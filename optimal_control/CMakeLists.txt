@@ -23,8 +23,11 @@ find_package(Biorbd REQUIRED)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
 # Write down all files to include here
-set(source_files 
-    main_acado.cpp
+set(source_files
+    SansMuscle.cpp
+    Av1Muscle.cpp 
+    Av2Muscles.cpp
+    Av2Phases.cpp   
 ) 
 
 # Setup each project
