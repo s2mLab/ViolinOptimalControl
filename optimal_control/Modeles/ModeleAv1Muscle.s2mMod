@@ -1,0 +1,81 @@
+version 3
+
+// Informations générales
+root_actuated	1
+external_forces	0
+
+// DEFINITION DES SEGMENTS
+
+	segment	Bras
+		RT	0 0 0 xyz 0 0 0
+		mass	1.00000
+
+		inertia
+			1.0000000000	0.0000000000	0.0000000000
+			0.0000000000	1.0000000000	0.0000000000
+			0.0000000000	0.0000000000	1.0000000000
+		com		0.0000000000		0.0000000000		-0.50000000000
+        mesh    0   0   0
+        mesh    0   0   -1
+	endsegment
+	// Markers
+		marker	origine
+			parent	Bras
+			position	0.0000 0.0000 0.0000
+		endmarker
+		marker	brascentre
+			parent	Bras
+			position	0.0000 0.0 000 -0.50000
+		endmarker
+
+	 segment Avantbras
+		parent Bras
+		RT	0 0 0 xyz 0 0 -1
+		rotations	    x
+		mass	1.00000
+		inertia
+			0.1000000	0.000000	0.000000
+			0.000000	0.1000000	0.000000
+			0.000000	0.000000	0.1000000
+		com	0.000000	0.000000	-0.2000000
+        mesh    0   0   0
+        mesh    0   0   -1
+
+	endsegment
+
+	// Markers
+		marker	milieu
+			parent	Avantbras
+			position	0.0000 0.0000 0.0000
+		endmarker
+		marker	avantbrascentre
+			parent	Avantbras
+			position	0.0000 0.0000 -0.50000
+		endmarker
+		marker	fin
+			parent	Avantbras
+			position	0.0000 0.0000 -1.0000
+		endmarker
+
+
+// DEFINITION DES MUSCLES
+// Bras > Avantbras
+musclegroup BrasAvantbras
+	OriginParent		Bras
+	InsertionParent		Avantbras
+endmusclegroup  	
+
+	muscle	TricepsLat
+		Type 			hillthelen
+		musclegroup 		BrasAvantbras
+		OriginPosition		0	0	-0.2
+		InsertionPosition	0	0	-0.1
+		optimalLength		0.600 //0.0863
+		maximalForce		620
+		tendonSlackLength 	0.30
+		pennationAngle		0.1700
+		PCSA			4.5
+		maxVelocity 		10
+	endmuscle
+
+
