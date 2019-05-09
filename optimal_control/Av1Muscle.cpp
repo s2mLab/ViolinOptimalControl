@@ -2,6 +2,7 @@
 #include <bindings/acado_gnuplot/gnuplot_window.hpp>
 #include <s2mMusculoSkeletalModel.h>
 
+//#define DEBUG ;
 using namespace std;
 USING_NAMESPACE_ACADO
 
@@ -44,14 +45,55 @@ void fowardDynamics( double *x, double *rhs, void *user_data){
     s2mGenCoord Qddot(static_cast<unsigned int>(nQdot));
     RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
 
-    //std::cout << "activation: " << x[nQ+nQdot] << endl;
-    //std::cout << "Qddot: "<< Qddot << endl;
-    //std::cout << "Tau: " << Tau << endl;
-
     for (int i = 0; i<nQ; ++i){
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];
     }
+
+/*
+      Q =(0.01, 0.01, 0.0, 0.0);
+      double u=0.0099999;
+
+      state.clear();
+      for (int i = 0; i<nMus; ++i)
+          state.push_back(s2mMuscleStateActual(0, u));
+      Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
+      RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
+
+      std::cout << Qddot << std::endl;
+*/
+
+#ifdef DEBUG
+    for(int i=0; i<m.nbTau(); ++i){
+        if (Tau[i]>1e5){
+            std::vector<int> L;
+            for(int j=0; j<nMus; ++j){
+                if (m.musclesLengthJacobian(m, true, &Q).coeff(j,i)!=0){
+                    L.push_back(j);
+                }
+            }
+         std::cout << "Torque "<<i<<" is too high" << endl;
+         std::cout << "Check the optimal lenth, the maximal force or the tendon slack lenth of muscles " << L <<endl;
+         L.clear();
+         }
+    }
+
+    for(int i=0; i<m.nbTau(); ++i){
+        if (Tau[i]>10){
+            int c=0;
+            std::vector<int> L;
+            for(int j=0; j<nMus; ++j){
+                if (m.musclesLengthJacobian(m, true, &Q).coeff(j,i)!=0){
+                    L.push_back(j);
+                    if(state[j].activation()>0.015)
+                        c++;
+                }
+            }
+            if (c=0)
+                std::cout << "Passive force of the muscles " <<L<< " is too high. Check the tendon slack lenth."<<endl;
+         }
+    }
+#endif
 }
 
 #define  NOL   1                 // number of lagrange objective functions
@@ -91,7 +133,6 @@ int  main ()
     DifferentialState       x("",nQ+nQdot,1);               //  the  differential states
     Control                 u("", nMus, 1);                 //  the  control input  u
     IntermediateState       is(nQ + nQdot + nMus);
-
 
     for (int i = 0; i < nQ; ++i)
         is(i) = x(i);

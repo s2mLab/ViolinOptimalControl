@@ -12,18 +12,18 @@ import matplotlib.pyplot as plt
 
 # Load the biorbd model
 
-m = biorbd.s2mMusculoSkeletalModel("Modeles/ModeleAv2Muscles.s2mMod")
+m = biorbd.s2mMusculoSkeletalModel("Modeles/ModeleSansMuscle.s2mMod")
 
 nFrame = 500            # number of frames
 nNoeuds = 30                # number of points
-nMuscle =m.nbMuscleTotal()
+nMuscle =m.nbTau()
 nPhase = 1
 nPoints = (nPhase*nNoeuds)+1
 nQtotal = m.nbQ()+m.nbQdot()
 
 ##### State from the file
 
-fichierS = open("Resultats/StatesAv2Muscles.txt", "r")
+fichierS = open("Resultats/StatesSansMuscle.txt", "r")
 
 i = 0
 t = []                                      # initialization of the time
@@ -65,7 +65,7 @@ for p in range(1, nPhase):
 
 ##### Controls from the file
 
-fichierU = open("Resultats/ControlsAv2Muscles.txt", "r")
+fichierU = open("Resultats/ControlsSansMuscle.txt", "r")
 
 i = 0
 all_U = np.ones((nMuscle, nPoints))          # initialization of the controls
@@ -92,35 +92,16 @@ fichierU.close()
 
 #### integration
 
-#dynamique avec activation des muscles
+# #dynamique sans muscle
 def dyn(t_int, X):
-    states_actual = biorbd.VecS2mMuscleStateActual(nMuscle)
-    for i in range(len(states_actual)):
-        states_actual[i] = biorbd.s2mMuscleStateActual(0, u[i])
 
-    m.updateMuscles(m, X[:m.nbQ()], X[m.nbQ():], True)
-
-    Tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(m, states_actual, X[:m.nbQ()], X[m.nbQ():])
-
-    QDDot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(m, X[:m.nbQ()], X[m.nbQ():], Tau).get_array()
+    QDDot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(m, X[:m.nbQ()], X[m.nbQ():], u).get_array()
     rsh = np.ndarray(m.nbQ() + m.nbQdot())
     for i in range(m.nbQ()):
-
         rsh[i] = X[m.nbQ()+i]
         rsh[i + m.nbQ()] = QDDot[i]
 
     return rsh
-
-# #dynamique sans muscle
-# def dyn(t_int, X):
-#
-#     QDDot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(m, X[:m.nbQ()], X[m.nbQ():], u).get_array()
-#     rsh = np.ndarray(m.nbQ() + m.nbQdot())
-#     for i in range(m.nbQ()):
-#         rsh[i] = X[m.nbQ()+i]
-#         rsh[i + m.nbQ()] = QDDot[i]
-#
-#     return rsh
 
 # u=np.array([8.6843e-01])
 # X=np.array([1.7794e-01, -1.0142, 1.0794, -4.0377])
@@ -131,7 +112,7 @@ print("Solution initiale: ", X)
 u = all_U[:, 0]
 print("Control: ", u)
 print("Tstart: ", t[0], "\nTend: ", t[1])
-LI = integrate.solve_ivp(dyn, (t[0], t[1]), X, rtol=1e-6, atol=1e-8)
+LI = integrate.solve_ivp(dyn, (t[0], t[1]), X)
 T = LI.t.tolist()[0:len(LI.t.tolist())-1]
 I = LI.y[:, 0:len(T)]
 print("Fin integration reelle: ", LI.y[:, -1])
@@ -151,47 +132,4 @@ for interval in range(1, len(t)-1):                 # integration between each p
     print("\n")
     for i in range(len(LI.t)-1):
         T.append(LI.t.tolist()[i])
-#
-# #### Interpolation
-# Q =np.ndarray((nFrame, m.nbQ()))
-# for q in range(m.nbQ()):
-#     tck = interpolate.splrep(T, I[q, :], s=0)
-#     time = np.linspace(0, T[len(T)-1], nFrame)
-#     Q[:, q] = interpolate.splev(time, tck, der=0)              # liste des positions à chaque temp: nQ listes de nFrames elements
-#
-# ###### visualisation
-#
-# plt.figure(1)
-# for i in range(m.nbQ()):
-#     plt.subplot(m.nbQ(), 2, 1+(2*i))
-#     plt.plot(all_Q[i])
-#     plt.title("états %i" %i)
-#
-#     plt.subplot(m.nbQ(), 2, 2+(2*i))
-#     plt.plot(all_Qdot[i])
-#     plt.title("états dérivés %i" %i)
-#
-# plt.figure(2)
-# for j in range(nMuscle):
-#     plt.subplot(nMuscle, 1, j+1)
-#     plt.plot(all_U[j])
-#     plt.title("contrôles %i" %j)
-#
-# plt.figure(3)
-# plt.subplot(1, 2, 1)
-# plt.plot(I[0])
-# plt.title("integration 0")
-# plt.subplot(1, 2, 2)
-# plt.plot(I[1])
-# plt.title("integration 1")
-#
-# plt.show()
 
-##### Animation
-#
-# b = BiorbdViz(loaded_model=m)
-#
-# i = 0
-# while b.vtk_window.is_active:
-#     b.set_q(Q[i, :])
-#     i = (i+1) % nFrame

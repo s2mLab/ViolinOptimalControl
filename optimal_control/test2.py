@@ -111,87 +111,14 @@ def dyn(t_int, X):
 
     return rsh
 
-# #dynamique sans muscle
-# def dyn(t_int, X):
-#
-#     QDDot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(m, X[:m.nbQ()], X[m.nbQ():], u).get_array()
-#     rsh = np.ndarray(m.nbQ() + m.nbQdot())
-#     for i in range(m.nbQ()):
-#         rsh[i] = X[m.nbQ()+i]
-#         rsh[i + m.nbQ()] = QDDot[i]
-#
-#     return rsh
-
-# u=np.array([8.6843e-01])
-# X=np.array([1.7794e-01, -1.0142, 1.0794, -4.0377])
-# print(dyn(0, X))
-
-X = np.concatenate((all_Q[:, 0], all_Qdot[:, 0]))
-print("Solution initiale: ", X)
-u = all_U[:, 0]
-print("Control: ", u)
-print("Tstart: ", t[0], "\nTend: ", t[1])
-LI = integrate.solve_ivp(dyn, (t[0], t[1]), X, rtol=1e-6, atol=1e-8)
-T = LI.t.tolist()[0:len(LI.t.tolist())-1]
-I = LI.y[:, 0:len(T)]
-print("Fin integration reelle: ", LI.y[:, -1])
-print("Fin integration theorique(noeuds suivant): ", np.concatenate((all_Q[:, 1], all_Qdot[:, 1])))
-print("\n")
-
-for interval in range(1, len(t)-1):                 # integration between each point
+for interval in range(0, len(t)-1):                 # integration between each point
+    print(interval)
     u = all_U[:, interval]
     X = np.concatenate((all_Q[:, interval], all_Qdot[:, interval]))
     print("Solution initiale: ", X)
     print("Control: ", u)
-    print("Tstart: ", t[interval], "\nTend: ", t[interval+1])
-    LI = integrate.solve_ivp(dyn, (t[interval], t[interval+1]), X)
-    I = np.concatenate((I, LI.y[:, 0:len(LI.t.tolist())-1]), axis=1)
-    print("Fin integration reelle: ", LI.y[:, -1])
-    print("Fin integration theorique(noeuds suivant): ", np.concatenate((all_Q[:, interval+1], all_Qdot[:, interval+1])))
+    print("dynamique: ", dyn(0, X))
     print("\n")
-    for i in range(len(LI.t)-1):
-        T.append(LI.t.tolist()[i])
-#
-# #### Interpolation
-# Q =np.ndarray((nFrame, m.nbQ()))
-# for q in range(m.nbQ()):
-#     tck = interpolate.splrep(T, I[q, :], s=0)
-#     time = np.linspace(0, T[len(T)-1], nFrame)
-#     Q[:, q] = interpolate.splev(time, tck, der=0)              # liste des positions à chaque temp: nQ listes de nFrames elements
-#
-# ###### visualisation
-#
-# plt.figure(1)
-# for i in range(m.nbQ()):
-#     plt.subplot(m.nbQ(), 2, 1+(2*i))
-#     plt.plot(all_Q[i])
-#     plt.title("états %i" %i)
-#
-#     plt.subplot(m.nbQ(), 2, 2+(2*i))
-#     plt.plot(all_Qdot[i])
-#     plt.title("états dérivés %i" %i)
-#
-# plt.figure(2)
-# for j in range(nMuscle):
-#     plt.subplot(nMuscle, 1, j+1)
-#     plt.plot(all_U[j])
-#     plt.title("contrôles %i" %j)
-#
-# plt.figure(3)
-# plt.subplot(1, 2, 1)
-# plt.plot(I[0])
-# plt.title("integration 0")
-# plt.subplot(1, 2, 2)
-# plt.plot(I[1])
-# plt.title("integration 1")
-#
-# plt.show()
 
-##### Animation
-#
-# b = BiorbdViz(loaded_model=m)
-#
-# i = 0
-# while b.vtk_window.is_active:
-#     b.set_q(Q[i, :])
-#     i = (i+1) % nFrame
+
+

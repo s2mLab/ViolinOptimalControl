@@ -1,6 +1,7 @@
 #include <acado_optimal_control.hpp>
 #include <bindings/acado_gnuplot/gnuplot_window.hpp>
 #include <s2mMusculoSkeletalModel.h>
+#include <vector>
 
 using namespace std;
 USING_NAMESPACE_ACADO
@@ -14,12 +15,12 @@ static int nQ(static_cast<int>(m.nbQ()));               // states number
 static int nQdot(static_cast<int>(m.nbQdot()));         // derived states number
 static int nTau(static_cast<int>(m.nbTau()));           // torque number
 static int nTags(static_cast<int>(m.nTags()));          // markers number
+static int nMus(static_cast<int>(m.nbMuscleTotal()));   // muscles number
 
 const double t_Start=0.0;
 const double t_End= 10.0;
 const int nPoints(30);
 
-int nMus(0);
 
 /* ---------- Functions ---------- */
 
@@ -52,6 +53,22 @@ void fowardDynamics( double *x, double *rhs, void *user_data){
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];
     }
+
+
+      Q[0]=2.65840941;
+      Q[1]=-1.63914636;
+      Qdot[0]=0.7330649;
+      Qdot[1]=3.74819289;
+      double u=0.01046615;
+
+      state.clear();
+      for (int i = 0; i<nMus; ++i)
+          state.push_back(s2mMuscleStateActual(0, u));
+      Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
+      RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
+
+      std::cout << Qddot << std::endl;
+
 }
 
 #define  NOL   1                 // number of lagrange objective functions
@@ -87,12 +104,6 @@ void myEndPointConstraint( double *x, double *g, void *user_data ){
 int  main ()
 {
     std::cout << "nb de marqueurs: " << nTags << std::endl<< std::endl;
-
-    for (unsigned int i=0; i<m.nbMuscleGroups(); ++i){
-        for (unsigned int j=0; j<m.muscleGroup(i).nbMuscles(); ++j){
-            ++nMus;
-        }
-    }
     std::cout << "nb de muscles: " << nMus << std::endl<< std::endl;
 
     /* ---------- INITIALIZATION ---------- */
@@ -136,7 +147,6 @@ int  main ()
     algorithm.initializeDifferentialStates("../Initialisation/X2Muscles.txt");
     //algorithm.initializeParameters("../Initialisation/T2Muscles.txt");
     algorithm.initializeControls("../Initialisation/U2Muscles.txt");
-
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
     window.addSubplot(  x ,  "STATES x" ) ;

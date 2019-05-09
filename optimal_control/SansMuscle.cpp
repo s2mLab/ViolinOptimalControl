@@ -42,6 +42,13 @@ void fowardDynamics( double *x, double *rhs, void *user_data){
        rhs[i] = Qdot[i];
        rhs[i + nQdot] = Qddot[i];
    }
+/*   Q[0]=1.5637;
+   Qdot[0]=4.2277e-01;
+   Tau[0]=-1.0949e+01;
+   RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
+
+   std::cout << Qddot <<endl;
+*/
 }
 
 #define  NOL   1                 // number of lagrange objective functions
@@ -75,7 +82,7 @@ int  main ()
     Parameter               T;                              //  the  time  horizon T
     DifferentialState       x("",nQ+nQdot,1);               //  the  differential states
     Control                 u("", nTau, 1);          //  the  control input  u
-    IntermediateState is(nQ + nQdot + nTau);
+    IntermediateState       is(nQ + nQdot + nTau);
 
     for (int i = 0; i < nQ; ++i)
         is(i) = x(i);                   //*scalingQ(i);
