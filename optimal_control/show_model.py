@@ -131,7 +131,7 @@ print("Solution initiale: ", X)
 u = all_U[:, 0]
 print("Control: ", u)
 print("Tstart: ", t[0], "\nTend: ", t[1])
-LI = integrate.solve_ivp(dyn, (t[0], t[1]), X, rtol=1e-6, atol=1e-8)
+LI = integrate.solve_ivp(dyn, (t[0], t[1]), X, method='RK45', rtol=1e-6, atol=1e-8)
 T = LI.t.tolist()[0:len(LI.t.tolist())-1]
 I = LI.y[:, 0:len(T)]
 print("Fin integration reelle: ", LI.y[:, -1])
@@ -144,7 +144,7 @@ for interval in range(1, len(t)-1):                 # integration between each p
     print("Solution initiale: ", X)
     print("Control: ", u)
     print("Tstart: ", t[interval], "\nTend: ", t[interval+1])
-    LI = integrate.solve_ivp(dyn, (t[interval], t[interval+1]), X)
+    LI = integrate.solve_ivp(dyn, (t[interval], t[interval+1]), X, method='RK45', rtol=1e-6, atol=1e-8)
     I = np.concatenate((I, LI.y[:, 0:len(LI.t.tolist())-1]), axis=1)
     print("Fin integration reelle: ", LI.y[:, -1])
     print("Fin integration theorique(noeuds suivant): ", np.concatenate((all_Q[:, interval+1], all_Qdot[:, interval+1])))
