@@ -15,7 +15,8 @@ external_forces	0
 			0.0000000000	1.0000000000	0.0000000000
 			0.0000000000	0.0000000000	1.0000000000
 		com		0.0000000000		0.0000000000		-0.50000000000
-
+        mesh    0   0   0
+        mesh    0   0   -1
 	endsegment
 	// Markers Scapula
 		marker	ScapulaOrigine
@@ -37,7 +38,8 @@ external_forces	0
 			0.000000	0.1000000	0.000000
 			0.000000	0.000000	0.1000000
 		com	0.000000	0.000000	-0.2000000
-
+        mesh    0   0   0
+        mesh    0   0   -1
 	endsegment
 
 	// Markers Bras
@@ -64,7 +66,8 @@ external_forces	0
 			0.000000	0.1000000	0.000000
 			0.000000	0.000000	0.1000000
 		com	0.000000	0.000000	-0.2000000
-
+        mesh    0   0   0
+        mesh    0   0   -1
 	endsegment
 
 	// Markers AvantBras
