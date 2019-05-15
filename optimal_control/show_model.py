@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 # Load the biorbd model
 
-m = biorbd.s2mMusculoSkeletalModel("Modeles/ModeleAv2Muscles.s2mMod")
+m = biorbd.s2mMusculoSkeletalModel("Modeles/ModeleAv2Muscles.bioMod")
 
 nFrame = 500            # number of frames
 nNoeuds = 30                # number of points

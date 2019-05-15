@@ -8,7 +8,7 @@ USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m("../Modeles/ModeleAv1Muscle.s2mMod");
+s2mMusculoSkeletalModel m("../Modeles/ModeleAv1Muscle.bioMod");
 
 
 static int nQ(static_cast<int>(m.nbQ()));               // states number

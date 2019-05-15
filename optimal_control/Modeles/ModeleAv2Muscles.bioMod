@@ -58,8 +58,8 @@ external_forces	0
 
 	segment AvantBras
 		parent Bras
-		RT	pi/6 0 0 xyz 0 0 -1
-		rotations	    x
+		RT	0.5 0 0 xyz 0 0 -1
+		rotations x
 		mass	1.00000
 		inertia
 			0.1000000	0.000000	0.000000
@@ -118,7 +118,7 @@ endmusclegroup
 		PCSA			4.5
 		maxVelocity 		10
 	endmuscle
-
+*/
 /*
 // Scapula > AvantBras
 musclegroup ScapulaAvantBras

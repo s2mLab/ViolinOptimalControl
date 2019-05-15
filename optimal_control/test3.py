@@ -16,7 +16,7 @@ m = biorbd.s2mMusculoSkeletalModel("Modeles/ModeleAv1Muscle.s2mMod")
 
 nFrame = 500            # number of frames
 nNoeuds = 30                # number of points
-nMuscle =m.nbTau()
+nMuscle = m.nbMuscleTotal()
 nPhase = 1
 nPoints = (nPhase*nNoeuds)+1
 nQtotal = m.nbQ()+m.nbQdot()

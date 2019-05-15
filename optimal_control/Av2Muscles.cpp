@@ -8,7 +8,7 @@ USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m("../Modeles/ModeleAv2Muscles.s2mMod");
+s2mMusculoSkeletalModel m("../Modeles/ModeleAv2Muscles.bioMod");
 
 
 static int nQ(static_cast<int>(m.nbQ()));               // states number
@@ -53,21 +53,6 @@ void fowardDynamics( double *x, double *rhs, void *user_data){
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];
     }
-
-
-      Q[0]=2.65840941;
-      Q[1]=-1.63914636;
-      Qdot[0]=0.7330649;
-      Qdot[1]=3.74819289;
-      double u=0.01046615;
-
-      state.clear();
-      for (int i = 0; i<nMus; ++i)
-          state.push_back(s2mMuscleStateActual(0, u));
-      Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
-      RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
-
-      std::cout << Qddot << std::endl;
 
 }
 
@@ -159,3 +144,4 @@ int  main ()
 
     return 0;
 }
+
