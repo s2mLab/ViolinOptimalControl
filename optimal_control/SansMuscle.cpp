@@ -42,7 +42,6 @@ void fowardDynamics( double *x, double *rhs, void *){ //void * user_data
        rhs[i] = Qdot[i];
        rhs[i + nQdot] = Qddot[i];
    }
-
 }
 
 #define  NOL   1                 // number of lagrange objective functions
@@ -132,4 +131,5 @@ int  main ()
 
     return 0;
 }
+
 

@@ -8,7 +8,7 @@ USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m("../Modeles/ModeleAv2Muscles.bioMod");
+s2mMusculoSkeletalModel m("../../models/Bras.pyoMod");
 
 
 static int nQ(static_cast<int>(m.nbQ()));               // states number
@@ -36,7 +36,6 @@ void fowardDynamics( double *x, double *rhs, void *user_data){
     }
     m.updateMuscles(m, Q, Qdot, true);
 
-    //std::cout << m.muscleGroup(0).muscle(0).get()->length(m, Q) << endl;
     std::vector<s2mMuscleStateActual> state;// controls
     for (int i = 0; i<nMus; ++i)
         state.push_back(s2mMuscleStateActual(0, x[i+nQ+nQdot]));
@@ -53,36 +52,32 @@ void fowardDynamics( double *x, double *rhs, void *user_data){
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];
     }
-
 }
 
-#define  NOL   1                 // number of lagrange objective functions
-void myLagrangeObjectiveFunction( double *x, double *g, void *user_data ){
-    g[0] = x[4];
+#define  NOL   nMus                 // number of lagrange objective functions
+void myLagrangeObjectiveFunction( double *x, double *g, void *user_data){
+    for(int i=0; i<nMus; ++i)
+        g[i] = x[i+nQ+nQdot];
 }
 
 
 #define  NOM   1                 // number of mayer objective functions
-void myMayerObjectiveFunction( double *x, double *g, void *user_data ){
+void myMayerObjectiveFunction( double *x, double *g, void *user_data){
     g[0] = (x[0]-PI/2)*(x[0]-PI/2);
     //g[1] = (x[1]-PI/6)*(x[1]-PI/6);
 }
 
-#define  NI   4                 // number of initial value constraints
-void myInitialValueConstraint( double *x, double *g, void *user_data ){
-    g[0] = x[0]-0.01;
-    g[1] = x[1]-0.01;
-    g[2] = x[2];
-    g[3] = x[3];
-
+#define  NI   nQ+nQdot                 // number of initial value constraints
+void myInitialValueConstraint( double *x, double *g, void *user_data){
+    for(int i=0; i<nQ; ++i){
+        g[i]=x[i]-0.01;
+        g[i+nQ]=x[i+nQ];
+    }
 }
 
-#define  NE   3                 // number of end-point / terminal constraints
-void myEndPointConstraint( double *x, double *g, void *user_data ){
-    g[0]=x[0]-PI/2;                         // rotation de 90°
-    g[1]=x[2];                              // vitesse nulle
-    g[2]=x[3];
-
+#define  NE   1                 // number of end-point / terminal constraints
+void myEndPointConstraint( double *x, double *g, void *user_data){
+    g[0]=x[0]-PI/2;
 }
 
 
@@ -108,7 +103,7 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp( t_Start, T , nPoints);
 
-    //CFunction Mayer( NOM, myMayerObjectiveFunction);
+    CFunction Mayer( NOM, myMayerObjectiveFunction);
     CFunction Lagrange( NOL, myLagrangeObjectiveFunction);
     ocp.minimizeMayerTerm( T );
     ocp.minimizeLagrangeTerm( Lagrange(is) );
@@ -129,9 +124,26 @@ int  main ()
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
 
-    algorithm.initializeDifferentialStates("../Initialisation/X2Muscles.txt");
-    //algorithm.initializeParameters("../Initialisation/T2Muscles.txt");
-    algorithm.initializeControls("../Initialisation/U2Muscles.txt");
+    VariablesGrid u_init(nMus, Grid(t_Start, t_End, 2));
+    VariablesGrid x_init(2, Grid(t_Start, t_End, 2));
+
+    for(int i=0; i<2; ++i){
+        for(int j=0; j<nMus; ++j){
+            u_init(i, j) = 0.1;
+        }
+    }
+
+    for(int i=0; i<nQ; ++i){
+         x_init(0, i) = 0.1;
+         x_init(1, i) = 0.1;
+    }
+    for(int i=nQ; i<nQdot; ++i){
+         x_init(0, i) = 0.0;
+         x_init(1, i) = 0.0;
+    }
+
+    algorithm.initializeControls(u_init);
+    algorithm.initializeDifferentialStates(x_init);
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
     window.addSubplot(  x ,  "STATES x" ) ;
@@ -144,4 +156,5 @@ int  main ()
 
     return 0;
 }
+
 
