@@ -9,11 +9,10 @@ USING_NAMESPACE_ACADO
 
 s2mMusculoSkeletalModel m("../Modeles/ModeleSansMuscle.bioMod");
 
-
-static int nQ(static_cast<int>(m.nbQ()));               // states number
-static int nQdot(static_cast<int>(m.nbQdot()));         // derived states number
-static int nTau(static_cast<int>(m.nbTau()));           // controls number
-static int nTags(static_cast<int>(m.nTags()));          // markers number
+static unsigned int nQ(m.nbQ());               // states number
+static unsigned int nQdot(m.nbQdot());         // derived states number
+static unsigned int nTau(m.nbTau());           // controls number
+static unsigned int nTags(m.nTags());          // markers number
 
 
 const double t_Start=0.0;
@@ -24,54 +23,49 @@ const int nPoints(30);
 /* ---------- Functions ---------- */
 
 #define  NX   nQ + nQdot        // number of differential states
-void fowardDynamics( double *x, double *rhs, void *user_data){
-    s2mGenCoord Q(static_cast<unsigned int>(nQ));           // states
-    s2mGenCoord Qdot(static_cast<unsigned int>(nQdot));     // derivated states
-    s2mTau Tau(static_cast<unsigned int>(nTau));            // controls
-    s2mGenCoord Qddot(static_cast<unsigned int>(nQdot));
+void fowardDynamics( double *x, double *rhs, void *){ //void * user_data
+    s2mGenCoord Q(nQ);           // states
+    s2mGenCoord Qdot(nQdot);     // derivated states
+    s2mTau Tau(nTau);            // controls
+    s2mGenCoord Qddot(nQdot);
 
-    for (int i = 0; i<nQ; ++i){
+    for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
-        Tau[i] = x[i+nQ+nQdot];
     }
+    for (unsigned int i = 0; i<nTau; ++i)
+        Tau[i] = x[i+nQ+nQdot];
 
     RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
 
-    for (int i = 0; i<nQ; ++i){
+    for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
        rhs[i] = Qdot[i];
        rhs[i + nQdot] = Qddot[i];
    }
-/*   Q[0]=1.5637;
-   Qdot[0]=4.2277e-01;
-   Tau[0]=-1.0949e+01;
-   RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
 
-   std::cout << Qddot <<endl;
-*/
 }
 
 #define  NOL   1                 // number of lagrange objective functions
-void myLagrangeObjectiveFunction( double *x, double *g, void *user_data ){
+void myLagrangeObjectiveFunction( double *, double *g, void * ){
     g[0] = 0;
 }
 
 #define  NOM   1                 // number of mayer objective functions
-void myMayerObjectiveFunction( double *x, double *g, void *user_data ){
+void myMayerObjectiveFunction( double *x, double *g, void * ){
     double obj = x[0]-PI/2;
     g[0] = obj*obj;
 }
 
-#define  NI   2                 // number of initial value constraints
-void myInitialValueConstraint( double *x, double *g, void *user_data ){
-    for (int i =0; i<nQ + nQdot; ++i) {
+#define  NI   nQ + nQdot         // number of initial value constraints
+void myInitialValueConstraint( double *x, double *g, void * ){
+    for (unsigned int i =0; i<nQ + nQdot; ++i) {
         g[i] =  x[i];
     }
 }
 
-#define  NE   2                 // number of end-point / terminal constraints
-void myEndPointConstraint( double *x, double *g, void *user_data ){
-    g[0]=x[0]-PI/2;                         // rotation de 90°
+#define  NE   1                 // number of end-point / terminal constraints
+void myEndPointConstraint( double *x, double *g, void * ){
+    // g[0]=x[0]-PI/2;                         // rotation de 90°
     g[0]=x[1];                              // vitesse nulle
 }
 
@@ -84,11 +78,11 @@ int  main ()
     Control                 u("", nTau, 1);          //  the  control input  u
     IntermediateState       is(nQ + nQdot + nTau);
 
-    for (int i = 0; i < nQ; ++i)
+    for (unsigned int i = 0; i < nQ; ++i){ // assuming nQ == nQdot
         is(i) = x(i);                   //*scalingQ(i);
-    for (int i = 0; i < nQdot; ++i)
         is(i+nQ) = x(i+nQ);             //*scalingQdot(i);
-    for (int i = 0; i < nTau; ++i)
+    }
+    for (unsigned int i = 0; i < nTau; ++i)
         is(i+nQ+nQdot) = u(i);          //*scalingQdot(i);
 
     /* ----------- DEFINE OCP ------------- */
@@ -103,7 +97,7 @@ int  main ()
     DifferentialEquation    f;                             //  the  differential  equation
     CFunction F( NX, fowardDynamics);
     CFunction I( NI, myInitialValueConstraint   );
-    CFunction E( 1, myEndPointConstraint       );
+    CFunction E( NE, myEndPointConstraint       );
 
     ocp.subjectTo( (f << dot(x)) == F(is) );                          //  differential  equation,
     ocp.subjectTo( AT_START, I(is) ==  0.0 );
