@@ -104,7 +104,7 @@ venv.bak/
 .mypy_cache/
 
 # Our files
-*/.idea/
+*.idea/
 */Debug/
 */Release/
 */Build/
