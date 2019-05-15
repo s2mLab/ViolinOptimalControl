@@ -2,7 +2,9 @@
 #include <bindings/acado_gnuplot/gnuplot_window.hpp>
 #include <s2mMusculoSkeletalModel.h>
 
-//#define DEBUG ;
+//#define DebugForce ;
+//#define DebugActivation ;
+//#define DebugLongueur ;
 using namespace std;
 USING_NAMESPACE_ACADO
 
@@ -50,20 +52,7 @@ void fowardDynamics( double *x, double *rhs, void *user_data){
         rhs[i + nQdot] = Qddot[i];
     }
 
-/*
-      Q =(0.01, 0.01, 0.0, 0.0);
-      double u=0.0099999;
-
-      state.clear();
-      for (int i = 0; i<nMus; ++i)
-          state.push_back(s2mMuscleStateActual(0, u));
-      Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
-      RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
-
-      std::cout << Qddot << std::endl;
-*/
-
-#ifdef DEBUG
+#ifdef DebugForce
     for(int i=0; i<m.nbTau(); ++i){
         if (Tau[i]>1e5){
             std::vector<int> L;
@@ -77,9 +66,11 @@ void fowardDynamics( double *x, double *rhs, void *user_data){
          L.clear();
          }
     }
+#endif
 
+#ifdef DebugActivation
     for(int i=0; i<m.nbTau(); ++i){
-        if (Tau[i]>10){
+        if (Tau[i]>0.1){
             int c=0;
             std::vector<int> L;
             for(int j=0; j<nMus; ++j){
@@ -92,6 +83,14 @@ void fowardDynamics( double *x, double *rhs, void *user_data){
             if (c=0)
                 std::cout << "Passive force of the muscles " <<L<< " is too high. Check the tendon slack lenth."<<endl;
          }
+    }
+#endif
+
+#ifdef DebugLongueur
+    for(int i=0; i<m.nbMuscleGroups(); ++i){
+        for(int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
+            if (m.muscleGroup(i).muscle(j).get()->length(m, Q) <= 0)
+                std::cout << "La longueur du muscle " << i << " est inférieur á 0" <<endl;
     }
 #endif
 }
@@ -180,4 +179,5 @@ int  main ()
 
     return 0;
 }
+
 

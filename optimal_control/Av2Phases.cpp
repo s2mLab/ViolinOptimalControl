@@ -60,8 +60,7 @@ void myLagrangeObjectiveFunction( double *x, double *g, void *user_data ){
 
 #define  NOM   1                 // number of mayer objective functions
 void myMayerObjectiveFunction( double *x, double *g, void *user_data ){
-    double obj = x[0]-PI/2;
-    g[0] = obj*obj;
+    g[0] = x[1];
 }
 
 #define  NI   2                 // number of initial value constraints
@@ -74,14 +73,13 @@ void myInitialValueConstraint( double *x, double *g, void *user_data ){
 #define  NE1   2                 // number of end-point / terminal constraints
 void myEndPointConstraint1( double *x, double *g, void *user_data ){
     g[0]=x[0]-PI/4;                         // rotation de 90°
-    g[0]=x[1];                              // vitesse nulle
+    g[1]=x[1];                              // vitesse nulle
 
 }
 
-#define  NE2   2                 // number of end-point / terminal constraints
+#define  NE2   1                 // number of end-point / terminal constraints
 void myEndPointConstraint2( double *x, double *g, void *user_data ){
     g[0]=x[0]-PI/2;                         // rotation de 90°
-    g[0]=x[1];                              // vitesse nulle
 
 }
 
@@ -117,9 +115,9 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(0.0, 1.0, nPoints);
 
-    //CFunction Mayer( NOM, myMayerObjectiveFunction);
+    CFunction Mayer( NOM, myMayerObjectiveFunction);
     CFunction Lagrange( NOL, myLagrangeObjectiveFunction);
-   //ocp.minimizeMayerTerm( Mayer(is) );
+    ocp.minimizeMayerTerm( Mayer(is2) );
     ocp.minimizeLagrangeTerm( Lagrange(is1) );
 
     /* ------------ CONSTRAINTS ----------- */
@@ -137,7 +135,7 @@ int  main ()
     ocp.subjectTo( AT_START, I(x1) ==  0.0 );
     ocp.subjectTo( 0.0, x2, -x1, 0.0 );
     ocp.subjectTo( AT_END  , E1(x1) ==  0.0 );
-    //ocp.subjectTo(AT_END, E2(x2) == 0.0);
+    ocp.subjectTo(AT_END, E2(x2) == 0.0);
 
     ocp.subjectTo(0.01 <= u1 <= 1);
     ocp.subjectTo(0.01 <= u2 <= 1);
@@ -161,10 +159,9 @@ int  main ()
     algorithm.solve();                              //  solve the problem .
 
     algorithm.getDifferentialStates("../Resultats/StatesAv2Phases.txt");
-    algorithm.getParameters("../Resultats/ParametersAv2Phases.txt");
+    //algorithm.getParameters("../Resultats/ParametersAv2Phases.txt");
     algorithm.getControls("../Resultats/ControlsAv2Phases.txt");
 
     return 0;
 }
-
 
