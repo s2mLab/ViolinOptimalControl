@@ -1,7 +1,5 @@
-### DO NOT MODIFY THIS PART ###
-
 CMAKE_MINIMUM_REQUIRED ( VERSION 3.1 )
-PROJECT("acado" CXX C)
+PROJECT("ViolonOptimal" CXX C)
 
 # Set folder to look path to
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/modules)
@@ -23,8 +21,11 @@ find_package(Biorbd REQUIRED)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
 # Write down all files to include here
-set(source_files 
-    main_acado.cpp
+set(source_files
+    SansMuscle.cpp
+    Av1Muscle.cpp
+    Av2Muscles.cpp
+    Av2Phases.cpp
 ) 
 
 # Setup each project

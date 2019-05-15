@@ -1,0 +1,141 @@
+version 3
+
+// Informations générales
+root_actuated	1
+external_forces	0
+
+// DEFINITION DES SEGMENTS
+
+	segment	Scapula
+		RT	0 0 0 xyz 0 0 0
+		mass	1.00000
+
+		inertia
+			1.0000000000	0.0000000000	0.0000000000
+			0.0000000000	1.0000000000	0.0000000000
+			0.0000000000	0.0000000000	1.0000000000
+		com		0.0000000000		0.0000000000		-0.50000000000
+        mesh    0   0   0
+        mesh    0   0   -1
+	endsegment
+	// Markers Scapula
+		marker	ScapulaOrigine
+			parent	Scapula
+			position	0.0000 0.0000 0.0000
+		endmarker
+		marker	ScapulaCentre
+			parent	Scapula
+			position	0.0000 0.0000 -0.50000
+		endmarker
+
+	 segment Bras
+		parent Scapula
+		RT	0 0 0 xyz 0 0 -1
+		rotations	    x
+		mass	1.00000
+		inertia
+			0.1000000	0.000000	0.000000
+			0.000000	0.1000000	0.000000
+			0.000000	0.000000	0.1000000
+		com	0.000000	0.000000	-0.2000000
+        mesh    0   0   0
+        mesh    0   0   -1
+	endsegment
+
+	// Markers Bras
+		marker	Epaule
+			parent	Bras
+			position	0.0000 0.0000 0.0000
+		endmarker
+		marker	BrasCentre
+			parent	Bras
+			position	0.0000 0.0000 -0.50000
+		endmarker
+		marker	Coude
+			parent	Bras
+			position	0.0000 0.0000 -1.0000
+		endmarker
+
+	segment AvantBras
+		parent Bras
+		RT	0.5 0 0 xyz 0 0 -1
+		rotations x
+		mass	1.00000
+		inertia
+			0.1000000	0.000000	0.000000
+			0.000000	0.1000000	0.000000
+			0.000000	0.000000	0.1000000
+		com	0.000000	0.000000	-0.2000000
+        mesh    0   0   0
+        mesh    0   0   -1
+	endsegment
+
+	// Markers AvantBras
+		marker	AvantBrasCentre
+			parent	AvantBras
+			position	0.0000 0.0000 -0.5
+		endmarker
+
+
+
+// DEFINITION DES MUSCLES
+
+// Scapula > Bras
+musclegroup ScapulaBras
+	OriginParent		Scapula
+	InsertionParent		Bras
+endmusclegroup 	
+		
+	muscle	Deltoid
+		Type 			hillthelen
+		musclegroup 		ScapulaBras
+		OriginPosition		0	0	-0.2
+		InsertionPosition	0	0	-0.2
+		optimalLength		0.600 //0.0863
+		maximalForce		1300
+		tendonSlackLength 	0.3
+		pennationAngle		0.1700
+		PCSA			4.5
+		maxVelocity 		10
+	endmuscle
+
+/*
+// Bras > AvantBras
+musclegroup BrasAvantBras
+	OriginParent		Bras
+	InsertionParent		AvantBras
+endmusclegroup  	
+
+	muscle	TricepsBrachial
+		Type 			hillthelen
+		musclegroup 		BrasAvantBras
+		OriginPosition		0	0	-0.2
+		InsertionPosition	0	0	-0.1
+		optimalLength		0.600 //0.0863
+		maximalForce		620
+		tendonSlackLength 	0.30
+		pennationAngle		0.1700
+		PCSA			4.5
+		maxVelocity 		10
+	endmuscle
+*/
+/*
+// Scapula > AvantBras
+musclegroup ScapulaAvantBras
+	OriginParent		Scapula
+	InsertionParent		AvantBras
+endmusclegroup 
+
+	muscle	Biceps 
+		Type 			hillthelen
+		musclegroup 		ScapulaAvantbras
+		OriginPosition		0	0	-0.2
+		InsertionPosition	0	0	-0.1
+		optimalLength		0.600 //0.0863
+		maximalForce		620
+		tendonSlackLength 	0.30
+		pennationAngle		0.1700
+		PCSA			4.5
+		maxVelocity 		10
+	endmuscle
+*/
