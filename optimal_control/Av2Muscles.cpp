@@ -151,8 +151,8 @@ int  main ()
     algorithm << window;
     algorithm.solve();                              //  solve the problem .
 
-    algorithm.getDifferentialStates("../Resultats/StatesAv2Muscles.txt");
-    algorithm.getControls("../Resultats/ControlsAv2Muscles.txt");
+    algorithm.getDifferentialStates("../Results/StatesAv2Muscles.txt");
+    algorithm.getControls("../Results/ControlsAv2Muscles.txt");
 
     return 0;
 }

@@ -173,9 +173,9 @@ int  main ()
     algorithm << window;
     algorithm.solve();                              //  solve the problem .
 
-    algorithm.getDifferentialStates("../Resultats/StatesAv1Muscle.txt");
-    //algorithm.getParameters("../Resultats/ParametresAv1Muscle.txt");
-    algorithm.getControls("../Resultats/ControlsAv1Muscle.txt");
+    algorithm.getDifferentialStates("../Results/StatesAv1Muscle.txt");
+    //algorithm.getParameters("../Results/ParametresAv1Muscle.txt");
+    algorithm.getControls("../Results/ControlsAv1Muscle.txt");
 
     return 0;
 }
