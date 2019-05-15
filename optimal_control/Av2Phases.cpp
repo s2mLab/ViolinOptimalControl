@@ -158,9 +158,9 @@ int  main ()
     algorithm << window;
     algorithm.solve();                              //  solve the problem .
 
-    algorithm.getDifferentialStates("../Resultats/StatesAv2Phases.txt");
-    //algorithm.getParameters("../Resultats/ParametersAv2Phases.txt");
-    algorithm.getControls("../Resultats/ControlsAv2Phases.txt");
+    algorithm.getDifferentialStates("../Results/StatesAv2Phases.txt");
+    //algorithm.getParameters("../Results/ParametersAv2Phases.txt");
+    algorithm.getControls("../Results/ControlsAv2Phases.txt");
 
     return 0;
 }

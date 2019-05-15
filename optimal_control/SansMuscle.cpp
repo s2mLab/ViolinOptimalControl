@@ -126,8 +126,8 @@ int  main ()
     algorithm << window;
     algorithm.solve();                              //  and solve the problem .
 
-    algorithm.getDifferentialStates("../Resultats/StatesSansMuscle.txt");
-    algorithm.getControls("../Resultats/ControlsSansMuscle.txt");
+    algorithm.getDifferentialStates("../Results/StatesSansMuscle.txt");
+    algorithm.getControls("../Results/ControlsSansMuscle.txt");
 
     return 0;
 }
