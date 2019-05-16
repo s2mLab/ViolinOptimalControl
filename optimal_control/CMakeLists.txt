@@ -20,6 +20,14 @@ find_package(Dlib REQUIRED)
 find_package(Biorbd REQUIRED)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
+# Build the dynamics 
+add_library(dynamics includes/dynamics.cpp)
+target_include_directories(dynamics PUBLIC
+    ${Biorbd_INCLUDE_DIR}
+    ${EIGEN3_INCLUDE_DIR}
+    ${RBDL_INCLUDE_DIR}
+    ${Boost_INCLUDE_DIRS})
+
 # Write down all files to include here
 set(source_files
     SansMuscle.cpp
@@ -45,6 +53,7 @@ foreach(src_file ${source_files})
     )
     
     target_link_libraries(${filename} 
+      dynamics
       ${Biorbd_LIBRARY}
       ${RBDL_LIBRARY}
       ${ACADO_SHARED_LIBRARIES}

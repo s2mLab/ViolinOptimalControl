@@ -1,7 +1,6 @@
 #include <acado_optimal_control.hpp>
 #include <bindings/acado_gnuplot/gnuplot_window.hpp>
-#include <s2mMusculoSkeletalModel.h>
-
+#include "includes/dynamics.h"
 using namespace std;
 USING_NAMESPACE_ACADO
 
@@ -9,11 +8,11 @@ USING_NAMESPACE_ACADO
 
 s2mMusculoSkeletalModel m("../Modeles/ModeleSansMuscle.bioMod");
 
-static unsigned int nQ(m.nbQ());               // states number
-static unsigned int nQdot(m.nbQdot());         // derived states number
-static unsigned int nTau(m.nbTau());           // controls number
-static unsigned int nTags(m.nTags());          // markers number
-
+unsigned int nQ(m.nbQ());               // states number
+unsigned int nQdot(m.nbQdot());         // derived states number
+unsigned int nTau(m.nbTau());           // controls number
+unsigned int nTags(m.nTags());          // markers number
+unsigned int nMus(0);
 
 const double t_Start=0.0;
 const double t_End= 10.0;
@@ -21,28 +20,7 @@ const int nPoints(30);
 
 
 /* ---------- Functions ---------- */
-
 #define  NX   nQ + nQdot        // number of differential states
-void fowardDynamics( double *x, double *rhs, void *){ //void * user_data
-    s2mGenCoord Q(nQ);           // states
-    s2mGenCoord Qdot(nQdot);     // derivated states
-    s2mTau Tau(nTau);            // controls
-    s2mGenCoord Qddot(nQdot);
-
-    for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-    }
-    for (unsigned int i = 0; i<nTau; ++i)
-        Tau[i] = x[i+nQ+nQdot];
-
-    RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
-
-    for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
-       rhs[i] = Qdot[i];
-       rhs[i + nQdot] = Qddot[i];
-   }
-}
 
 #define  NOL   1                 // number of lagrange objective functions
 void myLagrangeObjectiveFunction( double *, double *g, void * ){
@@ -94,7 +72,7 @@ int  main ()
 
     /* ------------ CONSTRAINTS ----------- */
     DifferentialEquation    f;                             //  the  differential  equation
-    CFunction F( NX, fowardDynamics);
+    CFunction F( NX, forwardDynamicsFromJointTorque);
     CFunction I( NI, myInitialValueConstraint   );
     CFunction E( NE, myEndPointConstraint       );
 
