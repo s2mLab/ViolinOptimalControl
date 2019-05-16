@@ -38,15 +38,14 @@ def read_acado_output_states(file_path, biorbd_model, nb_nodes, nb_phases):
         lin = line.split('\t')  # separation of the line in element
         lin[:1] = []  # remove the first element ( [ )
         lin[(nb_phases * biorbd_model.nbQ()) + (nb_phases * biorbd_model.nbQdot()) + 1:] = []  # remove the last ( ] )
-        t[-1] = float(lin[0])
+        t[i] = float(lin[0])
         all_q[:, -1] = [float(j) for j in lin[1 + (nb_phases - 1) * nb_dof_total:biorbd_model.nbQ() + (
                     nb_phases - 1) * nb_dof_total + 1]]  # complete the states with the nQ next columns
         all_qdot[:, -1] = [float(k) for k in lin[biorbd_model.nbQ() + 1 + (nb_phases - 1) * nb_dof_total:nb_dof_total * nb_phases + 1]]
 
-    # #TODO Complete the time when there is multiple phase
-    # for p in range(1, nb_phases):
-    #     for i in range(nb_nodes):
-    #         t.append(p + t[i + 1])
+    for p in range(1, nb_phases):
+        for j in range(nb_nodes):
+            t[nb_nodes+p+j] = p + t[j + 1]
     return t, all_q, all_qdot
 
 
@@ -124,6 +123,7 @@ def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_
             fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
             t_span=(t[interval], t[interval + 1]), y0=q_init, method='RK45')
 
+        q_init_previous = q_init
         if use_previous_as_init:
             q_init = integrated_tp.y[:, -1]
         else:
@@ -133,7 +133,7 @@ def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_
 
         if verbose:
             print(f"Time: {t[interval]}")
-            print(f"Initial states: {q_init}")
+            print(f"Initial states: {q_init_previous}")
             print(f"Control: {u}")
             print(f"Final states: {integrated_tp.y[:, -1]}")
             print(f"Expected final states: {np.concatenate((all_q[:, interval + 1], all_qdot[:, interval + 1]))}")
