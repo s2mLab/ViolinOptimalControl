@@ -110,7 +110,7 @@ def dynamics_from_joint_torque(t_int, states, biorbd_model, u):
 
     return rsh
 
-import copy
+
 def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_fun, verbose=False,
                                    use_previous_as_init=False):
     all_t = np.ndarray(0)
