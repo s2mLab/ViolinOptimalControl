@@ -43,9 +43,6 @@ def read_acado_output_states(file_path, biorbd_model, nb_nodes, nb_phases):
                     nb_phases - 1) * nb_dof_total + 1]]  # complete the states with the nQ next columns
         all_qdot[:, -1] = [float(k) for k in lin[biorbd_model.nbQ() + 1 + (nb_phases - 1) * nb_dof_total:nb_dof_total * nb_phases + 1]]
 
-    for p in range(1, nb_phases):
-        for j in range(nb_nodes):
-            t[nb_nodes+p+j] = p + t[j + 1]
     return t, all_q, all_qdot
 
 
@@ -76,6 +73,26 @@ def read_acado_output_controls(file_path, nb_nodes, nb_phases, nb_controls):
 
         all_u[:, -1] = [float(i) for i in lin[1+(nb_phases-1)*nb_controls:nb_controls*nb_phases+1]]
     return all_u
+
+def organize_time(file_path, t, nb_phases, nb_nodes):
+    with open(file_path, "r") as fichier_p:
+        line = fichier_p.readline()
+        lin = line.split('\t')
+        time_parameter = [float(i) for i in lin[2:nb_phases+2]]
+        # print(t[0:nb_nodes+1]*time_parameter[0])
+        print(t[0:nb_nodes+1]*time_parameter[1])
+        # print((t[0:nb_nodes + 1] * time_parameter[1])[1])
+        # print((t[0:nb_nodes+1]*time_parameter[0])[-1])
+        # print((t[0:nb_nodes + 1] * time_parameter[1])[1]+(t[0:nb_nodes+1]*time_parameter[0])[-1])
+        # print((t[0:nb_nodes + 1] * time_parameter[1])[2] + (t[0:nb_nodes + 1] * time_parameter[0])[-1])
+    t = t*time_parameter[0]
+
+    for p in range(1, nb_phases):
+        for j in range(nb_nodes):
+            t[nb_nodes+p+j] = t[p*nb_nodes] + (t[j + 1]*time_parameter[p])
+            print(t[p*nb_nodes])
+            print(t[j + 1]*time_parameter[p])
+    return t
 
 
 def dynamics_from_muscles(t_int, states, biorbd_model, u):
@@ -121,7 +138,7 @@ def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_
         u = all_u[:, interval]
         integrated_tp = integrate.solve_ivp(
             fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
-            t_span=(t[interval], t[interval + 1]), y0=q_init, method='RK45')
+            t_span=(t[interval], t[interval + 1]), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
 
         q_init_previous = q_init
         if use_previous_as_init:

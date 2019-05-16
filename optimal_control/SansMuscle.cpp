@@ -65,7 +65,7 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     CFunction Mayer( NOM, myMayerObjectiveFunction);
     CFunction Lagrange( NOL, myLagrangeObjectiveFunction);
-    OCP ocp( t_Start, T , nPoints);                        // time  horizon
+    OCP ocp( 0, 1 , nPoints);                        // time  horizon
     ocp.minimizeMayerTerm( Mayer(is) );                    // Mayer term
     ocp.minimizeLagrangeTerm( Lagrange(is) );                    // Lagrange term
 
@@ -76,10 +76,11 @@ int  main ()
     CFunction I( NI, myInitialValueConstraint   );
     CFunction E( NE, myEndPointConstraint       );
 
-    ocp.subjectTo( (f << dot(x)) == F(is) );                          //  differential  equation,
+    ocp.subjectTo( (f << dot(x)) == F(is)*T );                          //  differential  equation,
     ocp.subjectTo( AT_START, I(is) ==  0.0 );
     ocp.subjectTo( AT_END  , E(is) ==  0.0 );
     ocp.subjectTo(-100 <= u <= 100);
+    ocp.subjectTo(0.1 <= T <= 4);
 
 
 
@@ -102,8 +103,10 @@ int  main ()
     window.addSubplot(  x ,  "DISTANCE x" ) ;
     window.addSubplot( u ,  "CONTROL  u" ) ;
     algorithm << window;
-    algorithm.solve();                              //  and solve the problem .
+    algorithm.solve();
+    //  and solve the problem
 
+    algorithm.getParameters("../Results/ParametersSansMuscle.txt");
     algorithm.getDifferentialStates("../Results/StatesSansMuscle.txt");
     algorithm.getControls("../Results/ControlsSansMuscle.txt");
 

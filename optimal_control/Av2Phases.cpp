@@ -118,7 +118,7 @@ int  main ()
 
     algorithm.initializeDifferentialStates("../Initialisation/X2Phases.txt");
     algorithm.initializeControls("../Initialisation/U2Phases.txt");
-    algorithm.initializeParameters("../Initialisation/T2Phases.txt");
+    //algorithm.initializeParameters("../Initialisation/T2Phases.txt");
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
     window.addSubplot(  x1 ,  "STATES x" ) ;
@@ -129,7 +129,7 @@ int  main ()
     algorithm.solve();                              //  solve the problem .
 
     algorithm.getDifferentialStates("../Results/StatesAv2Phases.txt");
-    //algorithm.getParameters("../Results/ParametersAv2Phases.txt");
+    algorithm.getParameters("../Results/ParametersAv2Phases.txt");
     algorithm.getControls("../Results/ControlsAv2Phases.txt");
 
     return 0;

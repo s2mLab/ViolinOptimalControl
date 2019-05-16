@@ -19,7 +19,7 @@ unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 
 const double t_Start=0.0;
-const double t_End= 10.0;
+const double t_End= 1.0;
 const int nPoints(30);
 
 /* ---------- Functions ---------- */
@@ -52,14 +52,13 @@ void myEndPointConstraint( double *x, double *g, void * ){
 
 }
 
-
 int  main ()
 {
     std::cout << "nb de marqueurs: " << nTags << std::endl<< std::endl;
     std::cout << "nb de muscles: " << nMus << std::endl<< std::endl;
 
     /* ---------- INITIALIZATION ---------- */
-   // Parameter               T;                              //  the  time  horizon T
+    Parameter               T;                              //  the  time  horizon T
     DifferentialState       x("",nQ+nQdot,1);               //  the  differential states
     Control                 u("", nMus, 1);                 //  the  control input  u
     IntermediateState       is(nQ + nQdot + nMus);
@@ -72,7 +71,7 @@ int  main ()
         is(i+nQ+nQdot) = u(i);
 
     /* ----------- DEFINE OCP ------------- */
-    OCP ocp( t_Start, t_End , nPoints);
+    OCP ocp( 0, 1 , nPoints);
 
     CFunction Mayer( NOM, myMayerObjectiveFunction);
     CFunction Lagrange( NOL, myLagrangeObjectiveFunction);
@@ -85,10 +84,11 @@ int  main ()
     CFunction I( NI, myInitialValueConstraint   );
     CFunction E( NE, myEndPointConstraint       );
 
-    ocp.subjectTo( (f << dot(x)) == F(is) );                          //  differential  equation,
+    ocp.subjectTo( (f << dot(x)) == F(is)*T );                          //  differential  equation,
     ocp.subjectTo( AT_START, I(is) ==  0.0 );
     ocp.subjectTo( AT_END  , E(is) ==  0.0 );
     ocp.subjectTo(0.01 <= u <= 1);
+    ocp.subjectTo(0.1 <= T <= 4);
 
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
@@ -104,11 +104,10 @@ int  main ()
     algorithm << window;
     algorithm.solve();                              //  solve the problem .
 
+    VariablesGrid param;
+    algorithm.getParameters("../Results/ParametersAv1Muscle.txt");
     algorithm.getDifferentialStates("../Results/StatesAv1Muscle.txt");
-    //algorithm.getParameters("../Results/ParametresAv1Muscle.txt");
     algorithm.getControls("../Results/ControlsAv1Muscle.txt");
 
     return 0;
 }
-
-

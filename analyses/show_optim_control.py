@@ -6,7 +6,7 @@ import utils
 
 # Options
 model_name = "Av1Muscle"
-output_files = "Av1Muscle"
+output_files = "Av2Phases"
 fun_dyn = utils.dynamics_from_muscles
 nb_nodes = 30
 nb_phases = 2
@@ -24,10 +24,12 @@ else:
 # Read values
 t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results/States{output_files}.txt", m, nb_nodes, nb_phases)
 all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{output_files}.txt", nb_nodes, nb_phases, nb_controls)
+t = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_nodes)
+print(t)
 
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(m, t, all_q, all_qdot, all_u, fun_dyn,
-                                                                verbose=True, use_previous_as_init=True)
+                                                                verbose=False, use_previous_as_init=True)
 
 # Interpolate
 t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_int=t_integrate, y_int=q_integrate)
