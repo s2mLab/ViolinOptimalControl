@@ -6,7 +6,7 @@ USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m("../Modeles/ModeleSansMuscle.bioMod");
+s2mMusculoSkeletalModel m("../Modeles/ModeleAv1Muscle.bioMod");
 
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number

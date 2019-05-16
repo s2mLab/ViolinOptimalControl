@@ -9,7 +9,7 @@ model_name = "Av1Muscle"
 output_files = "Av1Muscle"
 fun_dyn = utils.dynamics_from_muscles
 nb_nodes = 30
-nb_phases = 1
+nb_phases = 2
 nb_frame_inter = 500
 
 # Load the biorbd model
@@ -27,7 +27,7 @@ all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{o
 
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(m, t, all_q, all_qdot, all_u, fun_dyn,
-                                                                verbose=False, use_previous_as_init=True)
+                                                                verbose=True, use_previous_as_init=True)
 
 # Interpolate
 t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_int=t_integrate, y_int=q_integrate)
@@ -48,11 +48,11 @@ for i in range(m.nbQ()):
     plt.subplot(m.nbQ(), 3, 3+(3*i))
     utils.plot_piecewise_constant(t, all_u[i, :])
     plt.title("Control %i" %i)
-plt.ion()  # Non blocking plt.show
+# plt.ion()  # Non blocking plt.show
 plt.show()
 
 # Animate the model
-b = BiorbdViz(loaded_model=m, show_muscles=False)
+b = BiorbdViz(loaded_model=m)
 frame = 0
 while b.vtk_window.is_active:
     b.set_q(q_interp[frame, :])

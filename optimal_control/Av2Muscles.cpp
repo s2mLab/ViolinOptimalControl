@@ -8,7 +8,7 @@ USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m("../../models/Bras.pyoMod");
+s2mMusculoSkeletalModel m("../../models/Bras.bioMod");
 
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
@@ -19,7 +19,6 @@ unsigned int nMus(m.nbMuscleTotal());   // muscles number
 const double t_Start=0.0;
 const double t_End= 10.0;
 const int nPoints(30);
-
 
 /* ---------- Functions ---------- */
 
@@ -54,8 +53,9 @@ void myEndPointConstraint( double *x, double *g, void *){
 
 int  main ()
 {
-    std::cout << "nb de marqueurs: " << nTags << std::endl<< std::endl;
     std::cout << "nb de muscles: " << nMus << std::endl<< std::endl;
+    std::cout << "nb de degré de liberté: " << nQ << std::endl<< std::endl;
+
 
     /* ---------- INITIALIZATION ---------- */
     Parameter               T;                              //  the  time  horizon T
@@ -96,7 +96,7 @@ int  main ()
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
 
     VariablesGrid u_init(nMus, Grid(t_Start, t_End, 2));
-    VariablesGrid x_init(2, Grid(t_Start, t_End, 2));
+    VariablesGrid x_init(nQ+nQdot, Grid(t_Start, t_End, 2));
 
     for(unsigned int i=0; i<2; ++i){
         for(unsigned int j=0; j<nMus; ++j){
@@ -120,12 +120,10 @@ int  main ()
     window.addSubplot(  x ,  "STATES x" ) ;
     window.addSubplot( u ,  "CONTROL  u" ) ;
     algorithm << window;
-    algorithm.solve();                              //  solve the problem .
+    algorithm.solve();                              //  solve the problem
 
     algorithm.getDifferentialStates("../Results/StatesAv2Muscles.txt");
     algorithm.getControls("../Results/ControlsAv2Muscles.txt");
 
     return 0;
 }
-
-
