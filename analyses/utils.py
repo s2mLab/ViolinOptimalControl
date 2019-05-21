@@ -79,20 +79,13 @@ def organize_time(file_path, t, nb_phases, nb_nodes):
         line = fichier_p.readline()
         lin = line.split('\t')
         time_parameter = [float(i) for i in lin[2:nb_phases+2]]
-        # print(t[0:nb_nodes+1]*time_parameter[0])
-        print(t[0:nb_nodes+1]*time_parameter[1])
-        # print((t[0:nb_nodes + 1] * time_parameter[1])[1])
-        # print((t[0:nb_nodes+1]*time_parameter[0])[-1])
-        # print((t[0:nb_nodes + 1] * time_parameter[1])[1]+(t[0:nb_nodes+1]*time_parameter[0])[-1])
-        # print((t[0:nb_nodes + 1] * time_parameter[1])[2] + (t[0:nb_nodes + 1] * time_parameter[0])[-1])
-    t = t*time_parameter[0]
+    t_final = t*time_parameter[0]
 
     for p in range(1, nb_phases):
         for j in range(nb_nodes):
-            t[nb_nodes+p+j] = t[p*nb_nodes] + (t[j + 1]*time_parameter[p])
-            print(t[p*nb_nodes])
-            print(t[j + 1]*time_parameter[p])
-    return t
+            t_final[nb_nodes+p+j] = (t[nb_nodes]*time_parameter[p-1]) + (t[j + 1]*time_parameter[p])
+
+    return t_final
 
 
 def dynamics_from_muscles(t_int, states, biorbd_model, u):
@@ -144,7 +137,7 @@ def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_
         if use_previous_as_init:
             q_init = integrated_tp.y[:, -1]
         else:
-            q_init = np.concatenate((all_q[:, interval], all_qdot[:, interval]))
+            q_init = np.concatenate((all_q[:, interval+1], all_qdot[:, interval+1]))
         all_t = np.concatenate((all_t, integrated_tp.t[:-1]))
         integrated_state = np.concatenate((integrated_state, integrated_tp.y[:, :-1]), axis=1)
 
@@ -154,6 +147,7 @@ def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_
             print(f"Control: {u}")
             print(f"Final states: {integrated_tp.y[:, -1]}")
             print(f"Expected final states: {np.concatenate((all_q[:, interval + 1], all_qdot[:, interval + 1]))}")
+            print(f"Difference: {(integrated_tp.y[:, -1]-np.concatenate((all_q[:, interval + 1], all_qdot[:, interval + 1])))}")
             print("")
 
     return all_t, integrated_state
@@ -186,3 +180,15 @@ def plot_piecewise_constant(t, data):
 
 def plot_piecewise_linear(t, data):
     plt.plot(t, data)
+
+def derive(q, t):
+
+    der = np.ndarray(q.shape)
+    for i in range(q.shape[0]):
+        for j in range(q.shape[1]-1):
+            der[i][j] = (q[i][j+1]-q[i][j])/(t[j+1]-t[j])
+
+    return der
+
+
+

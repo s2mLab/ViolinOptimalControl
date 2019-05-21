@@ -26,9 +26,10 @@ const int nPoints(30);
 
 #define  NX   nQ + nQdot        // number of differential states
 
-#define  NOL   1                 // number of lagrange objective functions
+#define  NOL  1                 // number of lagrange objective functions
 void myLagrangeObjectiveFunction( double *x, double *g, void * ){
     g[0] = x[2];
+    //g[1] = x[3];
 }
 
 
@@ -61,7 +62,8 @@ int  main ()
     Parameter               T;                              //  the  time  horizon T
     DifferentialState       x("",nQ+nQdot,1);               //  the  differential states
     Control                 u("", nMus, 1);                 //  the  control input  u
-    IntermediateState       is(nQ + nQdot + nMus);
+    IntermediateState       is(nQ + nQdot + nMus + 1);
+
 
     for (unsigned int i = 0; i < nQ; ++i)
         is(i) = x(i);
@@ -69,6 +71,7 @@ int  main ()
         is(i+nQ) = x(i+nQ);
     for (unsigned int i = 0; i < nMus; ++i)
         is(i+nQ+nQdot) = u(i);
+    is(3)=T;
 
     /* ----------- DEFINE OCP ------------- */
     OCP ocp( 0, 1 , nPoints);
@@ -84,17 +87,18 @@ int  main ()
     CFunction I( NI, myInitialValueConstraint   );
     CFunction E( NE, myEndPointConstraint       );
 
-    ocp.subjectTo( (f << dot(x)) == F(is)*T );                          //  differential  equation,
+    ocp.subjectTo( (f << dot(x)) == F(is)*T);                          //  differential  equation,
     ocp.subjectTo( AT_START, I(is) ==  0.0 );
     ocp.subjectTo( AT_END  , E(is) ==  0.0 );
+    ocp.subjectTo(T==2);
+
     ocp.subjectTo(0.01 <= u <= 1);
-    ocp.subjectTo(0.1 <= T <= 4);
 
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
 
     algorithm.initializeDifferentialStates("../Initialisation/X1Muscle.txt");
-    //algorithm.initializeParameters("../Initialisation/T1Muscle.txt");
+    algorithm.initializeParameters("../Initialisation/T1Muscle.txt");
     algorithm.initializeControls("../Initialisation/U1Muscle.txt");
 
 

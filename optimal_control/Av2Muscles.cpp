@@ -17,7 +17,7 @@ unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 
 const double t_Start=0.0;
-const double t_End= 10.0;
+const double t_End= 1.0;
 const int nPoints(30);
 
 /* ---------- Functions ---------- */
@@ -33,8 +33,7 @@ void myLagrangeObjectiveFunction( double *x, double *g, void *){
 
 #define  NOM   1                 // number of mayer objective functions
 void myMayerObjectiveFunction( double *x, double *g, void *){
-    g[0] = (x[0]-PI/2)*(x[0]-PI/2);
-    //g[1] = (x[1]-PI/6)*(x[1]-PI/6);
+    g[0] = x[5];
 }
 
 #define  NI   nQ+nQdot                 // number of initial value constraints
@@ -47,7 +46,7 @@ void myInitialValueConstraint( double *x, double *g, void *){
 
 #define  NE   1                 // number of end-point / terminal constraints
 void myEndPointConstraint( double *x, double *g, void *){
-    g[0]=x[0]-PI/2;
+    g[0]=x[0]-PI/4;
 }
 
 
@@ -72,7 +71,7 @@ int  main ()
         is(i+nQ+nQdot) = u(i);
 
     /* ----------- DEFINE OCP ------------- */
-    OCP ocp( t_Start, T , nPoints);
+    OCP ocp( t_Start, t_End , nPoints);
 
     CFunction Mayer( NOM, myMayerObjectiveFunction);
     CFunction Lagrange( NOL, myLagrangeObjectiveFunction);
@@ -80,17 +79,17 @@ int  main ()
     ocp.minimizeLagrangeTerm( Lagrange(is) );
 
     /* ------------ CONSTRAINTS ----------- */
-    DifferentialEquation    f(0.0, T) ;
+    DifferentialEquation    f ;
     CFunction F( NX, forwardDynamicsFromMuscleActivation);
     CFunction I( NI, myInitialValueConstraint   );
     CFunction E( NE, myEndPointConstraint       );
 
-    ocp.subjectTo( (f << dot(x)) == F(is) );                          //  differential  equation,
+    ocp.subjectTo( (f << dot(x)) == F(is)*T );                          //  differential  equation,
     ocp.subjectTo( AT_START, I(is) ==  0.0 );
     ocp.subjectTo( AT_END  , E(is) ==  0.0 );
     ocp.subjectTo(0.01 <= u <= 1);
 
-    ocp.subjectTo(3.0 <= T <= 10.0);
+    ocp.subjectTo(0.1 <= T <= 6.0);
 
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,

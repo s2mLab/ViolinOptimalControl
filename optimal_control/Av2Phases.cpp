@@ -42,14 +42,14 @@ void myInitialValueConstraint( double *x, double *g, void * ){
 
 #define  NE1   2                 // number of end-point / terminal constraints
 void myEndPointConstraint1( double *x, double *g, void * ){
-    g[0]=x[0]-PI/4;                         // rotation de 90°
+    g[0]=x[0]-2.5;                         // rotation de 90°
     g[1]=x[1];                              // vitesse nulle
 
 }
 
 #define  NE2   1                 // number of end-point / terminal constraints
 void myEndPointConstraint2( double *x, double *g, void * ){
-    g[0]=x[0]-PI/2;                         // rotation de 90°
+    g[0]=x[0]-0.01;                         // rotation de 90°
 
 }
 
@@ -94,8 +94,8 @@ int  main ()
     CFunction F( NX, forwardDynamicsFromMuscleActivation);
 
     DifferentialEquation    f ;
-    (f << dot(x1)) == F(is1)/T1;
-    (f << dot(x2)) == F(is2)/T2;
+    (f << dot(x1)) == F(is1)*T1;
+    (f << dot(x2)) == F(is2)*T2;
     ocp.subjectTo(f);
 
     CFunction I( NI, myInitialValueConstraint   );
