@@ -182,11 +182,10 @@ def plot_piecewise_linear(t, data):
     plt.plot(t, data)
 
 def derive(q, t):
-
     der = np.ndarray(q.shape)
-    for i in range(q.shape[0]):
-        for j in range(q.shape[1]-1):
-            der[i][j] = (q[i][j+1]-q[i][j])/(t[j+1]-t[j])
+    for i in range(q.shape[1]):
+        for j in range(q.shape[0]-1):
+            der[j][i] = (q[j+1][i]-q[j][i])/(t[j+1]-t[j])
 
     return der
 

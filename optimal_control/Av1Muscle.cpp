@@ -28,8 +28,8 @@ const int nPoints(30);
 
 #define  NOL  1                 // number of lagrange objective functions
 void myLagrangeObjectiveFunction( double *x, double *g, void * ){
-    g[0] = x[2];
-    //g[1] = x[3];
+    g[0] = x[2]*x[2]+x[3];
+
 }
 
 
@@ -71,7 +71,7 @@ int  main ()
         is(i+nQ) = x(i+nQ);
     for (unsigned int i = 0; i < nMus; ++i)
         is(i+nQ+nQdot) = u(i);
-    is(3)=T;
+    is(3) = T;
 
     /* ----------- DEFINE OCP ------------- */
     OCP ocp( 0, 1 , nPoints);
@@ -90,7 +90,7 @@ int  main ()
     ocp.subjectTo( (f << dot(x)) == F(is)*T);                          //  differential  equation,
     ocp.subjectTo( AT_START, I(is) ==  0.0 );
     ocp.subjectTo( AT_END  , E(is) ==  0.0 );
-    ocp.subjectTo(T==2);
+    ocp.subjectTo(0.1 <= T <= 5);
 
     ocp.subjectTo(0.01 <= u <= 1);
 

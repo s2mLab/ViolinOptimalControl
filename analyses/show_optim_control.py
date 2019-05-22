@@ -40,21 +40,19 @@ q_interp = q_interp[:, :m.nbQ()]
 # Show data
 plt.figure("States")
 for i in range(m.nbQ()):
-    plt.subplot(m.nbQ(), 4, 1+(3*i))
+    plt.subplot(m.nbQ(), 3, 1+(3*i))
     plt.plot(t_interp, q_interp[:, i])
     plt.title("Q %i" %i)
 
-    plt.subplot(m.nbQ(), 4, 2+(3*i))
+    plt.subplot(m.nbQ(), 3, 2+(3*i))
     plt.plot(t_interp, qdot_interp[:, i])
+    plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
     plt.title("Qdot %i" %i)
 
-    plt.subplot(m.nbQ(), 4, 3+(3*i))
+    plt.subplot(m.nbQ(), 3, 3+(3*i))
     utils.plot_piecewise_constant(t_final, all_u[i, :])
     plt.title("Control %i" %i)
 
-    plt.subplot(m.nbQ(), 4, 4+(3*i))
-    plt.plot(t_interp, utils.derive(q_interp, t_interp))
-    plt.title("Derivate %i" %i)
 
 # plt.ion()  # Non blocking plt.show
 plt.show()
