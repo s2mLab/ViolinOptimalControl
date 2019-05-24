@@ -26,10 +26,9 @@ const int nPoints(30);
 
 #define  NOL   1                // number of lagrange objective functions
 void myLagrangeObjectiveFunction( double *x, double *g, void *){
-    //g[0]=x[nQ+nQdot];
-    g[0]=0;
-    //for (unsigned int i=1; i<nMus+nTau; ++i)
-        //g[0] += x[i+nQ+nQdot];
+    g[0]=x[nQ+nQdot];
+    for (unsigned int i=1; i<nMus+nTau; ++i)
+        g[0] += x[i+nQ+nQdot];
 }
 
 
@@ -121,7 +120,7 @@ int  main ()
     algorithm.initializeControls(u_init);
     algorithm.initializeDifferentialStates(x_init);
 
-    //algorithm.initializeDifferentialStates("../Results/StatesSansMuscle.txt");
+//    algorithm.initializeDifferentialStates("../Results/StatesSansMuscle.txt");
 
 
 

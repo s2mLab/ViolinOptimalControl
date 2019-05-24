@@ -16,39 +16,44 @@ unsigned int nMus(0);
 
 const double t_Start=0.0;
 const double t_End= 10.0;
-const int nPoints(30);
+const int nPoints(35);
 
 
 /* ---------- Functions ---------- */
 #define  NX   nQ + nQdot        // number of differential states
 
 #define  NOL   1                 // number of lagrange objective functions
-void myLagrangeObjectiveFunction( double *, double *g, void * ){
-    g[0] = 0;
+void myLagrangeObjectiveFunction( double *x, double *g, void * ){
+    g[0]=x[10]*x[10]+x[11]*x[11]+x[12]*x[12]+x[13]*x[13];
+    //for (unsigned int i=1; i<nTau; ++i)
+        //g[0] += x[i+nQ+nQdot];
 }
 
 #define  NOM   1                 // number of mayer objective functions
 void myMayerObjectiveFunction( double *x, double *g, void * ){
-    double obj = x[4]-PI/4;
-    g[0] = obj*obj;
+    g[0] = x[7];
 }
 
 #define  NI   nQ + nQdot         // number of initial value constraints
 void myInitialValueConstraint( double *x, double *g, void * ){
     for (unsigned int i =0; i<nQ + nQdot; ++i) {
-        g[i] =  x[i];
+        g[i] =  x[i]-0.1;
     }
 }
 
 #define  NE   1                 // number of end-point / terminal constraints
 void myEndPointConstraint( double *x, double *g, void * ){
-    // g[0]=x[0]-PI/2;                         // rotation de 90°
-    g[0]=x[7];                              // vitesse nulle
+    g[0]=x[nQ-1]-PI/4;                         // rotation de 90°
+//    for (unsigned int i=0; i<nQ-1; ++i)
+//        g[i] = x[i]-0.01;
 }
-
 
 int  main ()
 {
+    std::cout << "nb de muscles: " << nMus << std::endl;
+    std::cout << "nb de degrés de liberté: " << nQ << std::endl;
+    std::cout << "nb de torques: " << nTau << std::endl;
+
     /* ---------- INITIALIZATION ---------- */
     Parameter               T;                              //  the  time  horizon T
     DifferentialState       x("",nQ+nQdot,1);               //  the  differential states
@@ -81,30 +86,50 @@ int  main ()
     ocp.subjectTo( AT_END  , E(is) ==  0.0 );
     ocp.subjectTo(-100 <= u <= 100);
     ocp.subjectTo(0.1 <= T <= 4);
+    
+    ocp.subjectTo(-PI/8 <= x(0) <= 0.1);
+    ocp.subjectTo(-PI/2 <= x(1) <= 0.1);
+    ocp.subjectTo(-PI/4 <= x(2) <= PI);
+    ocp.subjectTo(-PI/2 <= x(3) <= PI/2);
+    ocp.subjectTo(-0.1 <= x(4) <= PI);
+
 
 
 
     /* ---------- OPTIMIZATION  ------------ */
-    OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
+    OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm
+    algorithm.set(MAX_NUM_ITERATIONS, 1000);
+    //algorithm.set(KKT_TOLERANCE, 1e-10);
+    //algorithm.set(INTEGRATOR_TOLERANCE, 1e-6);
 
-    VariablesGrid u_init(1, Grid(t_Start, t_End, 2));
-    u_init(0, 0) = 0.1;
-    u_init(0, 1) = 0.1;
+    VariablesGrid u_init(nTau, Grid(t_Start, t_End, 2));
+    for(unsigned int i=0; i<2; ++i){
+        for(unsigned int j=0; j<nTau; ++j){
+            u_init(i, j) = 0;
+        }
+    }
     algorithm.initializeControls(u_init);
 
-    VariablesGrid x_init(2, Grid(t_Start, t_End, 2));
-    x_init(0, 0) = 0.1;
-    x_init(0, 1) = 0.1;
-    x_init(1, 0) = 0.1;
-    x_init(1, 1) = 0.1;
+    VariablesGrid x_init(nQ+nQdot, Grid(t_Start, t_End, 2));
+    for(unsigned int i=0; i<nQ-1; ++i){
+         x_init(0, i) = 0.1;
+         x_init(1, i) = 0.1;
+    }
+
+    x_init(0, 4) = 0.2;
+    x_init(1, 4) = 0.8;
+
+    for(unsigned int i=nQ; i<nQdot; ++i){
+         x_init(0, i) = 0.01;
+         x_init(1, i) = 0.01;
+    }
     algorithm.initializeDifferentialStates(x_init);
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
     window.addSubplot(  x ,  "DISTANCE x" ) ;
     window.addSubplot( u ,  "CONTROL  u" ) ;
     algorithm << window;
-    algorithm.solve();
-    //  and solve the problem
+    algorithm.solve();                              //  solve the problem
 
     algorithm.getParameters("../Results/ParametersSansMuscle.txt");
     algorithm.getDifferentialStates("../Results/StatesSansMuscle.txt");
@@ -112,5 +137,3 @@ int  main ()
 
     return 0;
 }
-
-

@@ -6,9 +6,9 @@ import utils
 
 # Options
 model_name = "Av1Muscle"
-output_files = "Av2Muscles"
+output_files = "SansMuscle"
 fun_dyn = utils.dynamics_from_muscles_and_torques
-nb_nodes = 30
+nb_nodes = 35
 nb_phases = 1
 nb_frame_inter = 500
 
