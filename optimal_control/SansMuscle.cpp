@@ -6,7 +6,7 @@ USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m("../Modeles/ModeleAv1Muscle.bioMod");
+s2mMusculoSkeletalModel m("../../models/Bras.bioMod");
 
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
@@ -29,7 +29,7 @@ void myLagrangeObjectiveFunction( double *, double *g, void * ){
 
 #define  NOM   1                 // number of mayer objective functions
 void myMayerObjectiveFunction( double *x, double *g, void * ){
-    double obj = x[0]-PI/2;
+    double obj = x[4]-PI/4;
     g[0] = obj*obj;
 }
 
@@ -43,7 +43,7 @@ void myInitialValueConstraint( double *x, double *g, void * ){
 #define  NE   1                 // number of end-point / terminal constraints
 void myEndPointConstraint( double *x, double *g, void * ){
     // g[0]=x[0]-PI/2;                         // rotation de 90°
-    g[0]=x[1];                              // vitesse nulle
+    g[0]=x[7];                              // vitesse nulle
 }
 
 

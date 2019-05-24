@@ -66,8 +66,8 @@ int  main ()
     Parameter               T1;
     Parameter               T2;
 
-    IntermediateState       is1(nQ + nQdot + nMus);
-    IntermediateState       is2(nQ + nQdot + nMus);
+    IntermediateState       is1(nQ + nQdot + nMus + 1);
+    IntermediateState       is2(nQ + nQdot + nMus + 1);
 
     for (unsigned int i = 0; i < nQ; ++i){
         is1(i) = x1(i);
@@ -81,6 +81,8 @@ int  main ()
         is1(i+nQ+nQdot) = u1(i);
         is2(i+nQ+nQdot) = u2(i);
     }
+    is1(nQ+nQdot+nMus)=T1;
+    is2(nQ+nQdot+nMus)=T2;
 
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(0.0, 1.0, nPoints);
@@ -125,6 +127,8 @@ int  main ()
     window.addSubplot(  x2 ,  "STATES x" ) ;
     window.addSubplot( u1 ,  "CONTROL  u" ) ;
     window.addSubplot( u2 ,  "CONTROL  u" ) ;
+    window.addSubplot( T1 ,  "Time parameter 1 " ) ;
+    window.addSubplot( T2 ,  "Time parameter 2 " ) ;
     algorithm << window;
     algorithm.solve();                              //  solve the problem .
 

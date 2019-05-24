@@ -6,18 +6,21 @@ import utils
 
 # Options
 model_name = "Av1Muscle"
-output_files = "Av1Muscle"
-fun_dyn = utils.dynamics_from_muscles
+output_files = "Av2Muscles"
+fun_dyn = utils.dynamics_from_muscles_and_torques
 nb_nodes = 30
 nb_phases = 1
 nb_frame_inter = 500
 
 # Load the biorbd model
-m = biorbd.s2mMusculoSkeletalModel(f"../optimal_control/Modeles/Modele{model_name}.bioMod")
+m = biorbd.s2mMusculoSkeletalModel(f"../models/Bras.bioMod")
+#m = biorbd.s2mMusculoSkeletalModel(f"../optimal_control/Modeles/Modele{model_name}.bioMod")
 if fun_dyn == utils.dynamics_from_muscles:
     nb_controls = m.nbMuscleTotal()
 elif fun_dyn == utils.dynamics_from_joint_torque:
     nb_controls = m.nbTau()
+elif fun_dyn == utils.dynamics_from_muscles_and_torques:
+    nb_controls=m.nbMuscleTotal()+m.nbTau()
 else:
     raise NotImplementedError("Dynamic not implemented yet")
 
@@ -46,7 +49,7 @@ for i in range(m.nbQ()):
 
     plt.subplot(m.nbQ(), 3, 2+(3*i))
     plt.plot(t_interp, qdot_interp[:, i])
-    plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
+    # plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
     plt.title("Qdot %i" %i)
 
     plt.subplot(m.nbQ(), 3, 3+(3*i))
@@ -58,7 +61,7 @@ for i in range(m.nbQ()):
 plt.show()
 
 # Animate the model
-b = BiorbdViz(loaded_model=m)
+b = BiorbdViz(loaded_model=m, show_muscles=False)
 frame = 0
 while b.vtk_window.is_active:
     b.set_q(q_interp[frame, :])

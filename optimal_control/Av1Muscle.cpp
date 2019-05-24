@@ -105,6 +105,7 @@ int  main ()
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
     window.addSubplot(  x ,  "STATES x" ) ;
     window.addSubplot( u ,  "CONTROL  u" ) ;
+    window.addSubplot( T ,  "Time parameter T" ) ;
     algorithm << window;
     algorithm.solve();                              //  solve the problem .
 

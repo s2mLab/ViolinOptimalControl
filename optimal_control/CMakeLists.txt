@@ -23,6 +23,7 @@ link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 # Build the dynamics 
 add_library(dynamics includes/dynamics.cpp)
 target_include_directories(dynamics PUBLIC
+    ${ACADO_INCLUDE_DIRS} ${ACADO_INCLUDE_DIRS}/..
     ${Biorbd_INCLUDE_DIR}
     ${EIGEN3_INCLUDE_DIR}
     ${RBDL_INCLUDE_DIR}
@@ -44,14 +45,6 @@ foreach(src_file ${source_files})
     ADD_EXECUTABLE (  ${filename}
         ${filename}.cpp
     )
-    target_include_directories(${filename} PUBLIC 
-      ${ACADO_INCLUDE_DIRS} ${ACADO_INCLUDE_DIRS}/..
-      ${Biorbd_INCLUDE_DIR}
-      ${EIGEN3_INCLUDE_DIR}
-      ${RBDL_INCLUDE_DIR}
-      ${Boost_INCLUDE_DIRS}
-    )
-    
     target_link_libraries(${filename} 
       dynamics
       ${Biorbd_LIBRARY}

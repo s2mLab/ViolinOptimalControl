@@ -109,6 +109,28 @@ def dynamics_from_muscles(t_int, states, biorbd_model, u):
     return rsh
 
 
+def dynamics_from_muscles_and_torques(t_int, states, biorbd_model, u):
+    nb_q = biorbd_model.nbQ()
+    nb_qdot = biorbd_model.nbQdot()
+    nb_tau = biorbd_model.nbTau()
+    nb_muscle = biorbd_model.nbMuscleTotal()
+
+    states_actual = biorbd.VecS2mMuscleStateActual(nb_muscle)
+    for i in range(len(states_actual)):
+        states_actual[i] = biorbd.s2mMuscleStateActual(0, u[i])
+
+    biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
+    tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(biorbd_model, states_actual, states[:nb_q], states[nb_q:])
+    tau_final = tau.get_array() + u[nb_muscle:nb_tau]
+    qddot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], tau_final).get_array()
+
+    rsh = np.ndarray(nb_q + nb_qdot)
+    for i in range(nb_q):
+        rsh[i] = states[nb_q+i]
+        rsh[i + nb_q] = qddot[i]
+
+    return rsh
+
 def dynamics_from_joint_torque(t_int, states, biorbd_model, u):
     nb_q = biorbd_model.nbQ()
     nb_qdot = biorbd_model.nbQdot()
