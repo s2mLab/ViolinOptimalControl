@@ -8,7 +8,7 @@ import utils
 model_name = "Av1Muscle"
 output_files = "SansMuscle"
 fun_dyn = utils.dynamics_from_muscles_and_torques
-nb_nodes = 35
+nb_nodes = 30
 nb_phases = 1
 nb_frame_inter = 500
 
@@ -30,6 +30,7 @@ all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{o
 t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_nodes)
 
 
+print(sum((all_qdot[:,-1])*(all_qdot[:,-1])))
 
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(m, t_final, all_q, all_qdot, all_u, fun_dyn,
@@ -39,6 +40,13 @@ t_integrate, q_integrate = utils.integrate_states_from_controls(m, t_final, all_
 t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_int=t_integrate, y_int=q_integrate)
 qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
+
+##Calcul integrale
+A = 0
+for i in range(len(t_final)-1):
+    A += (all_u[0][i]*all_u[0][i])*(t_final[i+1]-t_final[i])
+print(A)
+
 
 # Show data
 plt.figure("States")

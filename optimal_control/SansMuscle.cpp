@@ -16,23 +16,32 @@ unsigned int nMus(0);
 
 const double t_Start=0.0;
 const double t_End= 10.0;
-const int nPoints(35);
+const int nPoints(30);
 
 
 /* ---------- Functions ---------- */
 #define  NX   nQ + nQdot        // number of differential states
 
-#define  NOL   1                 // number of lagrange objective functions
 void myLagrangeObjectiveFunction( double *x, double *g, void * ){
-    g[0]=x[10]*x[10]+x[11]*x[11]+x[12]*x[12]+x[13]*x[13];
-    //for (unsigned int i=1; i<nTau; ++i)
-        //g[0] += x[i+nQ+nQdot];
+    g[0]=x[10]*x[10];
 }
 
-#define  NOM   1                 // number of mayer objective functions
-void myMayerObjectiveFunction( double *x, double *g, void * ){
-    g[0] = x[7];
+void myMayerObjectiveFunction( double *x, double *g, void *user_data ){
+    g[0]=x[5]*x[5];
+//    g[1]=x[6]*x[6];
+//    g[2]=x[7]*x[7];
+
+//    double * tata = new double[nQ + nQdot];
+//    forwardDynamicsFromJointTorque(x, tata, user_data);
+//    for (unsigned int i = 0; i<nQ + nQdot; ++i)
+//        tata[i] *= tata[i];
+//    g[0] = 0;
+//    for (unsigned int i = 0; i<nQ + nQdot; ++i)
+//        g[0] += tata[i];
+//    delete[] tata;
+
 }
+
 
 #define  NI   nQ + nQdot         // number of initial value constraints
 void myInitialValueConstraint( double *x, double *g, void * ){
@@ -68,11 +77,12 @@ int  main ()
         is(i+nQ+nQdot) = u(i);          //*scalingQdot(i);
 
     /* ----------- DEFINE OCP ------------- */
-    CFunction Mayer( NOM, myMayerObjectiveFunction);
-    CFunction Lagrange( NOL, myLagrangeObjectiveFunction);
+    //CFunction Mayer( 1, myMayerObjectiveFunction);
+    CFunction Lagrange( 1, myLagrangeObjectiveFunction);
     OCP ocp( 0, 1 , nPoints);                        // time  horizon
-    ocp.minimizeMayerTerm( Mayer(is) );                    // Mayer term
-    ocp.minimizeLagrangeTerm( Lagrange(is) );                    // Lagrange term
+    ocp.minimizeMayerTerm(0, x(5)*x(5) );                    // Mayer term
+    ocp.minimizeMayerTerm(1, x(6)*x(6) );                    // Mayer term
+    //ocp.minimizeLagrangeTerm( Lagrange(is) );                    // Lagrange term
 
 
     /* ------------ CONSTRAINTS ----------- */
@@ -93,11 +103,8 @@ int  main ()
     ocp.subjectTo(-PI/2 <= x(3) <= PI/2);
     ocp.subjectTo(-0.1 <= x(4) <= PI);
 
-
-
-
     /* ---------- OPTIMIZATION  ------------ */
-    OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm
+    MultiObjectiveAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     //algorithm.set(KKT_TOLERANCE, 1e-10);
     //algorithm.set(INTEGRATOR_TOLERANCE, 1e-6);
