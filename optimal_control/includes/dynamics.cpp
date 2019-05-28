@@ -114,7 +114,7 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
     }
     m.updateMuscles(m, Q, Qdot, true);
 
-    std::vector<s2mMuscleStateActual> state;// controls
+    std::vector<s2mMuscleStateActual> state; // controls
     for (unsigned int i = 0; i<nMus; ++i)
         state.push_back(s2mMuscleStateActual(0, x[i+nQ+nQdot]));
 

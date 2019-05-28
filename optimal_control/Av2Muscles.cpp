@@ -1,6 +1,8 @@
 #include <acado_optimal_control.hpp>
 #include <bindings/acado_gnuplot/gnuplot_window.hpp>
 #include "includes/dynamics.h"
+#include "includes/objectives.h"
+#include "includes/constraints.h"
 #include <vector>
 
 using namespace std;
@@ -18,56 +20,12 @@ unsigned int nMus(m.nbMuscleTotal());   // muscles number
 
 const double t_Start=0.0;
 const double t_End= 1.0;
-const int nPoints(35);
-
-/* ---------- Functions ---------- */
-
-#define  NX   nQ + nQdot        // number of differential states
-
-#define  NOL   4                // number of lagrange objective functions
-void myLagrangeObjectiveFunction( double *x, double *g, void *){
-    g[0]=x[10]*x[10];
-    g[1]=x[11]*x[11];
-    g[2]=x[12]*x[12];
-    g[3]=x[13]*x[13];
-//    for (unsigned int i=0; i<nTau-1; ++i)
-//        g[i]=x[i+nQ+nQdot]*x[i+nQ+nQdot];
-}
-
-
-#define  NOM   1                 // number of mayer objective functions
-void myMayerObjectiveFunction( double *x, double *g, void *){
-    g[0]=x[5]*x[5];
-    g[1]=x[6]*x[6];
-    g[2]=x[7]*x[7];
-    //g[3]=x[8]*x[8];
-//    double * tata = new double[nQ + nQdot];
-//    forwardDynamicsFromJointTorque(x, tata, user_data);
-//    for (unsigned int i = 0; i<NOM; ++i)
-//        tata[i] *= tata[i];
-//    g[0] = 0;
-//    for (unsigned int i = 0; i<NOM; ++i)
-//        g[0] += tata[i];
-//    delete[] tata;
-}
-
-#define  NI   nQ+nQdot                 // number of initial value constraints
-void myInitialValueConstraint( double *x, double *g, void *){
-    for (unsigned int i =0; i<nQ + nQdot; ++i) {
-        g[i] =  x[i]-0.01;
-    }
-}
-
-#define  NE   1                 // number of end-point / terminal constraints
-void myEndPointConstraint( double *x, double *g, void *){
-     g[0]=x[nQ-1]-PI/4;
-}
-
+const int nPoints(30);
 
 int  main ()
 {
-    std::cout << "nb de muscles: " << nMus << std::endl<< std::endl;
-    std::cout << "nb de degré de liberté: " << nQ << std::endl<< std::endl;
+    std::cout << "nb de muscles: " << nMus << std::endl;
+    std::cout << "nb de degré de liberté: " << nQ << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
 
 
@@ -89,16 +47,16 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp( t_Start, t_End , nPoints);
 
-    CFunction Mayer( NOM, myMayerObjectiveFunction);
-    CFunction Lagrange( NOL, myLagrangeObjectiveFunction);
-    //ocp.minimizeMayerTerm( Mayer(is) );
+    CFunction Mayer( 1, MayerSpeed);
+    CFunction Lagrange( 1, LagrangeTorques);
+    ocp.minimizeMayerTerm( Mayer(is) );
     ocp.minimizeLagrangeTerm( Lagrange(is) );
 
     /* ------------ CONSTRAINTS ----------- */
     DifferentialEquation    f ;
-    CFunction F( NX, forwardDynamicsFromMuscleActivationAndTorque);
-    CFunction I( NI, myInitialValueConstraint   );
-    CFunction E( NE, myEndPointConstraint       );
+    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
+    CFunction I( nQ+nQdot, StatesZero);
+    CFunction E( 1, Rotbras);
 
     ocp.subjectTo( (f << dot(x)) == F(is)*T );                          //  differential  equation,
     ocp.subjectTo( AT_START, I(is) ==  0.0 );
@@ -106,7 +64,7 @@ int  main ()
     ocp.subjectTo(0.1 <= T <= 4.0);
 
     for (unsigned int i=0; i<nMus; ++i){
-         ocp.subjectTo(0.01 <= u(i) <= 1);
+         ocp.subjectTo(0.00 <= u(i) <= 1);
     }
 
     for (unsigned int i=nMus; i<nTau; ++i){
@@ -142,7 +100,7 @@ int  main ()
          x_init(1, i) = 0.1;
     }
 
-    x_init(0, 4) = 0.2;
+    x_init(0, 4) = 0.1;
     x_init(1, 4) = 0.8;
 
     for(unsigned int i=nQ; i<nQdot; ++i){

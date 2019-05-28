@@ -23,25 +23,17 @@ const int nPoints(30);
 #define  NX   nQ + nQdot        // number of differential states
 
 void myLagrangeObjectiveFunction( double *x, double *g, void * ){
-    g[0]=x[10]*x[10];
+    g[0]=x[10]*x[10]+x[11]*x[11]-(x[12]*x[12])+x[13]*x[13]+x[14]*x[14];
+//    g[1]=x[11]*x[11];
+//    g[2]=-(x[12]*x[12]);
+//    g[3]=x[13]*x[13];
+//    g[4]=x[14]*x[14];
 }
 
 void myMayerObjectiveFunction( double *x, double *g, void *user_data ){
     g[0]=x[5]*x[5];
-//    g[1]=x[6]*x[6];
-//    g[2]=x[7]*x[7];
-
-//    double * tata = new double[nQ + nQdot];
-//    forwardDynamicsFromJointTorque(x, tata, user_data);
-//    for (unsigned int i = 0; i<nQ + nQdot; ++i)
-//        tata[i] *= tata[i];
-//    g[0] = 0;
-//    for (unsigned int i = 0; i<nQ + nQdot; ++i)
-//        g[0] += tata[i];
-//    delete[] tata;
 
 }
-
 
 #define  NI   nQ + nQdot         // number of initial value constraints
 void myInitialValueConstraint( double *x, double *g, void * ){
@@ -52,9 +44,7 @@ void myInitialValueConstraint( double *x, double *g, void * ){
 
 #define  NE   1                 // number of end-point / terminal constraints
 void myEndPointConstraint( double *x, double *g, void * ){
-    g[0]=x[nQ-1]-PI/4;                         // rotation de 90°
-//    for (unsigned int i=0; i<nQ-1; ++i)
-//        g[i] = x[i]-0.01;
+    g[0]=x[nQ-1]-PI/4;
 }
 
 int  main ()
@@ -80,9 +70,8 @@ int  main ()
     //CFunction Mayer( 1, myMayerObjectiveFunction);
     CFunction Lagrange( 1, myLagrangeObjectiveFunction);
     OCP ocp( 0, 1 , nPoints);                        // time  horizon
-    ocp.minimizeMayerTerm(0, x(5)*x(5) );                    // Mayer term
-    ocp.minimizeMayerTerm(1, x(6)*x(6) );                    // Mayer term
-    //ocp.minimizeLagrangeTerm( Lagrange(is) );                    // Lagrange term
+    //ocp.minimizeMayerTerm( Mayer(is) );                    // Mayer term
+    ocp.minimizeLagrangeTerm( Lagrange(is) );                    // Lagrange term
 
 
     /* ------------ CONSTRAINTS ----------- */
@@ -104,7 +93,7 @@ int  main ()
     ocp.subjectTo(-0.1 <= x(4) <= PI);
 
     /* ---------- OPTIMIZATION  ------------ */
-    MultiObjectiveAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm
+    OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     //algorithm.set(KKT_TOLERANCE, 1e-10);
     //algorithm.set(INTEGRATOR_TOLERANCE, 1e-6);

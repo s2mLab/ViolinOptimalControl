@@ -5,15 +5,15 @@ from pyoviz.BiorbdViz import BiorbdViz
 import utils
 
 # Options
-model_name = "Av1Muscle"
-output_files = "SansMuscle"
+model_name = "Bras"
+output_files = "Av2Muscles"
 fun_dyn = utils.dynamics_from_muscles_and_torques
 nb_nodes = 30
 nb_phases = 1
 nb_frame_inter = 500
 
 # Load the biorbd model
-m = biorbd.s2mMusculoSkeletalModel(f"../models/Bras.bioMod")
+m = biorbd.s2mMusculoSkeletalModel(f"../models/{model_name}.bioMod")
 #m = biorbd.s2mMusculoSkeletalModel(f"../optimal_control/Modeles/Modele{model_name}.bioMod")
 if fun_dyn == utils.dynamics_from_muscles:
     nb_controls = m.nbMuscleTotal()
