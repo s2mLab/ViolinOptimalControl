@@ -64,7 +64,7 @@ int  main ()
     ocp.subjectTo(0.1 <= T <= 4.0);
 
     for (unsigned int i=0; i<nMus; ++i){
-         ocp.subjectTo(0.00 <= u(i) <= 1);
+         ocp.subjectTo(0.01 <= u(i) <= 1);
     }
 
     for (unsigned int i=nMus; i<nTau; ++i){
@@ -86,9 +86,9 @@ int  main ()
     VariablesGrid u_init(nTau + nMus, Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<2; ++i){
         for(unsigned int j=0; j<nMus; ++j){
-            u_init(i, j) = 0;
+            u_init(i, j) = 0.01;
         }
-        for(unsigned int j=nMus; j<nTau; ++j){
+        for(unsigned int j=nMus; j<nMus+nTau; ++j){
             u_init(i, j) = 0;
         }
     }
@@ -108,9 +108,6 @@ int  main ()
          x_init(1, i) = 0.01;
     }
     algorithm.initializeDifferentialStates(x_init);
-
-//    algorithm.initializeDifferentialStates("../Results/StatesSansMuscle.txt");
-
 
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window

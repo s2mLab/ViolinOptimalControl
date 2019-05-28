@@ -1,5 +1,8 @@
 #include "dynamics.h"
 
+//#define CHECK_MAX_FORCE
+//#define CHECK_FORCE_IF_LOW_ACTIVATION
+//#define CHECK_MUSCLE_LENGTH_IS_POSITIVE
 
 void forwardDynamics(const s2mGenCoord& Q, const s2mGenCoord& Qdot, const s2mTau& Tau, double *rhs){
     s2mGenCoord Qddot(nQdot);
@@ -8,7 +11,6 @@ void forwardDynamics(const s2mGenCoord& Q, const s2mGenCoord& Qdot, const s2mTau
 //    for(unsigned int i=0; i<nTau; ++i){
 //        std::cout << Tau[i]<< std::endl;
 //    }
-
 
     for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
         rhs[i] = Qdot[i];
@@ -88,7 +90,7 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
                     }
                 }
                 if (c=0)
-                    std::cout << "Passive force of the muscles " <<L<< " is too high. Check the tendon slack lenth."<<endl;
+                    std::cout << "Passive force of the muscles " <<L<< " is too high. Check the tendon slack lenth."<<std::endl;
              }
         }
     #endif
@@ -97,7 +99,7 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
         for(int i=0; i<m.nbMuscleGroups(); ++i){
             for(int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
                 if (m.muscleGroup(i).muscle(j).get()->length(m, Q) <= 0)
-                    std::cout << "La longueur du muscle " << i << " est inférieur á 0" <<endl;
+                    std::cout << "La longueur du muscle " << i << " est inférieur á 0" <<std::endl;
         }
     #endif
 }
@@ -159,7 +161,7 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
                     }
                 }
                 if (c=0)
-                    std::cout << "Passive force of the muscles " <<L<< " is too high. Check the tendon slack lenth."<<endl;
+                    std::cout << "Passive force of the muscles " <<L<< " is too high. Check the tendon slack lenth."<<std::endl;
              }
         }
     #endif
@@ -168,7 +170,7 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
         for(int i=0; i<m.nbMuscleGroups(); ++i){
             for(int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
                 if (m.muscleGroup(i).muscle(j).get()->length(m, Q) <= 0)
-                    std::cout << "La longueur du muscle " << i << " est inférieur á 0" <<endl;
+                    std::cout << "La longueur du muscle " << i << " est inférieur á 0" <<std::endl;
         }
     #endif
 }

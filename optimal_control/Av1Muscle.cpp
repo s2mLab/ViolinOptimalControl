@@ -97,9 +97,9 @@ int  main ()
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
 
-    algorithm.initializeDifferentialStates("../Initialisation/X1Muscle.txt");
+    algorithm.initializeDifferentialStates("../Results/StatesAv1Muscle.txt");
     algorithm.initializeParameters("../Initialisation/T1Muscle.txt");
-    algorithm.initializeControls("../Initialisation/U1Muscle.txt");
+    algorithm.initializeControls("../Results/ControlsAv1Muscle.txt");
 
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
