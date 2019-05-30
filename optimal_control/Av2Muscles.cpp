@@ -4,6 +4,7 @@
 #include "includes/objectives.h"
 #include "includes/constraints.h"
 #include <vector>
+#include <time.h>
 
 using namespace std;
 USING_NAMESPACE_ACADO
@@ -24,6 +25,10 @@ const int nPoints(30);
 
 int  main ()
 {
+    clock_t start,end;
+    double time_exec;
+    start=clock();
+
     std::cout << "nb de muscles: " << nMus << std::endl;
     std::cout << "nb de degré de liberté: " << nQ << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
@@ -44,8 +49,8 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp( t_Start, t_End , nPoints);
 
-    CFunction Mayer( 1, MayerSpeed);
-    CFunction Lagrange( 1, LagrangeAddedTorques);
+    CFunction Mayer( 1, MayerVelocity);
+    CFunction Lagrange( 1, LagrangeResidualTorques);
     ocp.minimizeMayerTerm( Mayer(is) );
     ocp.minimizeLagrangeTerm( Lagrange(is) );
 
@@ -117,6 +122,10 @@ int  main ()
     algorithm.getDifferentialStates("../Results/StatesAv2Muscles.txt");
     algorithm.getParameters("../Results/ParametersAv2Muscles.txt");
     algorithm.getControls("../Results/ControlsAv2Muscles.txt");
+
+    end=clock();
+    time_exec = double(end - start)/CLOCKS_PER_SEC;
+    std::cout<<time_exec<<std::endl;
 
     return 0;
 }
