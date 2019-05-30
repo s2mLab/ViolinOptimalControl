@@ -28,7 +28,6 @@ int  main ()
     std::cout << "nb de degré de liberté: " << nQ << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
 
-
     /* ---------- INITIALIZATION ---------- */
     Parameter               T;                              //  the  time  horizon T
     DifferentialState       x("",nQ+nQdot,1);               //  the  differential states
@@ -36,10 +35,8 @@ int  main ()
     IntermediateState       is(nQ + nQdot + nMus +nTau);
 
 
-    for (unsigned int i = 0; i < nQ; ++i)
+    for (unsigned int i = 0; i < nQ+nQdot; ++i)
         is(i) = x(i);
-    for (unsigned int i = 0; i < nQdot; ++i)
-        is(i+nQ) = x(i+nQ);
     for (unsigned int i = 0; i < nMus+nTau; ++i)
         is(i+nQ+nQdot) = u(i);
 
@@ -48,7 +45,7 @@ int  main ()
     OCP ocp( t_Start, t_End , nPoints);
 
     CFunction Mayer( 1, MayerSpeed);
-    CFunction Lagrange( 1, LagrangeTorques);
+    CFunction Lagrange( 1, LagrangeAddedTorques);
     ocp.minimizeMayerTerm( Mayer(is) );
     ocp.minimizeLagrangeTerm( Lagrange(is) );
 
@@ -67,8 +64,8 @@ int  main ()
          ocp.subjectTo(0.01 <= u(i) <= 1);
     }
 
-    for (unsigned int i=nMus; i<nTau; ++i){
-         ocp.subjectTo(-100 <= u(i) <= 100);
+    for (unsigned int i=nMus; i<nMus+nTau; ++i){
+         ocp.subjectTo(-20 <= u(i) <= 20);
     }
 
     ocp.subjectTo(-PI/8 <= x(0) <= 0.1);
@@ -86,21 +83,21 @@ int  main ()
     VariablesGrid u_init(nTau + nMus, Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<2; ++i){
         for(unsigned int j=0; j<nMus; ++j){
-            u_init(i, j) = 0.01;
+            u_init(i, j) = 0.02;
         }
         for(unsigned int j=nMus; j<nMus+nTau; ++j){
-            u_init(i, j) = 0;
+            u_init(i, j) = 0.001;
         }
     }
     algorithm.initializeControls(u_init);
 
     VariablesGrid x_init(nQ+nQdot, Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<nQ-1; ++i){
-         x_init(0, i) = 0.1;
-         x_init(1, i) = 0.1;
+         x_init(0, i) = 0.01;
+         x_init(1, i) = 0.01;
     }
 
-    x_init(0, 4) = 0.1;
+    x_init(0, 4) = 0.01;
     x_init(1, 4) = 0.8;
 
     for(unsigned int i=nQ; i<nQdot; ++i){

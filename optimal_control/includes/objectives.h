@@ -3,7 +3,7 @@
 #include "s2mMusculoSkeletalModel.h"
 #include "dynamics.h"
 
-void LagrangeTorques( double *x, double *g, void *);
+void LagrangeAddedTorques( double *x, double *g, void *);
 void LagrangeActivations( double *x, double *g, void *);
 void MayerSpeed( double *x, double *g, void *);
 void MayerRHS( double *x, double *g, void *user_data);

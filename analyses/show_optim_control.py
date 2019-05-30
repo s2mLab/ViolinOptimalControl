@@ -30,8 +30,6 @@ all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{o
 t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_nodes)
 
 
-print(sum((all_qdot[:,-1])*(all_qdot[:,-1])))
-
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(m, t_final, all_q, all_qdot, all_u, fun_dyn,
                                                                 verbose=False, use_previous_as_init=False)
@@ -51,25 +49,31 @@ print(A)
 # Show data
 plt.figure("States")
 for i in range(m.nbQ()):
-    plt.subplot(m.nbQ(), 3, 1+(3*i))
+    plt.subplot(m.nbQ(), 2, 1+(2*i))
     plt.plot(t_interp, q_interp[:, i])
     plt.title("Q %i" %i)
 
-    plt.subplot(m.nbQ(), 3, 2+(3*i))
+    plt.subplot(m.nbQ(), 2, 2+(2*i))
     plt.plot(t_interp, qdot_interp[:, i])
     # plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
     plt.title("Qdot %i" %i)
 
-    plt.subplot(m.nbQ(), 3, 3+(3*i))
+plt.figure("Controls")
+for i in range(m.nbMuscleTotal()):
+    plt.subplot(m.nbMuscleTotal(), 2, 1+(2*i))
     utils.plot_piecewise_constant(t_final, all_u[i, :])
-    plt.title("Control %i" %i)
+    plt.title("Activation %i" %i)
+for i in range(m.nbTau()):
+    plt.subplot(m.nbTau(), 2, 2 + (2 * i))
+    utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
+    plt.title("Torques %i" % i)
 
 
 # plt.ion()  # Non blocking plt.show
 plt.show()
 
 # Animate the model
-b = BiorbdViz(loaded_model=m, show_muscles=False)
+b = BiorbdViz(loaded_model=m)
 frame = 0
 while b.vtk_window.is_active:
     b.set_q(q_interp[frame, :])

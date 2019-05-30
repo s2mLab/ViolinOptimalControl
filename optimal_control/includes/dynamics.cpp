@@ -117,14 +117,18 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
     m.updateMuscles(m, Q, Qdot, true);
 
     std::vector<s2mMuscleStateActual> state; // controls
-    for (unsigned int i = 0; i<nMus; ++i)
+    for (unsigned int i = 0; i<nMus; ++i){
         state.push_back(s2mMuscleStateActual(0, x[i+nQ+nQdot]));
-
+        //std::cout<<x[i+nQ+nQdot]<<std::endl;
+    }
     // Compute the torques from muscles
     s2mTau Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
     for (unsigned int i=0; i<nTau; ++i){
         Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
+        //std::cout<<x[i+nQ+nQdot+nMus]<<std::endl;
+        //std::cout<< Tau[i]<<std::endl;
     }
+
 
     // Compute the forward dynamics
     forwardDynamics(Q, Qdot, Tau, rhs);

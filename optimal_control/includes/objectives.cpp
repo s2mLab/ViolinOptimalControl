@@ -1,7 +1,7 @@
 #include "objectives.h"
 
 
-void LagrangeTorques( double *x, double *g, void *){
+void LagrangeAddedTorques( double *x, double *g, void *){
     g[0]=0;
     for (unsigned int i=0; i<nTau; ++i)
         g[0]+=(x[i+nQ+nQdot+nMus]*x[i+nQ+nQdot+nMus]);
