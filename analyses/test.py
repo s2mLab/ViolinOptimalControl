@@ -1,0 +1,19 @@
+import biorbd
+import numpy as np
+import utils
+
+m = biorbd.s2mMusculoSkeletalModel(f"../models/Bras.bioMod")
+
+t_int = 0.711263359978381
+u = [0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.001, 0.001, 0.001, 0.001, 0.001]
+
+states1 = np.array([0.0193523976270444, 0.00172498207909578, 0.0129428792214967, 0.00900964607332829, 0.538241012961172,
+           0.809289241298063, -0.738682642791675, 0.234058070379579, -0.0961464189972775, -2.11949515392366])
+states2 = np.array([0.0193523976270444, 0.00172498207909578, 0.0129428792214967, 0.00900964607332829, 0.538241012961172,
+           0.809289275010706, -0.738682676109712, 0.23405802763926, -0.0961464283724369, -2.11949502171813])
+
+
+np.set_printoptions(precision=15)
+print(utils.dynamics_from_muscles_and_torques(t_int, states1, m, u))
+print(utils.dynamics_from_muscles_and_torques(t_int, states2, m, u))
+

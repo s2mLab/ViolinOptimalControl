@@ -8,7 +8,7 @@
 void forwardDynamics(const s2mGenCoord& Q, const s2mGenCoord& Qdot, const s2mTau& Tau, double *rhs);
 void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *user_data);
 void forwardDynamicsFromJointTorque( double *x, double *rhs, void *user_data);
-void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void *);
+void forwardDynamicsFromMuscleActivationAndTorque(double *x, double *rhs, void *);
 
 extern s2mMusculoSkeletalModel m;
 extern unsigned int nQ;

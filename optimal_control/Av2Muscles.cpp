@@ -37,17 +37,18 @@ int  main ()
     Parameter               T;                              //  the  time  horizon T
     DifferentialState       x("",nQ+nQdot,1);               //  the  differential states
     Control                 u("", nMus+nTau, 1);                 //  the  control input  u
-    IntermediateState       is(nQ + nQdot + nMus +nTau);
-
+    IntermediateState       is(nQ + nQdot + nMus +nTau +1);
+    TIME t;
 
     for (unsigned int i = 0; i < nQ+nQdot; ++i)
         is(i) = x(i);
     for (unsigned int i = 0; i < nMus+nTau; ++i)
         is(i+nQ+nQdot) = u(i);
+    is(nQ+nQdot+nMus+nTau) = t;
 
 
     /* ----------- DEFINE OCP ------------- */
-    OCP ocp( t_Start, t_End , nPoints);
+    OCP ocp( t_Start, T , nPoints);
 
     CFunction Mayer( 1, MayerVelocity);
     CFunction Lagrange( 1, LagrangeResidualTorques);
@@ -55,12 +56,12 @@ int  main ()
     ocp.minimizeLagrangeTerm( Lagrange(is) );
 
     /* ------------ CONSTRAINTS ----------- */
-    DifferentialEquation    f ;
+    DifferentialEquation    f(0.0, T) ;
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
     CFunction I( nQ+nQdot, StatesZero);
     CFunction E( 1, Rotbras);
 
-    ocp.subjectTo( (f << dot(x)) == F(is)*T );                          //  differential  equation,
+    ocp.subjectTo( (f << dot(x)) == F(is) );                          //  differential  equation,
     ocp.subjectTo( AT_START, I(is) ==  0.0 );
     ocp.subjectTo( AT_END  , E(is) ==  0.0 );
     ocp.subjectTo(0.1 <= T <= 4.0);
@@ -82,8 +83,11 @@ int  main ()
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
-    //algorithm.set(KKT_TOLERANCE, 1e-10);
-    //algorithm.set(INTEGRATOR_TOLERANCE, 1e-6);
+    algorithm.set(INTEGRATOR_TYPE, INT_RK45);
+//    algorithm.set(INITIAL_INTEGRATOR_STEPSIZE, 1e-7);
+//    algorithm.set(KKT_TOLERANCE, 1e-2);
+//    algorithm.set(INTEGRATOR_TOLERANCE, 1e-2);
+
 
     VariablesGrid u_init(nTau + nMus, Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<2; ++i){
@@ -97,19 +101,36 @@ int  main ()
     algorithm.initializeControls(u_init);
 
     VariablesGrid x_init(nQ+nQdot, Grid(t_Start, t_End, 2));
-    for(unsigned int i=0; i<nQ-1; ++i){
-         x_init(0, i) = 0.01;
-         x_init(1, i) = 0.01;
+    for(unsigned int i=0; i<nQ; ++i){
+        x_init(0, i) = 0.01;
+        x_init(1, i) = 0.01;
     }
 
-    x_init(0, 4) = 0.01;
+    //x_init(0, 4) = 0.5;
     x_init(1, 4) = 0.8;
 
-    for(unsigned int i=nQ; i<nQdot; ++i){
+//    x_init(0, 0) = 0.0193523976270444;
+//    x_init(0, 1) = 0.00172498207909578;
+//    x_init(0, 2) = 0.0129428792214967;
+//    x_init(0, 3) = 0.00900964607332829;
+//    x_init(0, 4) = 0.538241012961172;
+
+
+    for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
          x_init(1, i) = 0.01;
     }
+//    x_init(0, nQ) = 0.809289241298063;
+//    x_init(0, nQ+1) = -0.738682642791675;
+//    x_init(0, nQ+2) = 0.234058070379579;
+//    x_init(0, nQ+3) = -0.0961464189972775;
+//    x_init(0, nQ+4) = -2.11949515392366;
+
+
     algorithm.initializeDifferentialStates(x_init);
+
+    //algorithm.set(INTEGRATOR_DEBUG_MODE, BT_TRUE);
+    //algorithm.set(PRINT_INTEGRATOR_PROFILE, BT_TRUE);
 
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
@@ -118,6 +139,18 @@ int  main ()
     window.addSubplot( T ,  "Time " ) ;
     algorithm << window;
     algorithm.solve();                              //  solve the problem
+
+//    double initstepsize;
+//    double minstepsize;
+//    double maxstepsize;
+//    algorithm.get(MIN_INTEGRATOR_STEPSIZE, minstepsize);
+//    algorithm.get(MAX_INTEGRATOR_STEPSIZE, maxstepsize);
+//    algorithm.get(INITIAL_INTEGRATOR_STEPSIZE, initstepsize);
+//    std::cout << "init stepsize " << initstepsize << std::endl;
+//    std::cout << "min stepsize " << minstepsize << std::endl;
+//    std::cout << "max stepsize " << maxstepsize << std::endl;
+
+
 
     algorithm.getDifferentialStates("../Results/StatesAv2Muscles.txt");
     algorithm.getParameters("../Results/ParametersAv2Muscles.txt");

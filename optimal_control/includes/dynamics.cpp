@@ -2,7 +2,7 @@
 
 //#define CHECK_MAX_FORCE
 //#define CHECK_FORCE_IF_LOW_ACTIVATION
-//#define CHECK_MUSCLE_LENGTH_IS_POSITIVE
+#define CHECK_MUSCLE_LENGTH_IS_POSITIVE
 
 void forwardDynamics(const s2mGenCoord& Q, const s2mGenCoord& Qdot, const s2mTau& Tau, double *rhs){
     s2mGenCoord Qddot(nQdot);
@@ -105,7 +105,7 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
 }
 
 
-void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void *){
+void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void *user_data){
     s2mGenCoord Q(static_cast<unsigned int>(nQ));           // states
     s2mGenCoord Qdot(static_cast<unsigned int>(nQdot));     // derivated states
 
@@ -119,19 +119,40 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
     std::vector<s2mMuscleStateActual> state; // controls
     for (unsigned int i = 0; i<nMus; ++i){
         state.push_back(s2mMuscleStateActual(0, x[i+nQ+nQdot]));
-        //std::cout<<x[i+nQ+nQdot]<<std::endl;
+        //std::cout<<"Activation:"<<x[i+nQ+nQdot]<<std::endl;
     }
     // Compute the torques from muscles
     s2mTau Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
     for (unsigned int i=0; i<nTau; ++i){
         Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
-        //std::cout<<x[i+nQ+nQdot+nMus]<<std::endl;
-        //std::cout<< Tau[i]<<std::endl;
+        //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
     }
-
 
     // Compute the forward dynamics
     forwardDynamics(Q, Qdot, Tau, rhs);
+
+    s2mGenCoord Qddot(nQdot);
+    RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
+
+//    std::cout << "\n";
+//    std::cout << std::setprecision(15) << "Time = " << x[nQ+nQdot+nMus+nTau] << std::endl;
+//    std::cout << "Activation = ";
+//    for(unsigned int i=0; i<nMus; ++i){
+//        std::cout << std::setprecision(15) <<  x[i+nQ+nQdot] << '\t';
+//    }
+//    std::cout << "\n";
+//    std::cout << "Tau res = " ;
+//    for(unsigned int i=0; i<nTau; ++i){
+//        std::cout << std::setprecision(15) << x[i+nQ+nQdot+nMus] << '\t';
+//    }
+//    std::cout << "\n";
+//    std::cout << std::setprecision(15) << "Tau = " << Tau.transpose() << std::endl;
+//    std::cout << std::setprecision(15) << "Q = " << Q.transpose() << std::endl;
+//    std::cout << std::setprecision(15) << "Qdot = " << Qdot.transpose() << std::endl;
+//    std::cout << std::setprecision(15) << "Qddot = " << Qddot.transpose() << std::endl;
+    std::cout << "longeur muscle: "<<m.muscleGroup(0).muscle(0).get()->length(m, Q)<<std::endl;
+
+
 
     // Error checker
     // Check if Forces are not too high
