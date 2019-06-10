@@ -32,7 +32,7 @@ t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_fil
 
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(m, t_final, all_q, all_qdot, all_u, fun_dyn,
-                                                                verbose=False, use_previous_as_init=True)
+                                                                verbose=False, use_previous_as_init=False)
 
 # Interpolate
 t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_int=t_integrate, y_int=q_integrate)
@@ -47,27 +47,33 @@ q_interp = q_interp[:, :m.nbQ()]
 
 
 # Show data
-plt.figure("States")
+L=[]
+for i in range(m.nbMuscleGroups()):
+    L.append(m.muscleGroup(i).nbMuscles())
+nb_muscles_max = max(L)
+
+plt.figure("States and torques res")
 for i in range(m.nbQ()):
-    plt.subplot(m.nbQ(), 2, 1+(2*i))
+    plt.subplot(m.nbQ(), 3, 1+(3*i))
     plt.plot(t_interp, q_interp[:, i])
     plt.title("Q %i" %i)
 
-    plt.subplot(m.nbQ(), 2, 2+(2*i))
+    plt.subplot(m.nbQ(), 3, 2+(3*i))
     plt.plot(t_interp, qdot_interp[:, i])
     # plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
     plt.title("Qdot %i" %i)
 
-plt.figure("Controls")
-for i in range(m.nbMuscleTotal()):
-    plt.subplot(m.nbMuscleTotal(), 2, 1+(2*i))
-    utils.plot_piecewise_constant(t_final, all_u[i, :])
-    plt.title("Activation %i" %i)
 for i in range(m.nbTau()):
-    plt.subplot(m.nbTau(), 2, 2 + (2 * i))
+    plt.subplot(m.nbTau(), 3, 3 + (3 * i))
     utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
     plt.title("Torques %i" % i)
 
+plt.figure("Activations")
+for i in range(m.nbMuscleGroups()):
+    for j in range(m.muscleGroup(i).nbMuscles()):
+        plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
+        utils.plot_piecewise_constant(t_final, all_u[i, :])
+        plt.title(biorbd.s2mMuscleHillType.getRef(m.muscleGroup(i).muscle(j)).name())
 
 # plt.ion()  # Non blocking plt.show
 plt.show()

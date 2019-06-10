@@ -84,8 +84,9 @@ int  main ()
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
+    algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
 //    algorithm.set(INITIAL_INTEGRATOR_STEPSIZE, 1e-7);
-//    algorithm.set(KKT_TOLERANCE, 1e-2);
+    algorithm.set(KKT_TOLERANCE, 1e-4);
 //    algorithm.set(INTEGRATOR_TOLERANCE, 1e-2);
 
     VariablesGrid u_init(nTau + nMus, Grid(t_Start, t_End, 2));
