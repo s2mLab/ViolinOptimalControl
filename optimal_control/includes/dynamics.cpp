@@ -2,7 +2,7 @@
 
 //#define CHECK_MAX_FORCE
 //#define CHECK_FORCE_IF_LOW_ACTIVATION
-#define CHECK_MUSCLE_LENGTH_IS_POSITIVE
+//#define CHECK_MUSCLE_LENGTH_IS_POSITIVE
 
 void forwardDynamics(const s2mGenCoord& Q, const s2mGenCoord& Qdot, const s2mTau& Tau, double *rhs){
     s2mGenCoord Qddot(nQdot);
@@ -150,7 +150,12 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
 //    std::cout << std::setprecision(15) << "Q = " << Q.transpose() << std::endl;
 //    std::cout << std::setprecision(15) << "Qdot = " << Qdot.transpose() << std::endl;
 //    std::cout << std::setprecision(15) << "Qddot = " << Qddot.transpose() << std::endl;
-    std::cout << "longeur muscle: "<<m.muscleGroup(0).muscle(0).get()->length(m, Q)<<std::endl;
+
+//    for(int i=0; i<m.nbMuscleGroups(); ++i){
+//        for(int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
+//           std::cout << std::setprecision(15) <<"Longeur du muscle "<<j<<" du groupe "<<i<< ": "<<m.muscleGroup(i).muscle(j).get()->length(m, Q)<< std::endl;
+//    }
+//    std::cout <<"\n";
 
 
 

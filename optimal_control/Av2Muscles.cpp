@@ -71,7 +71,7 @@ int  main ()
     }
 
     for (unsigned int i=nMus; i<nMus+nTau; ++i){
-         ocp.subjectTo(-20 <= u(i) <= 20);
+         ocp.subjectTo(-100 <= u(i) <= 100);
     }
 
     ocp.subjectTo(-PI/8 <= x(0) <= 0.1);
@@ -87,7 +87,6 @@ int  main ()
 //    algorithm.set(INITIAL_INTEGRATOR_STEPSIZE, 1e-7);
 //    algorithm.set(KKT_TOLERANCE, 1e-2);
 //    algorithm.set(INTEGRATOR_TOLERANCE, 1e-2);
-
 
     VariablesGrid u_init(nTau + nMus, Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<2; ++i){
@@ -109,29 +108,14 @@ int  main ()
     //x_init(0, 4) = 0.5;
     x_init(1, 4) = 0.8;
 
-//    x_init(0, 0) = 0.0193523976270444;
-//    x_init(0, 1) = 0.00172498207909578;
-//    x_init(0, 2) = 0.0129428792214967;
-//    x_init(0, 3) = 0.00900964607332829;
-//    x_init(0, 4) = 0.538241012961172;
-
-
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
          x_init(1, i) = 0.01;
     }
-//    x_init(0, nQ) = 0.809289241298063;
-//    x_init(0, nQ+1) = -0.738682642791675;
-//    x_init(0, nQ+2) = 0.234058070379579;
-//    x_init(0, nQ+3) = -0.0961464189972775;
-//    x_init(0, nQ+4) = -2.11949515392366;
-
 
     algorithm.initializeDifferentialStates(x_init);
 
-    //algorithm.set(INTEGRATOR_DEBUG_MODE, BT_TRUE);
     //algorithm.set(PRINT_INTEGRATOR_PROFILE, BT_TRUE);
-
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
     window.addSubplot(  x ,  "STATES x" ) ;
@@ -139,18 +123,6 @@ int  main ()
     window.addSubplot( T ,  "Time " ) ;
     algorithm << window;
     algorithm.solve();                              //  solve the problem
-
-//    double initstepsize;
-//    double minstepsize;
-//    double maxstepsize;
-//    algorithm.get(MIN_INTEGRATOR_STEPSIZE, minstepsize);
-//    algorithm.get(MAX_INTEGRATOR_STEPSIZE, maxstepsize);
-//    algorithm.get(INITIAL_INTEGRATOR_STEPSIZE, initstepsize);
-//    std::cout << "init stepsize " << initstepsize << std::endl;
-//    std::cout << "min stepsize " << minstepsize << std::endl;
-//    std::cout << "max stepsize " << maxstepsize << std::endl;
-
-
 
     algorithm.getDifferentialStates("../Results/StatesAv2Muscles.txt");
     algorithm.getParameters("../Results/ParametersAv2Muscles.txt");
