@@ -9,28 +9,8 @@ external_forces	0
 
 // DEFINITION DES SEGMENTS
 
-// Informations about Pelvis segment
-	// Segment
-	segment	Pelvis
-		RTinMatrix	1
-		RT
-			1.0000000000	0.0000000000	0.0000000000	0.0000000000
-			0.0000000000	1.0000000000	0.0000000000	0.0000000000
-			0.0000000000	0.0000000000	1.0000000000	1.0000000000
-			0.0000000000	0.0000000000	0.0000000000	1.0000000000
-		//translations	xyz
-		//rotations	xyz
-		mass	1.00000
-		inertia
-			1.0000000000	0.0000000000	0.0000000000
-			0.0000000000	1.0000000000	0.0000000000
-			0.0000000000	0.0000000000	1.0000000000
-		com		0.0000000000		0.0000000000		-0.50000000000
-	endsegment
-	
 // Thorax
 	 segment Thorax
-		parent Pelvis
 		RTinMatrix	1
 		RT
 			0.000000	0.000000	1.000000	0.000000
@@ -45,6 +25,7 @@ external_forces	0
 			0.000000	0.989495	0.000000
 			0.000000	0.000000	5.642031
 		com	0.000000	-0.44045	0.000000
+
 	endsegment
 
 // Spine
@@ -134,7 +115,7 @@ external_forces	0
 		parent	Scapula
 		RTinMatrix	0
 		RT -0.2 0.3 -0.1 zyx -0.0162235668937676 -0.0465334917069568 -0.00199722357227
-		rotations yxy
+		rotations xzy
 		mass 2.537
 		inertia
 			0.040215	0.000000	0.000000
@@ -256,7 +237,7 @@ musclegroup Arm2Thorax
 endmusclegroup 	
 
 	muscle	Pectoral2
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Arm2Thorax
 		OriginPosition		0.014 -0.047 0.009
@@ -283,7 +264,7 @@ endmusclegroup
 		endviapoint
 		
 	muscle	Pectoral3
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Arm2Thorax
 		OriginPosition		0.0138111 -0.047615 0.00816258
@@ -318,7 +299,7 @@ musclegroup Scapula2Arm
 endmusclegroup 	
 		
 	muscle	Deltoid3
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Scapula2Arm
 		OriginPosition		-0.0752687 -0.00105942 -0.0527559
@@ -346,7 +327,7 @@ musclegroup Scapula2LowerArm1
 endmusclegroup 
 
 	muscle	TricepsLong
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Scapula2LowerArm1
 		OriginPosition		-0.0443929 -0.0563498 -0.0134528
@@ -379,8 +360,9 @@ musclegroup Arm2LowerArm1
 	InsertionParent		LowerArm1
 endmusclegroup  	
 
+
 	muscle	TricepsLat
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Arm2LowerArm1
 		OriginPosition		-0.00651919 -0.137632 0.00465811
@@ -399,9 +381,9 @@ endmusclegroup
 			  musclegroup 	Arm2LowerArm1
 			  position 		-0.0265773 -0.271281 -0.0114385
 		endviapoint	
-		
+	
 	muscle	TricepsMed
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Arm2LowerArm1
 		OriginPosition		-0.00912031 -0.149048 -0.00986038
@@ -436,7 +418,7 @@ musclegroup Arm2Clavicle
 endmusclegroup 	
 
 	muscle	Pectoral1
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Arm2Clavicle
 		OriginPosition		0.0127226 -0.0456125 0.00848908
@@ -450,7 +432,7 @@ endmusclegroup
 	endmuscle
 	
 	muscle	Deltoid1
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Arm2Clavicle
 		OriginPosition		0.00975155 -0.129328 0.00636682
@@ -478,7 +460,7 @@ musclegroup Arm2Scapula
 endmusclegroup 	
 
 	muscle	Deltoid2
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Arm2Scapula
 		OriginPosition		-0.005 -0.159 0.005
@@ -506,7 +488,7 @@ endmusclegroup
 		endviapoint
 	
 	muscle	SupraSpin
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Arm2Scapula
 		OriginPosition		-0.000749943 0.0165142 0.0278686
@@ -518,9 +500,10 @@ endmusclegroup
 		PCSA				3.5
 		maxVelocity 		10
 	endmuscle
+
 		
 	muscle	InfraSpin
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Arm2Scapula
 		OriginPosition		-0.0116528 -0.00158952 0.027548
@@ -539,9 +522,10 @@ endmusclegroup
 			  musclegroup 	Arm2Scapula
 			  position 		-0.0705483 -0.0535173 -0.0304407
 		endviapoint
+
 		
 	muscle	SubScap
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Arm2Scapula
 		OriginPosition		0.0183277 0.00736809 -0.0157919
@@ -569,7 +553,7 @@ musclegroup Scapula2LowerArm2
 endmusclegroup 	
 
 	muscle	BicepsLong
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Scapula2LowerArm2
 		OriginPosition		-0.0353942 -0.0266676 -0.0147901
@@ -631,8 +615,9 @@ endmusclegroup
 			  position 		0.023585 -0.294299 -0.0112797
 		endviapoint
 
+
 	muscle	BicepsShort
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Scapula2LowerArm2
 		OriginPosition		0.0143708 -0.0445517 -0.0297503
@@ -678,7 +663,7 @@ musclegroup Spine2Scapula
 endmusclegroup 	
 
 	muscle	Trapeze1
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Spine2Scapula
 		OriginPosition		-0.075  0.035 0.005
@@ -699,7 +684,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	Trapeze2
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Spine2Scapula
 		OriginPosition		-0.087 0.011 0.006
@@ -727,7 +712,7 @@ endmusclegroup
 
 
 	muscle	Trapeze3
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Clavicle2Spine
 		OriginPosition		-0.027 0.027 0.111
@@ -741,7 +726,7 @@ endmusclegroup
 	endmuscle
 
 	muscle	Trapeze4
-		Type 				hillthelen
+		Type 				hillsimple
 		statetype			buchanan
 		musclegroup 		Clavicle2Spine
 		OriginPosition		-0.055 0.079 0.005
@@ -753,4 +738,4 @@ endmusclegroup
 		PCSA				1.8
 		maxVelocity 		10
 	endmuscle
-	
+

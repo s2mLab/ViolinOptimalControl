@@ -153,7 +153,7 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
 
 //    for(int i=0; i<m.nbMuscleGroups(); ++i){
 //        for(int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
-//           std::cout << std::setprecision(15) <<"Longeur du muscle "<<j<<" du groupe "<<i<< ": "<<m.muscleGroup(i).muscle(j).get()->length(m, Q)<< std::endl;
+//           std::cout << std::setprecision(15) <<"Longueur du muscle "<<j<<" du groupe "<<i<< ": "<<m.muscleGroup(i).muscle(j).get()->length(m, Q)<< std::endl;
 //    }
 //    std::cout <<"\n";
 
