@@ -48,7 +48,7 @@ int  main ()
 
 
     /* ----------- DEFINE OCP ------------- */
-    OCP ocp( t_Start, T , nPoints);
+    OCP ocp( t_Start, t_End , nPoints);
 
     CFunction Mayer( 1, MayerVelocity);
     CFunction Lagrange( 1, LagrangeResidualTorques);
@@ -56,15 +56,17 @@ int  main ()
     ocp.minimizeLagrangeTerm( Lagrange(is) );
 
     /* ------------ CONSTRAINTS ----------- */
-    DifferentialEquation    f(0.0, T) ;
+    DifferentialEquation    f ;
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
-    CFunction I( nQ+nQdot, StatesZero);
-    CFunction E( 1, Rotbras);
+    CFunction Init1( 3, ViolonUp);
+    CFunction Init2(nQdot, VelocityZero);
+    CFunction End( 3, ViolonDown);
 
-    ocp.subjectTo( (f << dot(x)) == F(is) );                          //  differential  equation,
-    ocp.subjectTo( AT_START, I(is) ==  0.0 );
-    ocp.subjectTo( AT_END  , E(is) ==  0.0 );
-    ocp.subjectTo(0.1 <= T <= 4.0);
+    ocp.subjectTo( (f << dot(x)) == F(is));                          //  differential  equation,
+    ocp.subjectTo( AT_START, Init1(is) ==  0.0 );
+    ocp.subjectTo( AT_START, Init2(is) ==  0.0 );
+    ocp.subjectTo( AT_END  , End(is) ==  0.0 );
+    //ocp.subjectTo(0.1 <= T <= 4.0);
 
     for (unsigned int i=0; i<nMus; ++i){
          ocp.subjectTo(0.01 <= u(i) <= 1);
@@ -85,8 +87,7 @@ int  main ()
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
     algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
-//    algorithm.set(INITIAL_INTEGRATOR_STEPSIZE, 1e-7);
-    algorithm.set(KKT_TOLERANCE, 1e-4);
+    algorithm.set(KKT_TOLERANCE, 1e-6);
 //    algorithm.set(INTEGRATOR_TOLERANCE, 1e-2);
 
     VariablesGrid u_init(nTau + nMus, Grid(t_Start, t_End, 2));
@@ -98,6 +99,11 @@ int  main ()
             u_init(i, j) = 0.001;
         }
     }
+    u_init(0, 2) = 0.5;
+    u_init(0, 2) = 0.5;
+    u_init(1, 9) = 0.5;
+    u_init(1, 9) = 0.5;
+
     algorithm.initializeControls(u_init);
 
     VariablesGrid x_init(nQ+nQdot, Grid(t_Start, t_End, 2));
@@ -106,8 +112,15 @@ int  main ()
         x_init(1, i) = 0.01;
     }
 
-    //x_init(0, 4) = 0.5;
-    x_init(1, 4) = 0.8;
+//    x_init(0, 4) = 0.5;
+//    x_init(1, 4) = 0.8;
+
+    x_init(0, 1) = -1.31;
+    x_init(0, 2) = 1.22;
+    x_init(0, 4) = 1.92;
+
+    x_init(1, 1) = -0.87;
+    x_init(1, 4) = 0.17;
 
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
@@ -116,12 +129,13 @@ int  main ()
 
     algorithm.initializeDifferentialStates(x_init);
 
+//    algorithm.initializeDifferentialStates("../Results/StatesAv2Musclesinit.txt");
+//    algorithm.initializeControls("../Results/ControlsAv2Musclesinit.txt");
     //algorithm.set(PRINT_INTEGRATOR_PROFILE, BT_TRUE);
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
     window.addSubplot(  x ,  "STATES x" ) ;
     window.addSubplot( u ,  "CONTROL  u" ) ;
-    window.addSubplot( T ,  "Time " ) ;
     algorithm << window;
     algorithm.solve();                              //  solve the problem
 
@@ -131,7 +145,7 @@ int  main ()
 
     end=clock();
     time_exec = double(end - start)/CLOCKS_PER_SEC;
-    std::cout<<time_exec<<std::endl;
+    std::cout<<"Execution time: "<<time_exec<<std::endl;
 
     return 0;
 }

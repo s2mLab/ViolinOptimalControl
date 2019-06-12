@@ -5,6 +5,7 @@
 
 void LagrangeResidualTorques( double *x, double *g, void *);
 void LagrangeActivations( double *x, double *g, void *);
+void LagrangeAccelerations( double *x, double *g, void *user_data);
 void MayerVelocity( double *x, double *g, void *);
 void MayerRHS( double *x, double *g, void *user_data);
 

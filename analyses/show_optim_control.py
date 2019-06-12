@@ -47,19 +47,16 @@ q_interp = q_interp[:, :m.nbQ()]
 
 
 # Show data
-L=[]
-for i in range(m.nbMuscleGroups()):
-    L.append(m.muscleGroup(i).nbMuscles())
-nb_muscles_max = max(L)
-
 plt.figure("States and torques res")
 for i in range(m.nbQ()):
     plt.subplot(m.nbQ(), 3, 1+(3*i))
     plt.plot(t_interp, q_interp[:, i])
+    plt.plot(t_integrate, q_integrate[i, :])
     plt.title("Q %i" %i)
 
     plt.subplot(m.nbQ(), 3, 2+(3*i))
     plt.plot(t_interp, qdot_interp[:, i])
+    plt.plot(t_integrate, q_integrate[m.nbQ() + i, :])
     # plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
     plt.title("Qdot %i" %i)
 
@@ -68,12 +65,19 @@ for i in range(m.nbTau()):
     utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
     plt.title("Torques %i" % i)
 
+L = []
+for i in range(m.nbMuscleGroups()):
+    L.append(m.muscleGroup(i).nbMuscles())
+nb_muscles_max = max(L)
 plt.figure("Activations")
+cmp = 0
 for i in range(m.nbMuscleGroups()):
     for j in range(m.muscleGroup(i).nbMuscles()):
         plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
-        utils.plot_piecewise_constant(t_final, all_u[i, :])
+        utils.plot_piecewise_constant(t_final, all_u[cmp, :])
         plt.title(biorbd.s2mMuscleHillType.getRef(m.muscleGroup(i).muscle(j)).name())
+        plt.ylim((0, 1))
+        cmp += 1
 
 # plt.ion()  # Non blocking plt.show
 plt.show()

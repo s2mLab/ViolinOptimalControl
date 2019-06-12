@@ -124,12 +124,15 @@ def dynamics_from_muscles_and_torques(t_int, states, biorbd_model, u):
 
     tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
 
-    #print(f"time : {t_int}, Tau: {tau_final}")
+
     qddot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], tau_final).get_array()
     rsh = np.ndarray(nb_q + nb_qdot)
     for i in range(nb_q):
         rsh[i] = states[nb_q+i]
         rsh[i + nb_q] = qddot[i]
+    # print(f"time : {t_int}, Tau: {tau_final}")
+    # print(f"Qddot : {qddot}")
+    # print(f"Qdot: {states[nb_q:]}\n")
     return rsh
 
 def dynamics_from_joint_torque(t_int, states, biorbd_model, u):

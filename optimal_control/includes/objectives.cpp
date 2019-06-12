@@ -13,6 +13,17 @@ void LagrangeActivations( double *x, double *g, void *){
         g[0]+=(x[i+nQ+nQdot]*x[i+nQ+nQdot]);
 }
 
+void LagrangeAccelerations( double *x, double *g, void *user_data){
+    g[0]=0;
+    double * rhs = new double[nQ + nQdot];
+    forwardDynamicsFromJointTorque(x, rhs, user_data);
+    for (unsigned int i=0; i<nQdot; ++i)
+        g[0] += (rhs[i+nQdot]*rhs[i+nQdot]);
+    delete[] rhs;
+//    for (unsigned int i=0; i<nTau; ++i)
+//        g[0]+=(x[i+nQ+nQdot+nMus]*x[i+nQ+nQdot+nMus]);
+}
+
 void MayerVelocity( double *x, double *g, void *){
     g[0]=0;
     for (unsigned int i=0; i<nQdot; ++i)

@@ -122,7 +122,7 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
         //std::cout<<"Activation:"<<x[i+nQ+nQdot]<<std::endl;
     }
     // Compute the torques from muscles
-    s2mTau Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
+    s2mTau Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
     for (unsigned int i=0; i<nTau; ++i){
         Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
         //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
