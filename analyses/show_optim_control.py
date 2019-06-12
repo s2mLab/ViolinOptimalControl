@@ -12,21 +12,22 @@ nb_nodes = 30
 nb_phases = 1
 nb_frame_inter = 500
 
-# Load the biorbd model
+# Load the model
 m = biorbd.s2mMusculoSkeletalModel(f"../models/{model_name}.bioMod")
-#m = biorbd.s2mMusculoSkeletalModel(f"../optimal_control/Modeles/Modele{model_name}.bioMod")
 if fun_dyn == utils.dynamics_from_muscles:
     nb_controls = m.nbMuscleTotal()
 elif fun_dyn == utils.dynamics_from_joint_torque:
     nb_controls = m.nbTau()
 elif fun_dyn == utils.dynamics_from_muscles_and_torques:
-    nb_controls=m.nbMuscleTotal()+m.nbTau()
+    nb_controls = m.nbMuscleTotal()+m.nbTau()
 else:
     raise NotImplementedError("Dynamic not implemented yet")
 
 # Read values
-t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results/States{output_files}.txt", m, nb_nodes, nb_phases)
-all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{output_files}.txt", nb_nodes, nb_phases, nb_controls)
+t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results/States{output_files}.txt", m, nb_nodes,
+                                                    nb_phases)
+all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{output_files}.txt", nb_nodes, nb_phases,
+                                         nb_controls)
 t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_nodes)
 
 
@@ -39,26 +40,19 @@ t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_i
 qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
 
-##Calcul integrale
-# A = 0
-# for i in range(len(t_final)-1):
-#     A += (all_u[0][i]*all_u[0][i])*(t_final[i+1]-t_final[i])
-# print(A)
-
-
 # Show data
 plt.figure("States and torques res")
 for i in range(m.nbQ()):
     plt.subplot(m.nbQ(), 3, 1+(3*i))
     plt.plot(t_interp, q_interp[:, i])
     plt.plot(t_integrate, q_integrate[i, :])
-    plt.title("Q %i" %i)
+    plt.title("Q %i" % i)
 
     plt.subplot(m.nbQ(), 3, 2+(3*i))
     plt.plot(t_interp, qdot_interp[:, i])
     plt.plot(t_integrate, q_integrate[m.nbQ() + i, :])
     # plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
-    plt.title("Qdot %i" %i)
+    plt.title("Qdot %i" % i)
 
 for i in range(m.nbTau()):
     plt.subplot(m.nbTau(), 3, 3 + (3 * i))
@@ -88,4 +82,3 @@ frame = 0
 while b.vtk_window.is_active:
     b.set_q(q_interp[frame, :])
     frame = (frame+1) % nb_frame_inter
-

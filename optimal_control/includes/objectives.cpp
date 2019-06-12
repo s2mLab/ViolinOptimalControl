@@ -4,7 +4,7 @@
 void LagrangeResidualTorques( double *x, double *g, void *){
     g[0]=0;
     for (unsigned int i=0; i<nTau; ++i)
-        g[0]+=(x[i+nQ+nQdot+nMus]*x[i+nQ+nQdot+nMus]);
+        g[0]+=(x[i+nQ+nQdot+nMus]*x[i+nQ+nQdot+nMus])+x[nQ+nQdot+nMus+nTau];
 }
 
 void LagrangeActivations( double *x, double *g, void *){
@@ -18,10 +18,13 @@ void LagrangeAccelerations( double *x, double *g, void *user_data){
     double * rhs = new double[nQ + nQdot];
     forwardDynamicsFromJointTorque(x, rhs, user_data);
     for (unsigned int i=0; i<nQdot; ++i)
-        g[0] += (rhs[i+nQdot]*rhs[i+nQdot]);
+        g[0] += (rhs[i]*rhs[i]);
     delete[] rhs;
-//    for (unsigned int i=0; i<nTau; ++i)
-//        g[0]+=(x[i+nQ+nQdot+nMus]*x[i+nQ+nQdot+nMus]);
+    std::cout<< g[0]<< std::endl;
+}
+
+void LagrangeTime( double *x, double *g, void *){
+        g[0]=x[nQ+nQdot+nMus+nTau];
 }
 
 void MayerVelocity( double *x, double *g, void *){

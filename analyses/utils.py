@@ -12,7 +12,7 @@ def read_acado_output_states(file_path, biorbd_model, nb_nodes, nb_phases):
     nb_points = (nb_phases * nb_nodes) + 1
 
     i = 0
-    t = np.ndarray((nb_points))  # initialization of the time
+    t = np.ndarray(nb_points)  # initialization of the time
 
     # initialization of the derived states
     all_q = np.ndarray((biorbd_model.nbQ(), nb_points))  # initialization of the states nbQ lines and nbP columns
@@ -23,7 +23,7 @@ def read_acado_output_states(file_path, biorbd_model, nb_nodes, nb_phases):
             line = data.readline()
             lin = line.split('\t')  # separation of the line in element
             lin[:1] = []  # remove the first element ( [ )
-            lin[(nb_phases * biorbd_model.nbQ()) + (nb_phases * biorbd_model.nbQdot()) + 1:] = []  # remove the last ( ] )
+            lin[(nb_phases * biorbd_model.nbQ()) + (nb_phases * biorbd_model.nbQdot()) + 1:] = []  # remove the last ]
 
             t[i] = float(lin[0])  # complete the time with the first column
             for p in range(nb_phases):

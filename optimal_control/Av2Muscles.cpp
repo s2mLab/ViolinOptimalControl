@@ -44,29 +44,31 @@ int  main ()
         is(i) = x(i);
     for (unsigned int i = 0; i < nMus+nTau; ++i)
         is(i+nQ+nQdot) = u(i);
-    is(nQ+nQdot+nMus+nTau) = t;
+    is(nQ+nQdot+nMus+nTau) = T;
 
 
     /* ----------- DEFINE OCP ------------- */
     OCP ocp( t_Start, t_End , nPoints);
 
     CFunction Mayer( 1, MayerVelocity);
-    CFunction Lagrange( 1, LagrangeResidualTorques);
+    CFunction LagrangeRT( 1, LagrangeResidualTorques);
+    CFunction LagrangeAcc(1, LagrangeAccelerations);
+    CFunction LagrangeT(1, LagrangeTime);
     ocp.minimizeMayerTerm( Mayer(is) );
-    ocp.minimizeLagrangeTerm( Lagrange(is) );
+    ocp.minimizeLagrangeTerm( LagrangeRT(is) + LagrangeT(is) );
 
     /* ------------ CONSTRAINTS ----------- */
-    DifferentialEquation    f ;
+    DifferentialEquation    f(t_Start, t_End) ;
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
     CFunction Init1( 3, ViolonUp);
     CFunction Init2(nQdot, VelocityZero);
     CFunction End( 3, ViolonDown);
 
-    ocp.subjectTo( (f << dot(x)) == F(is));                          //  differential  equation,
+    ocp.subjectTo( (f << dot(x)) == F(is)*T);                          //  differential  equation,
     ocp.subjectTo( AT_START, Init1(is) ==  0.0 );
     ocp.subjectTo( AT_START, Init2(is) ==  0.0 );
     ocp.subjectTo( AT_END  , End(is) ==  0.0 );
-    //ocp.subjectTo(0.1 <= T <= 4.0);
+    ocp.subjectTo(0.1 <= T <= 4.0);
 
     for (unsigned int i=0; i<nMus; ++i){
          ocp.subjectTo(0.01 <= u(i) <= 1);
@@ -99,10 +101,10 @@ int  main ()
             u_init(i, j) = 0.001;
         }
     }
-    u_init(0, 2) = 0.5;
-    u_init(0, 2) = 0.5;
-    u_init(1, 9) = 0.5;
-    u_init(1, 9) = 0.5;
+//    u_init(0, 2) = 0.5;
+//    u_init(0, 2) = 0.5;
+//    u_init(1, 9) = 0.5;
+//    u_init(1, 9) = 0.5;
 
     algorithm.initializeControls(u_init);
 
@@ -131,7 +133,7 @@ int  main ()
 
 //    algorithm.initializeDifferentialStates("../Results/StatesAv2Musclesinit.txt");
 //    algorithm.initializeControls("../Results/ControlsAv2Musclesinit.txt");
-    //algorithm.set(PRINT_INTEGRATOR_PROFILE, BT_TRUE);
+//    algorithm.set(PRINT_INTEGRATOR_PROFILE, BT_TRUE);
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
     window.addSubplot(  x ,  "STATES x" ) ;
