@@ -3,13 +3,14 @@
 #include "includes/dynamics.h"
 #include "includes/objectives.h"
 #include "includes/constraints.h"
+#include <time.h>
 
 using namespace std;
 USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m(".../../models/ModeleAv1Muscle.bioMod");
+s2mMusculoSkeletalModel m("../../models/Bras.bioMod");
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbTau());           // controls number
@@ -17,14 +18,17 @@ unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 
 const double t_Start = 0.0;
-const double t_End = 10.0;
+const double t_End = 1.0;
 const int nPoints(30);
 
 /* ---------- Functions ---------- */
 
 int  main ()
 {
-    std::cout << "nb de marqueurs: " << nTags << std::endl;
+    clock_t start,end;
+    double time_exec;
+    start=clock();
+
     std::cout << "nb de muscles: " << nMus << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
 
@@ -52,22 +56,24 @@ int  main ()
         is2(i+nQ+nQdot) = u2(i);
     }
     for (unsigned int i = 0; i < nTau; ++i){
-        is1(i+nQ+nQdot+nMus) = u1(i);
-        is2(i+nQ+nQdot+nMus) = u2(i);
+        is1(i+nQ+nQdot+nMus) = u1(i+nMus);
+        is2(i+nQ+nQdot+nMus) = u2(i+nMus);
     }
     is1(nQ+nQdot+nMus+nTau)=T1;
-    is2(nQ+nQdot+nMus+nTAu)=T2;
+    is2(nQ+nQdot+nMus+nTau)=T2;
 
     /* ----------- DEFINE OCP ------------- */
-    OCP ocp(0.0, 1.0, nPoints);
+    OCP ocp(t_Start, t_End, nPoints);
 
     CFunction Mayer(1, MayerVelocity);
     CFunction Lagrange(1, LagrangeResidualTorques);
-    ocp.minimizeMayerTerm( Mayer(is1) + Mayer(is2));
-    ocp.minimizeLagrangeTerm( Lagrange(is1) + Lagrange(is2) );
+    ocp.minimizeMayerTerm( Mayer(is1));
+    ocp.minimizeLagrangeTerm( Lagrange(is1));
+//    ocp.minimizeMayerTerm(Mayer(is2));
+//    ocp.minimizeLagrangeTerm( Lagrange(is2));
 
     /* ------------ CONSTRAINTS ----------- */
-    CFunction F( NX, forwardDynamicsFromMuscleActivation);
+    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
 
     DifferentialEquation    f ;
     (f << dot(x1)) == F(is1)*T1;
@@ -96,37 +102,37 @@ int  main ()
     ocp.subjectTo(0.1 <= T1 <= 5.0);
     ocp.subjectTo(0.1 <= T2 <= 5.0);
 
-    ocp.subjectTo(-PI/8 <= x1(0) <= 0.1);
-    ocp.subjectTo(-PI/2 <= x1(1) <= 0.1);
-    ocp.subjectTo(-PI/4 <= x1(2) <= PI);
-    ocp.subjectTo(-PI/2 <= x1(3) <= PI/2);
-    ocp.subjectTo(-0.1 <= x1(4) <= PI);
+//    ocp.subjectTo(-PI/8 <= x1(0) <= 0.1);
+//    ocp.subjectTo(-PI/2 <= x1(1) <= 0.1);
+//    ocp.subjectTo(-PI/4 <= x1(2) <= PI);
+//    ocp.subjectTo(-PI/2 <= x1(3) <= PI/2);
+//    ocp.subjectTo(-0.1 <= x1(4) <= PI);
 
-    ocp.subjectTo(-PI/8 <= x2(0) <= 0.1);
-    ocp.subjectTo(-PI/2 <= x2(1) <= 0.1);
-    ocp.subjectTo(-PI/4 <= x2(2) <= PI);
-    ocp.subjectTo(-PI/2 <= x2(3) <= PI/2);
-    ocp.subjectTo(-0.1 <= x2(4) <= PI);
+//    ocp.subjectTo(-PI/8 <= x2(0) <= 0.1);
+//    ocp.subjectTo(-PI/2 <= x2(1) <= 0.1);
+//    ocp.subjectTo(-PI/4 <= x2(2) <= PI);
+//    ocp.subjectTo(-PI/2 <= x2(3) <= PI/2);
+//    ocp.subjectTo(-0.1 <= x2(4) <= PI);
 
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
     algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
-    algorithm.set(KKT_TOLERANCE, 1e-6);
+    algorithm.set(KKT_TOLERANCE, 1e-4);
 
     VariablesGrid u_init(2*(nTau + nMus), Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<2; ++i){
         for(unsigned int j=0; j<nMus; ++j){
-            u_init(i, j) = 0.02;
+            u_init(i, j) = 0.1;
         }
         for(unsigned int j=nMus; j<nMus+nTau; ++j){
             u_init(i, j) = 0.001;
         }
-        for(unsigned int j=nMus+nTau; j<2*nMus+nTau; ++j){
-            u_init(i, j) = 0.02;
+        for(unsigned int j=nMus+nTau; j<(2*nMus)+nTau; ++j){
+            u_init(i, j) = 0.1;
         }
-        for(unsigned int j=2*nMus+nTau; j<2*(nMus+nTau); ++j){
+        for(unsigned int j=(2*nMus)+nTau; j<2*(nMus+nTau); ++j){
             u_init(i, j) = 0.001;
         }
     }
@@ -178,6 +184,9 @@ int  main ()
     algorithm.getParameters("../Results/ParametersAv2Phases.txt");
     algorithm.getControls("../Results/ControlsAv2Phases.txt");
 
+    end=clock();
+    time_exec = double(end - start)/CLOCKS_PER_SEC;
+    std::cout<<"Execution time: "<<time_exec<<std::endl;
+
     return 0;
 }
-

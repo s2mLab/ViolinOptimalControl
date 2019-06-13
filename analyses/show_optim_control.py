@@ -5,7 +5,7 @@ from pyoviz.BiorbdViz import BiorbdViz
 import utils
 
 # Options
-model_name = "Bras"
+model_name = "BrasSimple"
 output_files = "Av2Muscles"
 fun_dyn = utils.dynamics_from_muscles_and_torques
 nb_nodes = 30
