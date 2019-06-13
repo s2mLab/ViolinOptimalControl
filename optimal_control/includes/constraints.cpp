@@ -36,7 +36,7 @@ void ViolonUp( double *x, double *g, void * ){
 }
 
 void ViolonDown( double *x, double *g, void * ){
-    g[0] = x[1]+0.87;       // shoulder at 75° in  (Arm_RotX = -1.31)
+    g[0] = x[1]+0.87;       // shoulder at 75° in  (Arm_RotX = -0.87)
     g[1] = x[2];            //
-    g[2] = x[4]-0.17;       // elbow at 110° (LowerArm1_RotZ = 1.92)
+    g[2] = x[4]-0.17;       // elbow at 110° (LowerArm1_RotZ = 0.17)
 }
