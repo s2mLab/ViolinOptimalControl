@@ -74,17 +74,23 @@ def read_acado_output_controls(file_path, nb_nodes, nb_phases, nb_controls):
         all_u[:, -1] = [float(i) for i in lin[1+(nb_phases-1)*nb_controls:nb_controls*nb_phases+1]]
     return all_u
 
-def organize_time(file_path, t, nb_phases, nb_nodes):
-    with open(file_path, "r") as fichier_p:
-        line = fichier_p.readline()
-        lin = line.split('\t')
-        time_parameter = [float(i) for i in lin[2:nb_phases+2]]
-    t_final = t*time_parameter[0]
 
-    for p in range(1, nb_phases):
-        for j in range(nb_nodes):
-            t_final[nb_nodes+p+j] = (t[nb_nodes]*time_parameter[p-1]) + (t[j + 1]*time_parameter[p])
+def organize_time(file_path, t, nb_phases, nb_nodes, parameter=True):
+    if parameter:
+        with open(file_path, "r") as fichier_p:
+            line = fichier_p.readline()
+            lin = line.split('\t')
+            time_parameter = [float(i) for i in lin[2:nb_phases+2]]
+        t_final = t*time_parameter[0]
 
+        for p in range(1, nb_phases):
+            for j in range(nb_nodes+1):
+                t_final[(nb_nodes*p)+j] = t_final[(nb_nodes*p)-1] + (t[j + 1]*time_parameter[p])
+    else:
+        t_final = t
+        for p in range(1, nb_phases):
+            for j in range(nb_nodes+1):
+                t_final[(nb_nodes*p)+j] = t_final[(nb_nodes*p)-1] + t[j + 1]
     return t_final
 
 

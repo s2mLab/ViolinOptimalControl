@@ -30,13 +30,15 @@ void Rotbras( double *x, double *g, void * ){
 }
 
 void ViolonUp( double *x, double *g, void * ){
-    g[0] = x[1]+1.31;       // shoulder at 75° in abduction (Arm_RotX = -1.31)
-    g[1] = x[2]-1.22;       // shoulder at 70° in flexion (Arm_RotZ = 1.22)
-    g[2] = x[4]-1.92;       // elbow at 110° (LowerArm1_RotZ = 1.92)
+    g[0] = x[1]+1.13;       // shoulder at 65° in abduction (Arm_RotX = -1.13)
+    g[1] = x[2]-0.61;       // shoulder at 35° in flexion (Arm_RotZ = 0.61)
+    g[2] = x[3]+0.35;       // shoulder at 20°  (Arm_RotY = -0.35)
+    g[3] = x[4]-1.55;       // elbow at 110° (LowerArm1_RotZ = 1.55)
 }
 
 void ViolonDown( double *x, double *g, void * ){
-    g[0] = x[1]+0.87;       // shoulder at 75° in  (Arm_RotX = -0.87)
-    g[1] = x[2];            //
-    g[2] = x[4]-0.17;       // elbow at 110° (LowerArm1_RotZ = 0.17)
+    g[0] = x[1]+0.70;       // shoulder at 40° in  (Arm_RotX = -0.70)
+    g[1] = x[2]-0.17;       // shoulder at 10° in flexion (Arm_RotZ = 0.17)
+    g[2] = x[3];            // shoulder at 0°  (Arm_RotY = 0.0)
+    g[3] = x[4]-0.61;       // elbow at 35° (LowerArm1_RotZ = 0.61)
 }

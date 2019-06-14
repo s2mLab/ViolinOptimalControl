@@ -6,10 +6,10 @@ import utils
 
 # Options
 model_name = "BrasSimple"
-output_files = "Av2Muscles"
+output_files = "Av2Phases"
 fun_dyn = utils.dynamics_from_muscles_and_torques
 nb_nodes = 30
-nb_phases = 1
+nb_phases = 2
 nb_frame_inter = 500
 
 # Load the model
@@ -28,7 +28,7 @@ t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results
                                                     nb_phases)
 all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{output_files}.txt", nb_nodes, nb_phases,
                                          nb_controls)
-t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_nodes)
+t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_nodes, parameter=False)
 
 
 # Integrate

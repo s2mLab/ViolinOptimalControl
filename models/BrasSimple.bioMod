@@ -315,7 +315,7 @@ external_forces	0
 	 segment Arm2
 		parent	Scapula2
 		RTinMatrix	0
-		RT 0.3 0.8 0.1 zyx -0.0162235668937676 -0.0465334917069568 0.00199722357227
+		RT 0.3 0.65 0.5 zyx -0.0162235668937676 -0.0465334917069568 0.00199722357227
 		//rotations xzy
 		mass 2.537
 		inertia

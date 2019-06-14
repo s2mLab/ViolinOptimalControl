@@ -4,7 +4,7 @@
 void LagrangeResidualTorques( double *x, double *g, void *){
     g[0]=0;
     for (unsigned int i=0; i<nTau; ++i)
-        g[0]+=(x[i+nQ+nQdot+nMus]*x[i+nQ+nQdot+nMus])+x[nQ+nQdot+nMus+nTau];
+        g[0]+=(x[i+nQ+nQdot+nMus]*x[i+nQ+nQdot+nMus]);
 }
 
 void LagrangeActivations( double *x, double *g, void *){
