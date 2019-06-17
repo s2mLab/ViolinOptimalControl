@@ -60,14 +60,14 @@ int  main ()
     /* ------------ CONSTRAINTS ----------- */
     DifferentialEquation    f(t_Start, t_End) ;
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
-    CFunction Init1( 4, ViolonUp);
-    CFunction Init2(nQdot, VelocityZero);
-    CFunction End( 4, ViolonDown);
+    CFunction Frog( 4, ViolonUp);
+    CFunction Velocity(nQdot, VelocityZero);
+    CFunction Tip( 4, ViolonDown);
 
     ocp.subjectTo( (f << dot(x)) == F(is)); //*T);                          //  differential  equation,
-    ocp.subjectTo( AT_START, Init1(is) ==  0.0 );
-    ocp.subjectTo( AT_START, Init2(is) ==  0.0 );
-    ocp.subjectTo( AT_END  , End(is) ==  0.0 );
+    ocp.subjectTo( AT_END, Tip(is) ==  0.0 );
+    ocp.subjectTo( AT_START, Velocity(is) ==  0.0 );
+    ocp.subjectTo( AT_START, Frog(is) ==  0.0 );
     //ocp.subjectTo(0.1 <= T <= 4.0);
 
     for (unsigned int i=0; i<nMus; ++i){
@@ -104,17 +104,34 @@ int  main ()
     algorithm.initializeControls(u_init);
 
     VariablesGrid x_init(nQ+nQdot, Grid(t_Start, t_End, 2));
-    for(unsigned int i=0; i<nQ; ++i){
-        x_init(0, i) = 0.01;
-        x_init(1, i) = 0.01;
-    }
 
-    x_init(0, 1) = -1.31;
-    x_init(0, 2) = 1.22;
-    x_init(0, 4) = 1.92;
+// Tip -> Frog (montée)
+//    x_init(0, 0) = 0.01;
+//    x_init(0, 1) = -0.70;
+//    x_init(0, 2) = 0.17;
+//    x_init(0, 3) = 0.01;
+//    x_init(0, 4) = 0.61;
 
-    x_init(1, 1) = -0.87;
-    x_init(1, 4) = 0.17;
+//    x_init(1, 0) = 0.01;
+//    x_init(1, 1) = -1.13;
+//    x_init(1, 2) = 0.61;
+//    x_init(1, 3) = -0.35;
+//    x_init(1, 4) = 1.55;
+
+//Frog -> Tip (descente)
+    x_init(0, 0) = 0.01;
+    x_init(0, 1) = -1.13;
+    x_init(0, 2) = 0.61;
+    x_init(0, 3) = -0.35;
+    x_init(0, 4) = 1.55;
+
+    x_init(1, 0) = 0.01;
+    x_init(1, 1) = -0.70;
+    x_init(1, 2) = 0.17;
+    x_init(1, 3) = 0.01;
+    x_init(1, 4) = 0.61;
+
+
 
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
