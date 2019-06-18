@@ -291,7 +291,6 @@ endmusclegroup
 		endviapoint
 
 
-
 // Scapula > Arm
 musclegroup Scapula2Arm
 	OriginParent		Scapula
@@ -454,11 +453,33 @@ endmusclegroup
 		
 
 // Arm > Scapula
+
 musclegroup Arm2Scapula
 	OriginParent		Arm
 	InsertionParent		Scapula
 endmusclegroup 	
+/*
+    	muscle	InfraSpin
+		Type 				hillsimple
+		statetype			buchanan
+		musclegroup 		Arm2Scapula
+		OriginPosition		-0.0116528 -0.00158952 0.027548
+		InsertionPosition	-0.0884006 -0.0650538 -0.055069
+		optimalLength		0.066 //0.1191
+		maximalForce		1210.84
+		tendonSlackLength 	0.02871
+		pennationAngle		0.32288
+		PCSA				8.6
+		maxVelocity 		10
+	endmuscle
 
+		viapoint via1
+			  parent 		Scapula
+			  muscle 		InfraSpin
+			  musclegroup 	Arm2Scapula
+			  position 		-0.0705483 -0.0535173 -0.0304407
+		endviapoint
+*/
 	muscle	Deltoid2
 		Type 				hillsimple
 		statetype			buchanan
@@ -500,30 +521,7 @@ endmusclegroup
 		PCSA				3.5
 		maxVelocity 		10
 	endmuscle
-
-		
-	muscle	InfraSpin
-		Type 				hillsimple
-		statetype			buchanan
-		musclegroup 		Arm2Scapula
-		OriginPosition		-0.0116528 -0.00158952 0.027548
-		InsertionPosition	-0.0884006 -0.0650538 -0.055069
-		optimalLength		0.066 //0.1191
-		maximalForce		1210.84
-		tendonSlackLength 	0.02871
-		pennationAngle		0.32288
-		PCSA				8.6
-		maxVelocity 		10
-	endmuscle
-
-		viapoint via1
-			  parent 		Scapula
-			  muscle 		InfraSpin
-			  musclegroup 	Arm2Scapula
-			  position 		-0.0705483 -0.0535173 -0.0304407
-		endviapoint
-
-		
+	
 	muscle	SubScap
 		Type 				hillsimple
 		statetype			buchanan

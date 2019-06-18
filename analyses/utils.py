@@ -12,7 +12,7 @@ def read_acado_output_states(file_path, biorbd_model, nb_nodes, nb_phases):
     nb_points = (nb_phases * nb_nodes) + 1
 
     i = 0
-    t = np.ndarray((nb_points))  # initialization of the time
+    t = np.ndarray(nb_points)  # initialization of the time
 
     # initialization of the derived states
     all_q = np.ndarray((biorbd_model.nbQ(), nb_points))  # initialization of the states nbQ lines and nbP columns
@@ -23,7 +23,7 @@ def read_acado_output_states(file_path, biorbd_model, nb_nodes, nb_phases):
             line = data.readline()
             lin = line.split('\t')  # separation of the line in element
             lin[:1] = []  # remove the first element ( [ )
-            lin[(nb_phases * biorbd_model.nbQ()) + (nb_phases * biorbd_model.nbQdot()) + 1:] = []  # remove the last ( ] )
+            lin[(nb_phases * biorbd_model.nbQ()) + (nb_phases * biorbd_model.nbQdot()) + 1:] = []  # remove the last ]
 
             t[i] = float(lin[0])  # complete the time with the first column
             for p in range(nb_phases):
@@ -43,9 +43,6 @@ def read_acado_output_states(file_path, biorbd_model, nb_nodes, nb_phases):
                     nb_phases - 1) * nb_dof_total + 1]]  # complete the states with the nQ next columns
         all_qdot[:, -1] = [float(k) for k in lin[biorbd_model.nbQ() + 1 + (nb_phases - 1) * nb_dof_total:nb_dof_total * nb_phases + 1]]
 
-    for p in range(1, nb_phases):
-        for j in range(nb_nodes):
-            t[nb_nodes+p+j] = p + t[j + 1]
     return t, all_q, all_qdot
 
 
@@ -77,6 +74,19 @@ def read_acado_output_controls(file_path, nb_nodes, nb_phases, nb_controls):
         all_u[:, -1] = [float(i) for i in lin[1+(nb_phases-1)*nb_controls:nb_controls*nb_phases+1]]
     return all_u
 
+def organize_time(file_path, t, nb_phases, nb_nodes):
+    with open(file_path, "r") as fichier_p:
+        line = fichier_p.readline()
+        lin = line.split('\t')
+        time_parameter = [float(i) for i in lin[2:nb_phases+2]]
+    t_final = t*time_parameter[0]
+
+    for p in range(1, nb_phases):
+        for j in range(nb_nodes):
+            t_final[nb_nodes+p+j] = (t[nb_nodes]*time_parameter[p-1]) + (t[j + 1]*time_parameter[p])
+
+    return t_final
+
 
 def dynamics_from_muscles(t_int, states, biorbd_model, u):
     nb_q = biorbd_model.nbQ()
@@ -98,6 +108,32 @@ def dynamics_from_muscles(t_int, states, biorbd_model, u):
 
     return rsh
 
+
+def dynamics_from_muscles_and_torques(t_int, states, biorbd_model, u):
+    nb_q = biorbd_model.nbQ()
+    nb_qdot = biorbd_model.nbQdot()
+    nb_tau = biorbd_model.nbTau()
+    nb_muscle = biorbd_model.nbMuscleTotal()
+
+    states_actual = biorbd.VecS2mMuscleStateActual(nb_muscle)
+    for i in range(len(states_actual)):
+        states_actual[i] = biorbd.s2mMuscleStateActual(0, u[i])
+
+    biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
+    tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(biorbd_model, states_actual, states[:nb_q], states[nb_q:])
+
+    tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
+
+
+    qddot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], tau_final).get_array()
+    rsh = np.ndarray(nb_q + nb_qdot)
+    for i in range(nb_q):
+        rsh[i] = states[nb_q+i]
+        rsh[i + nb_q] = qddot[i]
+    # print(f"time : {t_int}, Tau: {tau_final}")
+    # print(f"Qddot : {qddot}")
+    # print(f"Qdot: {states[nb_q:]}\n")
+    return rsh
 
 def dynamics_from_joint_torque(t_int, states, biorbd_model, u):
     nb_q = biorbd_model.nbQ()
@@ -121,13 +157,13 @@ def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_
         u = all_u[:, interval]
         integrated_tp = integrate.solve_ivp(
             fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
-            t_span=(t[interval], t[interval + 1]), y0=q_init, method='RK45')
+            t_span=(t[interval], t[interval + 1]), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
 
         q_init_previous = q_init
         if use_previous_as_init:
             q_init = integrated_tp.y[:, -1]
         else:
-            q_init = np.concatenate((all_q[:, interval], all_qdot[:, interval]))
+            q_init = np.concatenate((all_q[:, interval+1], all_qdot[:, interval+1]))
         all_t = np.concatenate((all_t, integrated_tp.t[:-1]))
         integrated_state = np.concatenate((integrated_state, integrated_tp.y[:, :-1]), axis=1)
 
@@ -137,6 +173,7 @@ def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_
             print(f"Control: {u}")
             print(f"Final states: {integrated_tp.y[:, -1]}")
             print(f"Expected final states: {np.concatenate((all_q[:, interval + 1], all_qdot[:, interval + 1]))}")
+            print(f"Difference: {(integrated_tp.y[:, -1]-np.concatenate((all_q[:, interval + 1], all_qdot[:, interval + 1])))}")
             print("")
 
     return all_t, integrated_state
@@ -169,3 +206,14 @@ def plot_piecewise_constant(t, data):
 
 def plot_piecewise_linear(t, data):
     plt.plot(t, data)
+
+def derive(q, t):
+    der = np.ndarray(q.shape)
+    for i in range(q.shape[1]):
+        for j in range(q.shape[0]-1):
+            der[j][i] = (q[j+1][i]-q[j][i])/(t[j+1]-t[j])
+
+    return der
+
+
+

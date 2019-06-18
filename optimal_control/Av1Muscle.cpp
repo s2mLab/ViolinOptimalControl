@@ -10,7 +10,7 @@ USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m("../Modeles/ModeleAv1Muscle.bioMod");
+s2mMusculoSkeletalModel m("../../models/ModeleAv1Muscle.bioMod");
 
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
@@ -19,16 +19,17 @@ unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 
 const double t_Start=0.0;
-const double t_End= 10.0;
+const double t_End= 1.0;
 const int nPoints(30);
 
 /* ---------- Functions ---------- */
 
 #define  NX   nQ + nQdot        // number of differential states
 
-#define  NOL   1                 // number of lagrange objective functions
+#define  NOL  1                 // number of lagrange objective functions
 void myLagrangeObjectiveFunction( double *x, double *g, void * ){
-    g[0] = x[2];
+    g[0] = x[2]*x[2]+x[3];
+
 }
 
 
@@ -52,17 +53,17 @@ void myEndPointConstraint( double *x, double *g, void * ){
 
 }
 
-
 int  main ()
 {
     std::cout << "nb de marqueurs: " << nTags << std::endl<< std::endl;
     std::cout << "nb de muscles: " << nMus << std::endl<< std::endl;
 
     /* ---------- INITIALIZATION ---------- */
-   // Parameter               T;                              //  the  time  horizon T
+    Parameter               T;                              //  the  time  horizon T
     DifferentialState       x("",nQ+nQdot,1);               //  the  differential states
     Control                 u("", nMus, 1);                 //  the  control input  u
-    IntermediateState       is(nQ + nQdot + nMus);
+    IntermediateState       is(nQ + nQdot + nMus + 1);
+
 
     for (unsigned int i = 0; i < nQ; ++i)
         is(i) = x(i);
@@ -70,9 +71,10 @@ int  main ()
         is(i+nQ) = x(i+nQ);
     for (unsigned int i = 0; i < nMus; ++i)
         is(i+nQ+nQdot) = u(i);
+    is(3) = T;
 
     /* ----------- DEFINE OCP ------------- */
-    OCP ocp( t_Start, t_End , nPoints);
+    OCP ocp( 0, 1 , nPoints);
 
     CFunction Mayer( NOM, myMayerObjectiveFunction);
     CFunction Lagrange( NOL, myLagrangeObjectiveFunction);
@@ -85,30 +87,32 @@ int  main ()
     CFunction I( NI, myInitialValueConstraint   );
     CFunction E( NE, myEndPointConstraint       );
 
-    ocp.subjectTo( (f << dot(x)) == F(is) );                          //  differential  equation,
+    ocp.subjectTo( (f << dot(x)) == F(is)*T);                          //  differential  equation,
     ocp.subjectTo( AT_START, I(is) ==  0.0 );
     ocp.subjectTo( AT_END  , E(is) ==  0.0 );
+    ocp.subjectTo(0.1 <= T <= 5);
+
     ocp.subjectTo(0.01 <= u <= 1);
 
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
 
-    algorithm.initializeDifferentialStates("../Initialisation/X1Muscle.txt");
-    //algorithm.initializeParameters("../Initialisation/T1Muscle.txt");
-    algorithm.initializeControls("../Initialisation/U1Muscle.txt");
+    algorithm.initializeDifferentialStates("../Results/StatesAv1Muscle.txt");
+    algorithm.initializeParameters("../Initialisation/T1Muscle.txt");
+    algorithm.initializeControls("../Results/ControlsAv1Muscle.txt");
 
 
     GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
     window.addSubplot(  x ,  "STATES x" ) ;
     window.addSubplot( u ,  "CONTROL  u" ) ;
+    window.addSubplot( T ,  "Time parameter T" ) ;
     algorithm << window;
     algorithm.solve();                              //  solve the problem .
 
+    VariablesGrid param;
+    algorithm.getParameters("../Results/ParametersAv1Muscle.txt");
     algorithm.getDifferentialStates("../Results/StatesAv1Muscle.txt");
-    //algorithm.getParameters("../Results/ParametresAv1Muscle.txt");
     algorithm.getControls("../Results/ControlsAv1Muscle.txt");
 
     return 0;
 }
-
-
