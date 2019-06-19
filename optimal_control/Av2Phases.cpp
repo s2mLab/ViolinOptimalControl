@@ -84,12 +84,9 @@ int  main ()
 
     ocp.subjectTo( AT_START, Frog(x1) ==  0.0 );
     ocp.subjectTo( AT_END  , Tip(x1) ==  0.0 );
-    for(unsigned int i=0; i<nQ+nQdot; ++i){
-        ocp.subjectTo( 0.0, x2(i), -x1(i), 0.0 );
-    }
-    //ocp.subjectTo( 0.0, x2, -x1, 0.0 );
+    ocp.subjectTo( 0.0, x2, -x1, 0.0 );
     //ocp.subjectTo( AT_START, Tip(x2) ==  0.0 );
-    ocp.subjectTo(AT_END, Frog(x2) == 0.0);
+    ocp.subjectTo(AT_END, Tip(x2) == 0.0);
 
     ocp.subjectTo(AT_START, Velocity(is1) == 0.0);
     //ocp.subjectTo(AT_START, Velocity(is2) == 0.0);
@@ -164,10 +161,16 @@ int  main ()
     x_init(0, 4+nQ+nQdot) = 0.61;
 
     x_init(1, nQ+nQdot) = 0.01;
-    x_init(1, 1+nQ+nQdot) = -1.13;
-    x_init(1, 2+nQ+nQdot) = 0.61;
-    x_init(1, 3+nQ+nQdot) = -0.35;
-    x_init(1, 4+nQ+nQdot) = 1.55;
+    x_init(1, 1+nQ+nQdot) = -0.70;
+    x_init(1, 2+nQ+nQdot) = 0.17;
+    x_init(1, 3+nQ+nQdot) = 0.01;
+    x_init(1, 4+nQ+nQdot) = 0.61;
+
+//    x_init(1, nQ+nQdot) = 0.01;
+//    x_init(1, 1+nQ+nQdot) = -1.13;
+//    x_init(1, 2+nQ+nQdot) = 0.61;
+//    x_init(1, 3+nQ+nQdot) = -0.35;
+//    x_init(1, 4+nQ+nQdot) = 1.55;
 
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;

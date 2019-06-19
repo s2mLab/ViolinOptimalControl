@@ -122,7 +122,7 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
         //std::cout<<"Activation:"<<x[i+nQ+nQdot]<<std::endl;
     }
     // Compute the torques from muscles
-    s2mTau Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
+    s2mTau Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
     for (unsigned int i=0; i<nTau; ++i){
         Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
         //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
@@ -131,8 +131,8 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
     // Compute the forward dynamics
     forwardDynamics(Q, Qdot, Tau, rhs);
 
-    s2mGenCoord Qddot(nQdot);
-    RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
+//    s2mGenCoord Qddot(nQdot);
+//    RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
 
 //    std::cout << "\n";
 //    std::cout << std::setprecision(15) << "Time = " << x[nQ+nQdot+nMus+nTau] << std::endl;

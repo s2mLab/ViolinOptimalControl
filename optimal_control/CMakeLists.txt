@@ -36,6 +36,7 @@ set(source_files
     Av2Muscles.cpp
     Av2Phases.cpp
     Violon.cpp
+    eocar.cpp
 ) 
 
 # Setup each project

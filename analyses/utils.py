@@ -69,7 +69,7 @@ def read_acado_output_controls(file_path, nb_nodes, nb_phases, nb_controls):
         line = fichier_u.readline()
         lin = line.split('\t')
         lin[:1] = []
-        lin[(2*nb_controls) + 1:] = []
+        lin[(nb_phases*nb_controls) + 1:] = []
 
         all_u[:, -1] = [float(i) for i in lin[1+(nb_phases-1)*nb_controls:nb_controls*nb_phases+1]]
     return all_u

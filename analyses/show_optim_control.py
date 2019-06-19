@@ -40,6 +40,7 @@ t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_i
 qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
 
+print(q_integrate[4, :])
 # Show data
 plt.figure("States and torques res")
 for i in range(m.nbQ()):
