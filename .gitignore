@@ -111,3 +111,4 @@ venv.bak/
 */Results/
 */Resultats/
 *.user*
+*.DS_Store
