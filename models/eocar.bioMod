@@ -1,0 +1,57 @@
+version 3
+
+// 4 MARQUEURS PAR SEGMENT
+
+
+// Informations générales
+root_actuated	1
+external_forces	0
+
+// DEFINITION DES SEGMENTS
+
+	segment	Bras
+		RTinMatrix	1
+
+		RT
+			1.0000000000	0.0000000000	0.0000000000	0.0000000000
+			0.0000000000	1.0000000000	0.0000000000	0.0000000000
+			0.0000000000	0.0000000000	1.0000000000	0.0000000000
+			0.0000000000	0.0000000000	0.0000000000	1.0000000000
+
+		//translations	xyz 
+		rotations	x //yz
+
+		mass	1.00000
+
+		inertia
+			1.0000000000	0.0000000000	0.0000000000
+			0.0000000000	1.0000000000	0.0000000000
+			0.0000000000	0.0000000000	1.0000000000
+
+		com		0.0000000000		0.0000000000		-0.50000000000
+        
+        mesh    0.5   -0.5   0
+        mesh    0.5   -0.5   -1
+        mesh    -0.5   -0.5   -1
+        mesh    -0.5   -0.5   0
+        mesh    0.5   -0.5   0
+        mesh    0.5   0.5   0
+        mesh    0.5   0.5   -1
+        mesh    -0.5   0.5   -1
+        mesh    -0.5   0.5   0
+        mesh    0.5   0.5   0
+        mesh    0.5   -0.5   -1
+        mesh    0.5   0.5   -1
+        mesh    -0.5   0.5   0
+        mesh    -0.5   -0.5   0
+
+	endsegment
+
+	// Markers
+		marker	origine
+			parent	Bras
+			position	0.0000 0.0000 0.0000
+		endmarker
+
+			
+

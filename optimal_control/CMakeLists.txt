@@ -20,14 +20,19 @@ find_package(Dlib REQUIRED)
 find_package(Biorbd REQUIRED)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
-# Build the dynamics 
-add_library(utils includes/dynamics.cpp includes/constraints.cpp includes/objectives.cpp)
+# Build the dynamics
+add_library(utils
+    includes/dynamics.cpp
+    includes/constraints.cpp
+    includes/objectives.cpp
+)
 target_include_directories(utils PUBLIC
     ${ACADO_INCLUDE_DIRS} ${ACADO_INCLUDE_DIRS}/..
     ${Biorbd_INCLUDE_DIR}
     ${EIGEN3_INCLUDE_DIR}
     ${RBDL_INCLUDE_DIR}
-    ${Boost_INCLUDE_DIRS})
+    ${Boost_INCLUDE_DIRS}
+)
 
 # Write down all files to include here
 set(source_files
@@ -37,7 +42,7 @@ set(source_files
     Av2Phases.cpp
     Violon.cpp
     eocar.cpp
-) 
+)
 
 # Setup each project
 foreach(src_file ${source_files})
@@ -47,7 +52,15 @@ foreach(src_file ${source_files})
     ADD_EXECUTABLE (  ${filename}
         ${filename}.cpp
     )
-    target_link_libraries(${filename} 
+    target_include_directories(${filename} PUBLIC
+        ${ACADO_INCLUDE_DIRS} ${ACADO_INCLUDE_DIRS}/..
+        ${Biorbd_INCLUDE_DIR}
+        ${EIGEN3_INCLUDE_DIR}
+        ${RBDL_INCLUDE_DIR}
+        ${Boost_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(${filename}
       utils
       ${Biorbd_LIBRARY}
       ${RBDL_LIBRARY}
