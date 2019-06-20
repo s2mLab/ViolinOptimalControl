@@ -1,5 +1,7 @@
 from pyoviz.BiorbdViz import BiorbdViz
 
-b = BiorbdViz(model_path="/home/lim/Documents/Model.s2mMod", show_muscles=False, show_meshes=False)
+model_name = "eocar"
+
+b = BiorbdViz(model_path=f"../models/{model_name}.bioMod", show_muscles=False)
 
 b.exec()

@@ -8,10 +8,6 @@ void forwardDynamics(const s2mGenCoord& Q, const s2mGenCoord& Qdot, const s2mTau
     s2mGenCoord Qddot(nQdot);
     RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
 
-//    for(unsigned int i=0; i<nTau; ++i){
-//        std::cout << Tau[i]<< std::endl;
-//    }
-
     for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];

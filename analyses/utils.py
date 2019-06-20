@@ -152,6 +152,15 @@ def dynamics_from_joint_torque(t_int, states, biorbd_model, u):
 
     return rsh
 
+def dynamics_from_accelerations(t_int, states, biorbd_model, u):
+    nb_q = biorbd_model.nbQ()
+    nb_qdot = biorbd_model.nbQdot()
+    rsh = np.ndarray(nb_q + nb_qdot)
+    for i in range(nb_q):
+        rsh[i] = states[nb_q+i]
+        rsh[i + nb_q] = u[i]
+
+    return rsh
 
 def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_fun, verbose=False,
                                    use_previous_as_init=False):
