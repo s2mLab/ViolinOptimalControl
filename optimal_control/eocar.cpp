@@ -11,7 +11,7 @@ USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m("../../models/eocar.bioMod");
+s2mMusculoSkeletalModel m("../../models/Bras.bioMod");
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbTau());           // controls number
@@ -19,20 +19,8 @@ unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 
 const double t_Start = 0.0;
-const double t_End = 5.0;
-const int nPoints(30);
-
-void LagrangeObjective( double *x, double *g, void *){
-    g[0]=0;
-    for (unsigned int i=0; i<nQ; ++i)
-        g[0]+=(x[i]*x[i]);
-}
-
-void MayeurObjective( double *x, double *g, void *){
-    g[0]=0;
-    for (unsigned int i=0; i<nQ; ++i)
-        g[0]+=(x[nQ+i]*x[nQ+i]);
-}
+const double t_End = 1.0;
+const int nPoints(31);
 
 void Position( double *x, double *g, void *){
     for (unsigned int i=0; i<nQ; ++i)
@@ -44,42 +32,38 @@ void Velocity( double *x, double *g, void *){
         g[i] = x[nQ+i];
 }
 
-void dynamic( double *x, double *rhs, void *){
-
-    for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
-        rhs[i] = x[i+nQ];
-        rhs[i + nQdot] = x[i+2*nQ];
-    }
-}
-
 int  main ()
 {
     /* ---------- INITIALIZATION ---------- */
-    DifferentialState       x1("", 2*nQ, 1);
-    DifferentialState       x2("", 2*nQ, 1);
-    Control                 u1("", nQ, 1);
-    Control                 u2("", nQ, 1);
+    DifferentialState       x1("", nQ+nQdot, 1);
+    DifferentialState       x2("", nQ+nQdot, 1);
+    Control                 u1("", nTau, 1);
+    Control                 u2("", nTau, 1);
     DifferentialEquation    f;
-    IntermediateState       is1("", 3*nQ, 1);
-    IntermediateState       is2("", 3*nQ, 1);
+    IntermediateState       is1("", nQ+nQdot+nTau, 1);
+    IntermediateState       is2("", nQ+nQdot+nTau, 1);
 
 
-    for (unsigned int i = 0; i < 2*nQ; ++i){
+    for (unsigned int i = 0; i < nQ; ++i){
         is1(i) = x1(i);
         is2(i) = x2(i);
     }
-    for (unsigned int i = 0; i < nQ; ++i){
-        is1(i+2*nQ) = u1(i);
-        is2(i+2*nQ) = u2(i);
+    for (unsigned int i = 0; i < nQdot; ++i){
+        is1(i+nQ) = x1(i+nQ);
+        is2(i+nQ) = x2(i+nQ);
+    }
+    for (unsigned int i = 0; i < nTau; ++i){
+        is1(i+nQ+nQdot) = u1(i);
+        is2(i+nQ+nQdot) = u2(i);
     }
 
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(  0.0 , t_End , 30);
 
-    CFunction Mayeur(1, MayeurObjective);
-    CFunction Lagrange(1, LagrangeObjective);
-    ocp.minimizeLagrangeTerm(Lagrange(u1) + Lagrange(u2));
-    ocp.minimizeMayerTerm(Mayeur(x1) + Mayeur(x2));
+    CFunction Mayer(1, MayerVelocity);
+    CFunction Lagrange(1, LagrangeResidualTorques);
+    ocp.minimizeLagrangeTerm(Lagrange(is1) + Lagrange(is2));
+    ocp.minimizeMayerTerm(Mayer(is1) + Mayer(is2));
 
     CFunction F(2*nQ, forwardDynamicsFromJointTorque);
     (f << dot( x1 )) == F(is1);
@@ -91,19 +75,26 @@ int  main ()
 
     CFunction Pos( nQ, Position);
     CFunction Vel( nQ, Velocity);
-    ocp.subjectTo( AT_START,  x1 ==  0.0 ) ;
-    ocp.subjectTo( AT_END   ,  Pos(x1) == 3.1415) ;
-    ocp.subjectTo(0.0, x2, -x1, 0.0);
-    ocp.subjectTo( AT_END   ,  Pos(x2) == 0.0) ;
+    CFunction Frog( 4, ViolonUp);
+    CFunction Tip( 4,  ViolonDown);
+    CFunction Velocity(nQdot, VelocityZero);
 
-    ocp.subjectTo( -1 <= Pos(x1) <= 4);
-    ocp.subjectTo( -1 <= Pos(x2) <= 4);
+    ocp.subjectTo( AT_START, Frog(x1) ==  0.0 );
+    ocp.subjectTo( AT_END  , Tip(x1) ==  0.0 );
+    ocp.subjectTo( 0.0, x2, -x1, 0.0 );
+    //ocp.subjectTo( AT_START, Tip(x2) ==  0.0 );
+    ocp.subjectTo(AT_END, Tip(x2) == 0.0);
+
+    ocp.subjectTo(AT_START, Velocity(x1) == 0.0);
+
+    ocp.subjectTo( -4 <= Pos(x1) <= 4);
+    ocp.subjectTo( -4 <= Pos(x2) <= 4);
 
     ocp.subjectTo( -5.0 <= Vel(x1) <= 5.0);
     ocp.subjectTo( -5.0 <= Vel(x2) <= 5.0);
 
-    ocp.subjectTo( -2 <= u1 <= 2);
-    ocp.subjectTo( -2 <= u2 <= 2);
+    ocp.subjectTo( -100 <= u1 <= 100);
+    ocp.subjectTo( -100 <= u2 <= 100);
 
     /* ---------- VISUALIZATION ------------ */
 
