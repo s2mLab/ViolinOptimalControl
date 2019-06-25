@@ -37,11 +37,11 @@ int  main ()
     /* ---------- INITIALIZATION ---------- */
     DifferentialState       x1("", nQ+nQdot, 1);
     DifferentialState       x2("", nQ+nQdot, 1);
-    Control                 u1("", nTau, 1);
-    Control                 u2("", nTau, 1);
+    Control                 u1("", nMus+nTau, 1);
+    Control                 u2("", nMus+nTau, 1);
     DifferentialEquation    f;
-    IntermediateState       is1("", nQ+nQdot+nTau, 1);
-    IntermediateState       is2("", nQ+nQdot+nTau, 1);
+    IntermediateState       is1("", nQ+nQdot+nMus+nTau, 1);
+    IntermediateState       is2("", nQ+nQdot+nMus+nTau, 1);
 
 
     for (unsigned int i = 0; i < nQ; ++i){
@@ -52,9 +52,13 @@ int  main ()
         is1(i+nQ) = x1(i+nQ);
         is2(i+nQ) = x2(i+nQ);
     }
-    for (unsigned int i = 0; i < nTau; ++i){
+    for (unsigned int i = 0; i < nMus; ++i){
         is1(i+nQ+nQdot) = u1(i);
         is2(i+nQ+nQdot) = u2(i);
+    }
+    for (unsigned int i = 0; i < nTau; ++i){
+        is1(i+nQ+nQdot+nMus) = u1(i+nMus);
+        is2(i+nQ+nQdot+nMus) = u2(i+nMus);
     }
 
     /* ----------- DEFINE OCP ------------- */
@@ -75,15 +79,24 @@ int  main ()
 
     CFunction Pos( nQ, Position);
     CFunction Vel( nQ, Velocity);
-    CFunction Frog( 4, ViolonUp);
-    CFunction Tip( 4,  ViolonDown);
     CFunction Velocity(nQdot, VelocityZero);
 
-    ocp.subjectTo( AT_START, Frog(x1) ==  0.0 );
-    ocp.subjectTo( AT_END  , Tip(x1) ==  0.0 );
+    ocp.subjectTo( AT_START, x1(1) ==  -1.13 );
+    ocp.subjectTo( AT_START, x1(2) ==  0.61 );
+    ocp.subjectTo( AT_START, x1(3) ==  -0.35 );
+    ocp.subjectTo( AT_START, x1(4) ==  1.55 );
+
+    ocp.subjectTo( AT_END, x1(1) ==  -0.7 );
+    ocp.subjectTo( AT_END, x1(2) ==  0.17 );
+    ocp.subjectTo( AT_END, x1(3) ==  0.0 );
+    ocp.subjectTo( AT_END, x1(4) ==  0.61 );
+
     ocp.subjectTo( 0.0, x2, -x1, 0.0 );
-    //ocp.subjectTo( AT_START, Tip(x2) ==  0.0 );
-    ocp.subjectTo(AT_END, Tip(x2) == 0.0);
+
+    ocp.subjectTo( AT_END, x2(1) ==  -0.7 );
+    ocp.subjectTo( AT_END, x2(2) ==  0.17 );
+    ocp.subjectTo( AT_END, x2(3) ==  0.0 );
+    ocp.subjectTo( AT_END, x2(4) ==  0.61 );
 
     ocp.subjectTo(AT_START, Velocity(x1) == 0.0);
 
@@ -93,8 +106,16 @@ int  main ()
     ocp.subjectTo( -5.0 <= Vel(x1) <= 5.0);
     ocp.subjectTo( -5.0 <= Vel(x2) <= 5.0);
 
-    ocp.subjectTo( -100 <= u1 <= 100);
-    ocp.subjectTo( -100 <= u2 <= 100);
+    for (unsigned int i=0; i<nMus; ++i){
+         ocp.subjectTo(0.01 <= u1(i) <= 1);
+         ocp.subjectTo(0.01 <= u2(i) <= 1);
+    }
+
+    for (unsigned int i=nMus; i<nMus+nTau; ++i){
+         ocp.subjectTo(-100 <= u1(i) <= 100);
+         ocp.subjectTo(-100 <= u2(i) <= 100);
+    }
+
 
     /* ---------- VISUALIZATION ------------ */
 
