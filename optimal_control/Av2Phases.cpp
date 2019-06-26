@@ -8,8 +8,6 @@
 using namespace std;
 USING_NAMESPACE_ACADO
 
-/* ---------- Model ---------- */
-
 s2mMusculoSkeletalModel m("../../models/Bras.bioMod");
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
@@ -20,8 +18,6 @@ unsigned int nMus(m.nbMuscleTotal());   // muscles number
 const double t_Start = 0.0;
 const double t_End = 0.5;
 const int nPoints(30);
-
-/* ---------- Functions ---------- */
 
 int  main ()
 {
@@ -37,9 +33,6 @@ int  main ()
     DifferentialState       x2("",nQ+nQdot,1);
     Control                 u1("", nMus+nTau, 1);                 //  the  control input  u
     Control                 u2("", nMus+nTau, 1);
-//    Parameter               T1;
-//    Parameter               T2;
-
     IntermediateState       is1(nQ + nQdot + nMus + nTau); // + 1);
     IntermediateState       is2(nQ + nQdot + nMus + nTau); // + 1);
 
@@ -59,28 +52,22 @@ int  main ()
         is1(i+nQ+nQdot+nMus) = u1(i+nMus);
         is2(i+nQ+nQdot+nMus) = u2(i+nMus);
     }
-//    is1(nQ+nQdot+nMus+nTau)=T1;
-//    is2(nQ+nQdot+nMus+nTau)=T2;
 
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(t_Start, t_End, nPoints);
 
     CFunction Mayer(1, MayerVelocity);
     CFunction Lagrange(1, LagrangeResidualTorques);
-    ocp.minimizeMayerTerm(Mayer(is2));
+    //ocp.minimizeMayerTerm(Mayer(is2));
     ocp.minimizeLagrangeTerm( Lagrange(is1) + Lagrange(is2));
 
     /* ------------ CONSTRAINTS ----------- */
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
 
     DifferentialEquation    f ;
-    (f << dot(x1)) == F(is1); //*T1;
-    (f << dot(x2)) == F(is2); //*T2;
+    (f << dot(x1)) == F(is1);
+    (f << dot(x2)) == F(is2);
     ocp.subjectTo(f);
-
-    CFunction Frog( 4, ViolonUp);
-    CFunction Tip( 4,  ViolonDown);
-    CFunction Velocity(nQdot, VelocityZero);
 
     ocp.subjectTo( AT_START, x1(1) ==  -1.13 );
     ocp.subjectTo( AT_START, x1(2) ==  0.61 );
@@ -93,14 +80,7 @@ int  main ()
     ocp.subjectTo( AT_END, x1(4) ==  0.61 );
 
     ocp.subjectTo( 0.0, x2, -x1, 0.0 );
-
-    ocp.subjectTo( AT_END, x2(1) ==  -1.13 );
-    ocp.subjectTo( AT_END, x2(2) ==  0.61 );
-    ocp.subjectTo( AT_END, x2(3) ==  -0.35 );
-    ocp.subjectTo( AT_END, x2(4) ==  1.55 );
-
-//    ocp.subjectTo(AT_START, Velocity(is1) == 0.0);
-    ocp.subjectTo(AT_END, Velocity(is2) == 0.0);
+    ocp.subjectTo( 0.0, x1, -x2, 0.0 );
 
     for (unsigned int i=0; i<nMus; ++i){
          ocp.subjectTo(0.01 <= u1(i) <= 1);
@@ -111,9 +91,6 @@ int  main ()
          ocp.subjectTo(-100 <= u1(i) <= 100);
          ocp.subjectTo(-100 <= u2(i) <= 100);
     }
-
-//    ocp.subjectTo(0.1 <= T1 <= 5.0);
-//    ocp.subjectTo(0.1 <= T2 <= 5.0);
 
     ocp.subjectTo(-PI/8 <= x1(0) <= 0.1);
     ocp.subjectTo(-PI/2 <= x1(1) <= 0.1);
@@ -134,6 +111,7 @@ int  main ()
     algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
     algorithm.set(KKT_TOLERANCE, 1e-6);
 
+    /* ---------- INITIAL SOLUTION ---------- */
     VariablesGrid u_init(2*(nTau + nMus), Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<2; ++i){
         for(unsigned int j=0; j<nMus; ++j){
@@ -171,12 +149,6 @@ int  main ()
     x_init(0, 3+nQ+nQdot) = 0.01;
     x_init(0, 4+nQ+nQdot) = 0.61;
 
-//    x_init(1, nQ+nQdot) = 0.01;
-//    x_init(1, 1+nQ+nQdot) = -0.70;
-//    x_init(1, 2+nQ+nQdot) = 0.17;
-//    x_init(1, 3+nQ+nQdot) = 0.01;
-//    x_init(1, 4+nQ+nQdot) = 0.61;
-
     x_init(1, nQ+nQdot) = 0.01;
     x_init(1, 1+nQ+nQdot) = -1.13;
     x_init(1, 2+nQ+nQdot) = 0.61;
@@ -192,10 +164,12 @@ int  main ()
     }
     algorithm.initializeDifferentialStates(x_init);
 
+    /* ---------- SOLVING THE PROBLEM ---------- */
     algorithm.solve();
 
+
+    /* ---------- STORING THE RESULTS ---------- */
     algorithm.getDifferentialStates("../Results/StatesAv2Phases.txt");
-    //algorithm.getParameters("../Results/ParametersAv2Phases.txt");
     algorithm.getControls("../Results/ControlsAv2Phases.txt");
 
     end=clock();
