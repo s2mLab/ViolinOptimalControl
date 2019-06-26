@@ -480,7 +480,7 @@ endmusclegroup
 			  musclegroup 	Arm2Scapula
 			  position 		-0.0705483 -0.0535173 -0.0304407
 		endviapoint
-*/
+
 	muscle	Deltoid2
 		Type 				hillsimple
 		statetype			buchanan

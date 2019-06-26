@@ -5,9 +5,9 @@ from pyoviz.BiorbdViz import BiorbdViz
 import utils
 
 # Options
-model_name = "eocar"
-output_files = "Eocar"
-fun_dyn = utils.dynamics_from_accelerations
+model_name = "BrasSimple"
+output_files = "Av2Phases"
+fun_dyn = utils.dynamics_from_muscles_and_torques
 nb_nodes = 30
 nb_phases = 2
 nb_frame_inter = 500
@@ -41,7 +41,7 @@ t_integrate, q_integrate = utils.integrate_states_from_controls(m, t_final, all_
 t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_int=t_integrate, y_int=q_integrate)
 qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
-
+print(all_q[4, :])
 # Show data
 plt.figure("States and torques res")
 for i in range(m.nbQ()):
@@ -58,35 +58,35 @@ for i in range(m.nbQ()):
     # plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
     plt.title("Qdot %i" % i)
 
-for i in range(nb_controls):
-    plt.subplot(nb_controls, 3, 3 + (3 * i))
-    utils.plot_piecewise_constant(t_final, all_u[i, :])
-    plt.title("Acceleration %i" % i)
+# for i in range(nb_controls):
+#     plt.subplot(nb_controls, 3, 3 + (3 * i))
+#     utils.plot_piecewise_constant(t_final, all_u[i, :])
+#     plt.title("Acceleration %i" % i)
 
-# for i in range(m.nbTau()):
-#     plt.subplot(m.nbTau(), 3, 3 + (3 * i))
-#     utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
-#     plt.title("Torques %i" % i)
+for i in range(m.nbTau()):
+    plt.subplot(m.nbTau(), 3, 3 + (3 * i))
+    utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
+    plt.title("Torques %i" % i)
 
-# L = []
-# for i in range(m.nbMuscleGroups()):
-#     L.append(m.muscleGroup(i).nbMuscles())
-# nb_muscles_max = max(L)
-# plt.figure("Activations")
-# cmp = 0
-# for i in range(m.nbMuscleGroups()):
-#     for j in range(m.muscleGroup(i).nbMuscles()):
-#         plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
-#         utils.plot_piecewise_constant(t_final, all_u[cmp, :])
-#         plt.title(biorbd.s2mMuscleHillType.getRef(m.muscleGroup(i).muscle(j)).name())
-#         plt.ylim((0, 1))
-#         cmp += 1
+L = []
+for i in range(m.nbMuscleGroups()):
+    L.append(m.muscleGroup(i).nbMuscles())
+nb_muscles_max = max(L)
+plt.figure("Activations")
+cmp = 0
+for i in range(m.nbMuscleGroups()):
+    for j in range(m.muscleGroup(i).nbMuscles()):
+        plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
+        utils.plot_piecewise_constant(t_final, all_u[cmp, :])
+        plt.title(biorbd.s2mMuscleHillType.getRef(m.muscleGroup(i).muscle(j)).name())
+        plt.ylim((0, 1))
+        cmp += 1
 
 # plt.ion()  # Non blocking plt.show
 plt.show()
 
 # Animate the model
-b = BiorbdViz(loaded_model=m, show_muscles=False)
+b = BiorbdViz(loaded_model=m)
 frame = 0
 while b.vtk_window.is_active:
     b.set_q(q_interp[frame, :])

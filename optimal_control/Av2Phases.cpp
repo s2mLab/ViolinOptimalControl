@@ -82,14 +82,25 @@ int  main ()
     CFunction Tip( 4,  ViolonDown);
     CFunction Velocity(nQdot, VelocityZero);
 
-    ocp.subjectTo( AT_START, Frog(x1) ==  0.0 );
-    ocp.subjectTo( AT_END  , Tip(x1) ==  0.0 );
-    ocp.subjectTo( 0.0, x2, -x1, 0.0 );
-    //ocp.subjectTo( AT_START, Tip(x2) ==  0.0 );
-    ocp.subjectTo(AT_END, Tip(x2) == 0.0);
+    ocp.subjectTo( AT_START, x1(1) ==  -1.13 );
+    ocp.subjectTo( AT_START, x1(2) ==  0.61 );
+    ocp.subjectTo( AT_START, x1(3) ==  -0.35 );
+    ocp.subjectTo( AT_START, x1(4) ==  1.55 );
 
-    ocp.subjectTo(AT_START, Velocity(is1) == 0.0);
-    //ocp.subjectTo(AT_START, Velocity(is2) == 0.0);
+    ocp.subjectTo( AT_END, x1(1) ==  -0.7 );
+    ocp.subjectTo( AT_END, x1(2) ==  0.17 );
+    ocp.subjectTo( AT_END, x1(3) ==  0.01 );
+    ocp.subjectTo( AT_END, x1(4) ==  0.61 );
+
+    ocp.subjectTo( 0.0, x2, -x1, 0.0 );
+
+    ocp.subjectTo( AT_END, x2(1) ==  -1.13 );
+    ocp.subjectTo( AT_END, x2(2) ==  0.61 );
+    ocp.subjectTo( AT_END, x2(3) ==  -0.35 );
+    ocp.subjectTo( AT_END, x2(4) ==  1.55 );
+
+//    ocp.subjectTo(AT_START, Velocity(is1) == 0.0);
+    ocp.subjectTo(AT_END, Velocity(is2) == 0.0);
 
     for (unsigned int i=0; i<nMus; ++i){
          ocp.subjectTo(0.01 <= u1(i) <= 1);
@@ -121,7 +132,7 @@ int  main ()
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
     algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
-    algorithm.set(KKT_TOLERANCE, 1e-4);
+    algorithm.set(KKT_TOLERANCE, 1e-6);
 
     VariablesGrid u_init(2*(nTau + nMus), Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<2; ++i){
@@ -129,13 +140,13 @@ int  main ()
             u_init(i, j) = 0.02;
         }
         for(unsigned int j=nMus; j<nMus+nTau; ++j){
-            u_init(i, j) = 0.001;
+            u_init(i, j) = 0.01;
         }
         for(unsigned int j=nMus+nTau; j<(2*nMus)+nTau; ++j){
             u_init(i, j) = 0.02;
         }
         for(unsigned int j=(2*nMus)+nTau; j<2*(nMus+nTau); ++j){
-            u_init(i, j) = 0.001;
+            u_init(i, j) = 0.01;
         }
     }
     algorithm.initializeControls(u_init);
@@ -160,17 +171,17 @@ int  main ()
     x_init(0, 3+nQ+nQdot) = 0.01;
     x_init(0, 4+nQ+nQdot) = 0.61;
 
-    x_init(1, nQ+nQdot) = 0.01;
-    x_init(1, 1+nQ+nQdot) = -0.70;
-    x_init(1, 2+nQ+nQdot) = 0.17;
-    x_init(1, 3+nQ+nQdot) = 0.01;
-    x_init(1, 4+nQ+nQdot) = 0.61;
-
 //    x_init(1, nQ+nQdot) = 0.01;
-//    x_init(1, 1+nQ+nQdot) = -1.13;
-//    x_init(1, 2+nQ+nQdot) = 0.61;
-//    x_init(1, 3+nQ+nQdot) = -0.35;
-//    x_init(1, 4+nQ+nQdot) = 1.55;
+//    x_init(1, 1+nQ+nQdot) = -0.70;
+//    x_init(1, 2+nQ+nQdot) = 0.17;
+//    x_init(1, 3+nQ+nQdot) = 0.01;
+//    x_init(1, 4+nQ+nQdot) = 0.61;
+
+    x_init(1, nQ+nQdot) = 0.01;
+    x_init(1, 1+nQ+nQdot) = -1.13;
+    x_init(1, 2+nQ+nQdot) = 0.61;
+    x_init(1, 3+nQ+nQdot) = -0.35;
+    x_init(1, 4+nQ+nQdot) = 1.55;
 
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
@@ -179,17 +190,9 @@ int  main ()
          x_init(1, i+nQ+nQdot) = 0.01;
 
     }
-
     algorithm.initializeDifferentialStates(x_init);
 
-
-    GnuplotWindow window;                           //  visualize  the  results  in  a  Gnuplot  window
-    window.addSubplot(  x1 ,  "STATES x" ) ;
-    window.addSubplot(  x2 ,  "STATES x" ) ;
-    window.addSubplot( u1 ,  "CONTROL  u" ) ;
-    window.addSubplot( u2 ,  "CONTROL  u" ) ;
-    algorithm << window;
-    algorithm.solve();                              //  solve the problem .
+    algorithm.solve();
 
     algorithm.getDifferentialStates("../Results/StatesAv2Phases.txt");
     //algorithm.getParameters("../Results/ParametersAv2Phases.txt");
