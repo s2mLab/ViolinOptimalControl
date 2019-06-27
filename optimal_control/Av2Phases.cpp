@@ -8,7 +8,7 @@
 using namespace std;
 USING_NAMESPACE_ACADO
 
-s2mMusculoSkeletalModel m("../../models/Bras.bioMod");
+s2mMusculoSkeletalModel m("../../models/BrasViolon.bioMod");
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbTau());           // controls number
@@ -27,6 +27,7 @@ int  main ()
 
     std::cout << "nb de muscles: " << nMus << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
+    std::cout << "nb de marqueurs: " << nTags << std::endl;
 
     /* ---------- INITIALIZATION ---------- */
     DifferentialState       x1("",nQ+nQdot,1);               //  the  differential states
@@ -69,15 +70,15 @@ int  main ()
     (f << dot(x2)) == F(is2);
     ocp.subjectTo(f);
 
-    ocp.subjectTo( AT_START, x1(1) ==  -1.13 );
-    ocp.subjectTo( AT_START, x1(2) ==  0.61 );
-    ocp.subjectTo( AT_START, x1(3) ==  -0.35 );
-    ocp.subjectTo( AT_START, x1(4) ==  1.55 );
+    int tagArchet = 16;
+    int tagViolon = 33;
+    CFunction MarkerArchet(3, MarkerPosition);
+    MarkerArchet.setUserData((void*) &tagArchet);
+    CFunction MarkerViolon(3, MarkerPosition);
+    MarkerViolon.setUserData((void*) &tagViolon);
 
-    ocp.subjectTo( AT_END, x1(1) ==  -0.7 );
-    ocp.subjectTo( AT_END, x1(2) ==  0.17 );
-    ocp.subjectTo( AT_END, x1(3) ==  0.01 );
-    ocp.subjectTo( AT_END, x1(4) ==  0.61 );
+    ocp.subjectTo( AT_START, MarkerArchet(x1) == (0.5, 0.5, -0.5));
+    ocp.subjectTo( AT_END, MarkerArchet(x1) - MarkerViolon(x1) == 0.0 );
 
     ocp.subjectTo( 0.0, x2, -x1, 0.0 );
     ocp.subjectTo( 0.0, x1, -x2, 0.0 );

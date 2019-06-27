@@ -4,6 +4,7 @@ from pyoviz.BiorbdViz import BiorbdViz
 
 import utils
 
+
 # Options
 model_name = "BrasViolon"
 output_files = "Av2Phases"
