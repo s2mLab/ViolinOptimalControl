@@ -3,6 +3,7 @@
 #include "includes/dynamics.h"
 #include "includes/objectives.h"
 #include "includes/constraints.h"
+#include "includes/utils.h"
 #include <time.h>
 
 using namespace std;
@@ -21,6 +22,8 @@ const int nPoints(30);
 
 int  main ()
 {
+    std::string resultsPath("../Results/");
+
     clock_t start,end;
     double time_exec;
     start=clock();
@@ -170,8 +173,9 @@ int  main ()
 
 
     /* ---------- STORING THE RESULTS ---------- */
-    algorithm.getDifferentialStates("../Results/StatesAv2Phases.txt");
-    algorithm.getControls("../Results/ControlsAv2Phases.txt");
+    createTreePath(resultsPath);
+    algorithm.getDifferentialStates((resultsPath + "StatesAv2Phases.txt").c_str());
+    algorithm.getControls((resultsPath + "ControlsAv2Phases.txt").c_str());
 
     end=clock();
     time_exec = double(end - start)/CLOCKS_PER_SEC;
