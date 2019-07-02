@@ -25,6 +25,7 @@ add_library(utils
     includes/dynamics.cpp
     includes/constraints.cpp
     includes/objectives.cpp
+    includes/utils.cpp
 )
 target_include_directories(utils PUBLIC
     ${ACADO_INCLUDE_DIRS} ${ACADO_INCLUDE_DIRS}/..
