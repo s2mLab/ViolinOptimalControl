@@ -243,20 +243,28 @@ external_forces	0
 		mesh 0.0 0.0 0.740
 	endsegment
     
-    marker Bouton
+    marker Bouton               //15
 	    parent Archet
 	    position 0 0 0
 	endmarker
-    marker COMarchet            //15
+    marker Poucette             //16
+	    parent Archet
+	    position 0 0 0.1
+	endmarker
+    marker COMarchet            //17
 	    parent Archet
 	    position 0 0 0.370
 	endmarker
-    marker Tete
+    marker Tete                 //18
 	    parent Archet
 	    position 0 0 0.740
 	endmarker
-
-	
+/*
+    contact ViolonArchet
+        parent  Archet   
+        axis    xy   
+    end contact
+*/	
 // Deuxième bras
 
 // Spine2
@@ -474,7 +482,7 @@ external_forces	0
 		mesh 0.0 0.0 0.485
 	endsegment
 
-    marker COMviolon        //33
+    marker COMviolon        //34
 	    parent Violon
 	    position 0 0 0.2425
 	endmarker
