@@ -60,9 +60,7 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(t_Start, t_End, nPoints);
 
-    CFunction Mayer(1, MayerVelocity);
     CFunction Lagrange(1, LagrangeResidualTorques);
-    //ocp.minimizeMayerTerm(Mayer(is2));
     ocp.minimizeLagrangeTerm( Lagrange(is1) + Lagrange(is2));
 
     /* ------------ CONSTRAINTS ----------- */
@@ -84,15 +82,12 @@ int  main ()
     CFunction MarkerViolon(3, MarkerPosition);
     MarkerViolon.setUserData((void*) &tagViolon);
 
-    for (unsigned int i=0; i<nQ; ++i){
-        ocp.subjectTo( AT_START, x1(i) == 0.0 );
-    }
-    ocp.subjectTo( AT_START, x1 == 0.0 );
+    ocp.subjectTo(AT_START, MarkerArchetPoucette(x1) == (0.5, 0.5, -0.5));
     ocp.subjectTo( AT_END, MarkerArchetPoucette(x1) - MarkerViolon(x1) == 0.0 );
     ocp.subjectTo( 0.0, x2, -x1, 0.0 );
-    ocp.subjectTo( AT_END, MarkerArchetTete(x2) - MarkerViolon(x2) == 0.0 );
+    //ocp.subjectTo( AT_END, MarkerArchetTete(x2) - MarkerViolon(x2) == 0.0 );
 
-    //ocp.subjectTo( 0.0, x1, -x2, 0.0 );
+    ocp.subjectTo( 0.0, x1, -x2, 0.0 );
 
     for (unsigned int i=0; i<nMus; ++i){
          ocp.subjectTo(0.01 <= u1(i) <= 1);
@@ -152,18 +147,18 @@ int  main ()
     x_init(0, 6) = 0.01;
 
     x_init(1, 0) = 0.01;
-    x_init(1, 1) = -0.42;
-    x_init(1, 2) = 0.01;
-    x_init(1, 3) = 0.21;
-    x_init(1, 4) = 0.69;
+    x_init(1, 1) = -1.13;
+    x_init(1, 2) = 0.61;
+    x_init(1, 3) = -0.35;
+    x_init(1, 4) = 1.55;
     x_init(1, 5) = 1.34;
     x_init(1, 6) = -0.19;
 
     x_init(0, nQ+nQdot) = 0.01;
-    x_init(0, 1+nQ+nQdot) = -0.42;
-    x_init(0, 2+nQ+nQdot) = 0.01;
-    x_init(0, 3+nQ+nQdot) = 0.21;
-    x_init(0, 4+nQ+nQdot) = 0.69;
+    x_init(0, 1+nQ+nQdot) = -1.13;
+    x_init(0, 2+nQ+nQdot) = 0.61;
+    x_init(0, 3+nQ+nQdot) = -0.35;
+    x_init(0, 4+nQ+nQdot) = 1.55;
     x_init(0, 5+nQ+nQdot) = 1.34;
     x_init(0, 6+nQ+nQdot) = -0.19;
 
