@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import biorbd
-from pyoviz.BiorbdViz import BiorbdViz
+from BiorbdViz import BiorbdViz
 
 import utils
 
