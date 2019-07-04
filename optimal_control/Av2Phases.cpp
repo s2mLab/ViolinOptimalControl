@@ -73,21 +73,23 @@ int  main ()
 
     //m.AddContactConstraint()
     int tagArchetPoucette = 16;
+    int tagArchetCOM = 17;
     int tagArchetTete = 18;
     int tagViolon = 34;
     CFunction MarkerArchetPoucette(3, MarkerPosition);
     MarkerArchetPoucette.setUserData((void*) &tagArchetPoucette);
+    CFunction MarkerArchetCOM(3, MarkerPosition);
+    MarkerArchetCOM.setUserData((void*) &tagArchetCOM);
     CFunction MarkerArchetTete(3, MarkerPosition);
     MarkerArchetTete.setUserData((void*) &tagArchetTete);
     CFunction MarkerViolon(3, MarkerPosition);
     MarkerViolon.setUserData((void*) &tagViolon);
 
-    ocp.subjectTo(AT_START, MarkerArchetPoucette(x1) == (0.5, 0.5, -0.5));
+    ocp.subjectTo( AT_START, MarkerArchetCOM(x1) == (0.5, 0.5, 0.5));
     ocp.subjectTo( AT_END, MarkerArchetPoucette(x1) - MarkerViolon(x1) == 0.0 );
     ocp.subjectTo( 0.0, x2, -x1, 0.0 );
-    //ocp.subjectTo( AT_END, MarkerArchetTete(x2) - MarkerViolon(x2) == 0.0 );
+    ocp.subjectTo( AT_END, MarkerArchetTete(x2) - MarkerViolon(x2) == 0.0 );
 
-    ocp.subjectTo( 0.0, x1, -x2, 0.0 );
 
     for (unsigned int i=0; i<nMus; ++i){
          ocp.subjectTo(0.01 <= u1(i) <= 1);
@@ -138,37 +140,37 @@ int  main ()
 
     VariablesGrid x_init(2*(nQ+nQdot), Grid(t_Start, t_End, 2));
 
-    x_init(0, 0) = 0.01;
-    x_init(0, 1) = 0.01;
-    x_init(0, 2) = 0.01;
-    x_init(0, 3) = 0.01;
-    x_init(0, 4) = 0.01;
-    x_init(0, 5) = 0.01;
-    x_init(0, 6) = 0.01;
+    x_init(0, 0) = -0.3878;
+    x_init(0, 1) = -0.9673;
+    x_init(0, 2) = 0.4600;
+    x_init(0, 3) = -1.2182;
+    x_init(0, 4) = 0.63655;
+    x_init(0, 5) = 0.82093;
+    x_init(0, 6) = -1.69199;
 
-    x_init(1, 0) = 0.01;
-    x_init(1, 1) = -1.13;
-    x_init(1, 2) = 0.61;
-    x_init(1, 3) = -0.35;
-    x_init(1, 4) = 1.55;
-    x_init(1, 5) = 1.34;
-    x_init(1, 6) = -0.19;
+    x_init(1, 0) = 0.099038;
+    x_init(1, 1) = -0.33291;
+    x_init(1, 2) = 0.637402;
+    x_init(1, 3) = 0.717423;
+    x_init(1, 4) = 0.791724;
+    x_init(1, 5) = 1.264167;
+    x_init(1, 6) = -0.64453;
 
-    x_init(0, nQ+nQdot) = 0.01;
-    x_init(0, 1+nQ+nQdot) = -1.13;
-    x_init(0, 2+nQ+nQdot) = 0.61;
-    x_init(0, 3+nQ+nQdot) = -0.35;
-    x_init(0, 4+nQ+nQdot) = 1.55;
-    x_init(0, 5+nQ+nQdot) = 1.34;
-    x_init(0, 6+nQ+nQdot) = -0.19;
+    x_init(0, nQ+nQdot) = 0.099038;
+    x_init(0, 1+nQ+nQdot) = -0.33291;
+    x_init(0, 2+nQ+nQdot) = 0.637402;
+    x_init(0, 3+nQ+nQdot) =0.717423;
+    x_init(0, 4+nQ+nQdot) = 0.791724;
+    x_init(0, 5+nQ+nQdot) = 1.264167;
+    x_init(0, 6+nQ+nQdot) = -0.64453;
 
-    x_init(1, nQ+nQdot) = 0.01;
-    x_init(1, 1+nQ+nQdot) = 0.01;
-    x_init(1, 2+nQ+nQdot) = 0.01;
-    x_init(1, 3+nQ+nQdot) = 0.01;
-    x_init(1, 4+nQ+nQdot) = 0.01;
-    x_init(1, 5+nQ+nQdot) = 0.01;
-    x_init(1, 6+nQ+nQdot) = 0.01;
+    x_init(1, nQ+nQdot) = -0.3878;
+    x_init(1, 1+nQ+nQdot) = -0.9673;
+    x_init(1, 2+nQ+nQdot) = 0.4600;
+    x_init(1, 3+nQ+nQdot) =-1.2182;
+    x_init(1, 4+nQ+nQdot) = 0.63655;
+    x_init(1, 5+nQ+nQdot) = 0.82093;
+    x_init(1, 6+nQ+nQdot) = -1.69199;
 
 
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
