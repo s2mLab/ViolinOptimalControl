@@ -1,0 +1,22 @@
+version 3
+
+// Informations générales
+root_actuated	1
+external_forces	0
+
+// DEFINITION DU SEGMENTS
+
+// Thorax
+	 segment Thorax
+		translations	xyz
+		rotations	    xyz
+		mass 1
+		inertie 
+		  1 0 0 
+		  0 1 0
+		  0 0 1
+		com 0 0 -0.5
+		mesh 0 0 0
+		mesh 0 0 -1
+	endsegment
+
