@@ -18,7 +18,7 @@ unsigned int nMus(m.nbMuscleTotal());   // muscles number
 
 const double t_Start = 0.0;
 const double t_End = 0.5;
-const int nPoints(31);
+const int nPoints(35);
 
 int  main ()
 {
@@ -64,7 +64,7 @@ int  main ()
     ocp.minimizeLagrangeTerm( Lagrange(is1) + Lagrange(is2));
 
     /* ------------ CONSTRAINTS ----------- */
-    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
+    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorqueContact);
 
     DifferentialEquation    f ;
     (f << dot(x1)) == F(is1);
@@ -112,6 +112,13 @@ int  main ()
     ocp.subjectTo(-PI/2 <= x2(3) <= PI/2);
     ocp.subjectTo(-0.1 <= x2(4) <= PI);
 
+
+    ocp.subjectTo(MarkerViolon(x1)(2) - MarkerArchetTete(x1)(2) <= 0.0);
+    ocp.subjectTo(MarkerViolon(x2)(2) - MarkerArchetTete(x2)(2) <= 0.0);
+
+    ocp.subjectTo(MarkerArchetPoucette(x1)(2) - MarkerViolon(x1)(2) <= 0.0);
+    ocp.subjectTo(MarkerArchetPoucette(x2)(2) - MarkerViolon(x2)(2) <= 0.0);
+
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
@@ -123,13 +130,13 @@ int  main ()
     VariablesGrid u_init(2*(nTau + nMus), Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<2; ++i){
         for(unsigned int j=0; j<nMus; ++j){
-            u_init(i, j) = 0.1;
+            u_init(i, j) = 0.2;
         }
         for(unsigned int j=nMus; j<nMus+nTau; ++j){
             u_init(i, j) = 0.01;
         }
         for(unsigned int j=nMus+nTau; j<(2*nMus)+nTau; ++j){
-            u_init(i, j) = 0.1;
+            u_init(i, j) = 0.2;
         }
         for(unsigned int j=(2*nMus)+nTau; j<2*(nMus+nTau); ++j){
             u_init(i, j) = 0.01;

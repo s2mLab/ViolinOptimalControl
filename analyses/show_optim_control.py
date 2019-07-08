@@ -88,7 +88,5 @@ plt.show()
 
 # Animate the model
 b = BiorbdViz(loaded_model=m)
-frame = 0
-while b.vtk_window.is_active:
-    b.set_q(q_interp[frame, :])
-    frame = (frame+1) % nb_frame_inter
+b.load_movement(q_interp)
+b.exec()
