@@ -43,6 +43,7 @@ set(source_files
     Av2Phases.cpp
     Violon.cpp
     eocar.cpp
+    dumbOCP.cpp
 )
 
 # Setup each project
