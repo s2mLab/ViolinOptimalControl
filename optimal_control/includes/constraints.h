@@ -9,6 +9,7 @@ void TorquesZero( double *x, double *g, void * );
 void Rotbras( double *x, double *g, void * );
 void ViolonUp( double *x, double *g, void * );
 void ViolonDown( double *x, double *g, void * );
+void MarkerPosition(double *x, double *g, void *user_data );
 
 extern s2mMusculoSkeletalModel m;
 extern unsigned int nQ;

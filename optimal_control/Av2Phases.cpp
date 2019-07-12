@@ -9,7 +9,7 @@
 using namespace std;
 USING_NAMESPACE_ACADO
 
-s2mMusculoSkeletalModel m("../../models/Bras.bioMod");
+s2mMusculoSkeletalModel m("../../models/BrasViolon.bioMod");
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbTau());           // controls number
@@ -18,7 +18,7 @@ unsigned int nMus(m.nbMuscleTotal());   // muscles number
 
 const double t_Start = 0.0;
 const double t_End = 0.5;
-const int nPoints(30);
+const int nPoints(31);
 
 int  main ()
 {
@@ -30,6 +30,7 @@ int  main ()
 
     std::cout << "nb de muscles: " << nMus << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
+    std::cout << "nb de marqueurs: " << nTags << std::endl;
 
     /* ---------- INITIALIZATION ---------- */
     DifferentialState       x1("",nQ+nQdot,1);               //  the  differential states
@@ -59,9 +60,7 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(t_Start, t_End, nPoints);
 
-    CFunction Mayer(1, MayerVelocity);
     CFunction Lagrange(1, LagrangeResidualTorques);
-    //ocp.minimizeMayerTerm(Mayer(is2));
     ocp.minimizeLagrangeTerm( Lagrange(is1) + Lagrange(is2));
 
     /* ------------ CONSTRAINTS ----------- */
@@ -72,16 +71,22 @@ int  main ()
     (f << dot(x2)) == F(is2);
     ocp.subjectTo(f);
 
-    ocp.subjectTo( AT_START, x1(1) ==  -1.13 );
-    ocp.subjectTo( AT_START, x1(2) ==  0.61 );
-    ocp.subjectTo( AT_START, x1(3) ==  -0.35 );
-    ocp.subjectTo( AT_START, x1(4) ==  1.55 );
+    //m.AddContactConstraint()
+    int tagArchetPoucette = 16;
+    int tagArchetCOM = 17;
+    int tagArchetTete = 18;
+    int tagViolon = 34;
+    CFunction MarkerArchetPoucette(3, MarkerPosition);
+    MarkerArchetPoucette.setUserData((void*) &tagArchetPoucette);
+    CFunction MarkerArchetCOM(3, MarkerPosition);
+    MarkerArchetCOM.setUserData((void*) &tagArchetCOM);
+    CFunction MarkerArchetTete(3, MarkerPosition);
+    MarkerArchetTete.setUserData((void*) &tagArchetTete);
+    CFunction MarkerViolon(3, MarkerPosition);
+    MarkerViolon.setUserData((void*) &tagViolon);
 
-    ocp.subjectTo( AT_END, x1(1) ==  -0.7 );
-    ocp.subjectTo( AT_END, x1(2) ==  0.17 );
-    ocp.subjectTo( AT_END, x1(3) ==  0.01 );
-    ocp.subjectTo( AT_END, x1(4) ==  0.61 );
-
+    ocp.subjectTo( AT_START, MarkerArchetPoucette(x1) - MarkerViolon(x1) == 0.0 );
+    ocp.subjectTo( AT_END, MarkerArchetTete(x1) - MarkerViolon(x1) == 0.0 );
     ocp.subjectTo( 0.0, x2, -x1, 0.0 );
     ocp.subjectTo( 0.0, x1, -x2, 0.0 );
 
@@ -112,19 +117,19 @@ int  main ()
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
     algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
-    algorithm.set(KKT_TOLERANCE, 1e-6);
+    algorithm.set(KKT_TOLERANCE, 1e-4);
 
     /* ---------- INITIAL SOLUTION ---------- */
     VariablesGrid u_init(2*(nTau + nMus), Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<2; ++i){
         for(unsigned int j=0; j<nMus; ++j){
-            u_init(i, j) = 0.02;
+            u_init(i, j) = 0.1;
         }
         for(unsigned int j=nMus; j<nMus+nTau; ++j){
             u_init(i, j) = 0.01;
         }
         for(unsigned int j=nMus+nTau; j<(2*nMus)+nTau; ++j){
-            u_init(i, j) = 0.02;
+            u_init(i, j) = 0.1;
         }
         for(unsigned int j=(2*nMus)+nTau; j<2*(nMus+nTau); ++j){
             u_init(i, j) = 0.01;
@@ -134,29 +139,37 @@ int  main ()
 
     VariablesGrid x_init(2*(nQ+nQdot), Grid(t_Start, t_End, 2));
 
-    x_init(0, 0) = 0.01;
-    x_init(0, 1) = -1.13;
-    x_init(0, 2) = 0.61;
-    x_init(0, 3) = -0.35;
-    x_init(0, 4) = 1.55;
+    x_init(0, 0) = 0.09973;
+    x_init(0, 1) = 0.09733;
+    x_init(0, 2) = 1.05710;
+    x_init(0, 3) = 1.56950;
+    x_init(0, 4) = 1.07125;
+    x_init(0, 5) = 0.95871;
+    x_init(0, 6) = -1.7687;
 
-    x_init(1, 0) = 0.01;
-    x_init(1, 1) = -0.70;
-    x_init(1, 2) = 0.17;
-    x_init(1, 3) = 0.01;
-    x_init(1, 4) = 0.61;
+    x_init(1, 0) = -0.39107;
+    x_init(1, 1) = -0.495383;
+    x_init(1, 2) = -0.089030;
+    x_init(1, 3) = 0.1485315;
+    x_init(1, 4) = 0.8569764;
+    x_init(1, 5) = 1.9126840;
+    x_init(1, 6) = -0.490220;
 
-    x_init(0, nQ+nQdot) = 0.01;
-    x_init(0, 1+nQ+nQdot) = -0.70;
-    x_init(0, 2+nQ+nQdot) = 0.17;
-    x_init(0, 3+nQ+nQdot) = 0.01;
-    x_init(0, 4+nQ+nQdot) = 0.61;
+    x_init(0, nQ+nQdot) = -0.39107;
+    x_init(0, 1+nQ+nQdot) = -0.495383;
+    x_init(0, 2+nQ+nQdot) = -0.089030;
+    x_init(0, 3+nQ+nQdot) = 0.1485315;
+    x_init(0, 4+nQ+nQdot) = 0.8569764;
+    x_init(0, 5+nQ+nQdot) = 1.9126840;
+    x_init(0, 6+nQ+nQdot) = -0.490220;
 
-    x_init(1, nQ+nQdot) = 0.01;
-    x_init(1, 1+nQ+nQdot) = -1.13;
-    x_init(1, 2+nQ+nQdot) = 0.61;
-    x_init(1, 3+nQ+nQdot) = -0.35;
-    x_init(1, 4+nQ+nQdot) = 1.55;
+    x_init(1, nQ+nQdot) = 0.09973;
+    x_init(1, 1+nQ+nQdot) = 0.09733;
+    x_init(1, 2+nQ+nQdot) = 1.05710;
+    x_init(1, 3+nQ+nQdot) = 1.56950;
+    x_init(1, 4+nQ+nQdot) = 1.07125;
+    x_init(1, 5+nQ+nQdot) = 0.95871;
+    x_init(1, 6+nQ+nQdot) = -1.7687;
 
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
