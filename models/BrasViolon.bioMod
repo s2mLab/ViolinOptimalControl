@@ -259,12 +259,13 @@ external_forces	0
 	    parent Archet
 	    position 0 0 0.740
 	endmarker
-/*
+
     contact ViolonArchet
-        parent  Archet   
+        parent  Archet 
+        position  0 0 0.370  
         axis    xy   
-    end contact
-*/	
+    endcontact
+	
 // Deuxième bras
 
 // Spine2

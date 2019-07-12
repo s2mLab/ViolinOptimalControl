@@ -200,3 +200,36 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
         }
     #endif
 }
+
+void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs, void *user_data){
+    s2mGenCoord Q(static_cast<unsigned int>(nQ));           // states
+    s2mGenCoord Qdot(static_cast<unsigned int>(nQdot));     // derivated states
+
+    // Dispatch the inputs
+    for (unsigned int i = 0; i<nQ; ++i){
+        Q[i] = x[i];
+        Qdot[i] = x[i+nQ];
+    }
+    m.updateMuscles(m, Q, Qdot, true);
+
+    std::vector<s2mMuscleStateActual> state; // controls
+    for (unsigned int i = 0; i<nMus; ++i){
+        state.push_back(s2mMuscleStateActual(0, x[i+nQ+nQdot]));
+        //std::cout<<"Activation:"<<x[i+nQ+nQdot]<<std::endl;
+    }
+    // Compute the torques from muscles
+    s2mTau Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
+    for (unsigned int i=0; i<nTau; ++i){
+        Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
+        //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
+    }
+    // Compute the forward dynamics
+    s2mGenCoord Qddot(nQdot);
+    RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, m.getConstraints(m), Qddot);
+
+    for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
+        rhs[i] = Qdot[i];
+        rhs[i + nQdot] = Qddot[i];
+    }
+
+}

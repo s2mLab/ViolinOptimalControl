@@ -1,4 +1,4 @@
-from pyoviz.BiorbdViz import BiorbdViz
+from BiorbdViz import BiorbdViz
 
 model_name = "BrasViolon"
 
