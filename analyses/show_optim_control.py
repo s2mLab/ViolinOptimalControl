@@ -5,7 +5,7 @@ from BiorbdViz import BiorbdViz
 import utils
 
 # Options
-model_name = "BrasViolon"
+model_name = "Bras"
 output_files = "Av2Phases"
 fun_dyn = utils.dynamics_from_muscles_and_torques
 nb_nodes = 30
