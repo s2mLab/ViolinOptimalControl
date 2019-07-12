@@ -225,7 +225,11 @@ void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs
     }
     // Compute the forward dynamics
     s2mGenCoord Qddot(nQdot);
-    RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, m.getConstraints(m), Qddot);
+    RigidBodyDynamics::ConstraintSet CS = m.getConstraints(m);
+    RigidBodyDynamics::ForwardDynamicsContactsKokkevis(m, Q, Qdot, Tau, CS, Qddot);
+
+//    std::cout << CS.force << std::endl;
+//    std::cout <<"\n";
 
     for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
         rhs[i] = Qdot[i];

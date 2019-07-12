@@ -10,6 +10,7 @@ using namespace std;
 USING_NAMESPACE_ACADO
 
 s2mMusculoSkeletalModel m("../../models/BrasViolon.bioMod");
+
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbTau());           // controls number
@@ -18,7 +19,7 @@ unsigned int nMus(m.nbMuscleTotal());   // muscles number
 
 const double t_Start = 0.0;
 const double t_End = 0.5;
-const int nPoints(35);
+const int nPoints(45);
 
 int  main ()
 {
@@ -67,8 +68,10 @@ int  main ()
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorqueContact);
 
     DifferentialEquation    f ;
+
     (f << dot(x1)) == F(is1);
     (f << dot(x2)) == F(is2);
+
     ocp.subjectTo(f);
 
     //m.AddContactConstraint()
@@ -85,8 +88,10 @@ int  main ()
     CFunction MarkerViolon(3, MarkerPosition);
     MarkerViolon.setUserData((void*) &tagViolon);
 
-    ocp.subjectTo( AT_START, MarkerArchetPoucette(x1) - MarkerViolon(x1) == 0.0 );
-    ocp.subjectTo( AT_END, MarkerArchetTete(x1) - MarkerViolon(x1) == 0.0 );
+//    ocp.subjectTo( AT_START, MarkerArchetPoucette(x1) - MarkerViolon(x1) == 0.0 );
+    ocp.subjectTo( AT_START, MarkerArchetCOM(x1) - MarkerViolon(x1) == 0.0 );
+    ocp.subjectTo( AT_END, MarkerArchetCOM(x1) - MarkerViolon(x1) == 0.0 );
+//    ocp.subjectTo( AT_END, MarkerArchetTete(x1) - MarkerViolon(x1) == 0.0 );
     ocp.subjectTo( 0.0, x2, -x1, 0.0 );
     ocp.subjectTo( 0.0, x1, -x2, 0.0 );
 
@@ -113,11 +118,11 @@ int  main ()
     ocp.subjectTo(-0.1 <= x2(4) <= PI);
 
 
-    ocp.subjectTo(MarkerViolon(x1)(2) - MarkerArchetTete(x1)(2) <= 0.0);
-    ocp.subjectTo(MarkerViolon(x2)(2) - MarkerArchetTete(x2)(2) <= 0.0);
+//    ocp.subjectTo(MarkerViolon(x1)(2) - MarkerArchetTete(x1)(2) <= 0.0);
+//    ocp.subjectTo(MarkerViolon(x2)(2) - MarkerArchetTete(x2)(2) <= 0.0);
 
-    ocp.subjectTo(MarkerArchetPoucette(x1)(2) - MarkerViolon(x1)(2) <= 0.0);
-    ocp.subjectTo(MarkerArchetPoucette(x2)(2) - MarkerViolon(x2)(2) <= 0.0);
+//    ocp.subjectTo(MarkerArchetPoucette(x1)(2) - MarkerViolon(x1)(2) <= 0.0);
+//    ocp.subjectTo(MarkerArchetPoucette(x2)(2) - MarkerViolon(x2)(2) <= 0.0);
 
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
@@ -146,37 +151,76 @@ int  main ()
 
     VariablesGrid x_init(2*(nQ+nQdot), Grid(t_Start, t_End, 2));
 
-    x_init(0, 0) = 0.09973;
-    x_init(0, 1) = 0.09733;
-    x_init(0, 2) = 1.05710;
-    x_init(0, 3) = 1.56950;
-    x_init(0, 4) = 1.07125;
-    x_init(0, 5) = 0.95871;
-    x_init(0, 6) = -1.7687;
+//    // poucette sur COM
+//    x_init(0, 0) = 0.1000001;
+//    x_init(0, 1) = 0.1000001;
+//    x_init(0, 2) = 1.0946872;
+//    x_init(0, 3) = 1.5707965;
+//    x_init(0, 4) = 1.0564277;
+//    x_init(0, 5) = 1.0607269;
+//    x_init(0, 6) = -1.725867;
 
-    x_init(1, 0) = -0.39107;
-    x_init(1, 1) = -0.495383;
-    x_init(1, 2) = -0.089030;
-    x_init(1, 3) = 0.1485315;
-    x_init(1, 4) = 0.8569764;
-    x_init(1, 5) = 1.9126840;
-    x_init(1, 6) = -0.490220;
+//    // bouton sur COM
+//    x_init(1, 0) = -0.39269915;
+//    x_init(1, 1) = -0.27353444;
+//    x_init(1, 2) = -0.05670261;
+//    x_init(1, 3) = 0.439974729;
+//    x_init(1, 4) = 0.511486204;
+//    x_init(1, 5) = 1.929967317;
+//    x_init(1, 6) = -3.35089080;
 
-    x_init(0, nQ+nQdot) = -0.39107;
-    x_init(0, 1+nQ+nQdot) = -0.495383;
-    x_init(0, 2+nQ+nQdot) = -0.089030;
-    x_init(0, 3+nQ+nQdot) = 0.1485315;
-    x_init(0, 4+nQ+nQdot) = 0.8569764;
-    x_init(0, 5+nQ+nQdot) = 1.9126840;
-    x_init(0, 6+nQ+nQdot) = -0.490220;
+//    // bouton sur COM
+//    x_init(0, nQ+nQdot) = -0.39269915;
+//    x_init(0, 1+nQ+nQdot) = -0.27353444;
+//    x_init(0, 2+nQ+nQdot) = -0.05670261;
+//    x_init(0, 3+nQ+nQdot) = 0.439974729;
+//    x_init(0, 4+nQ+nQdot) = 0.511486204;
+//    x_init(0, 5+nQ+nQdot) = 1.929967317;
+//    x_init(0, 6+nQ+nQdot) = -3.35089080;
 
-    x_init(1, nQ+nQdot) = 0.09973;
-    x_init(1, 1+nQ+nQdot) = 0.09733;
-    x_init(1, 2+nQ+nQdot) = 1.05710;
-    x_init(1, 3+nQ+nQdot) = 1.56950;
-    x_init(1, 4+nQ+nQdot) = 1.07125;
-    x_init(1, 5+nQ+nQdot) = 0.95871;
-    x_init(1, 6+nQ+nQdot) = -1.7687;
+//    // poucette sur COM
+//    x_init(1, nQ+nQdot) = 0.1000001;
+//    x_init(1, 1+nQ+nQdot) = 0.1000001;
+//    x_init(1, 2+nQ+nQdot) = 1.09468721;
+//    x_init(1, 3+nQ+nQdot) = 1.57079651;
+//    x_init(1, 4+nQ+nQdot) = 1.05642775;
+//    x_init(1, 5+nQ+nQdot) = 1.06072698;
+//    x_init(1, 6+nQ+nQdot) = -1.7258677;
+
+    //COM sur COM :
+    x_init(0, 0) = 0.0990382;
+    x_init(0, 1) = -0.3329108;
+    x_init(0, 2) = 0.63740231;
+    x_init(0, 3) = 0.71742303;
+    x_init(0, 4) = 0.79172476;
+    x_init(0, 5) = 1.26416757;
+    x_init(0, 6) = -0.6445338;
+
+    x_init(1, 0) = 0.0990382;
+    x_init(1, 1) = -0.3329108;
+    x_init(1, 2) = 0.63740231;
+    x_init(1, 3) = 0.71742303;
+    x_init(1, 4) = 0.79172476;
+    x_init(1, 5) = 1.26416757;
+    x_init(1, 6) = -0.6445338;
+
+    x_init(0, nQ+nQdot) = 0.0990382382;
+    x_init(0, 1+nQ+nQdot) = -0.3329108;
+    x_init(0, 2+nQ+nQdot) = 0.63740231;
+    x_init(0, 3+nQ+nQdot) = 0.71742303;
+    x_init(0, 4+nQ+nQdot) = 0.79172476;
+    x_init(0, 5+nQ+nQdot) = 1.26416757;
+    x_init(0, 6+nQ+nQdot) = -0.6445338;
+
+    x_init(1, nQ+nQdot) = 0.0990382382;
+    x_init(1, 1+nQ+nQdot) = -0.3329108;
+    x_init(1, 2+nQ+nQdot) = 0.63740231;
+    x_init(1, 3+nQ+nQdot) = 0.71742303;
+    x_init(1, 4+nQ+nQdot) = 0.79172476;
+    x_init(1, 5+nQ+nQdot) = 1.26416757;
+    x_init(1, 6+nQ+nQdot) = -0.6445338;
+
+
 
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
@@ -189,7 +233,6 @@ int  main ()
 
     /* ---------- SOLVING THE PROBLEM ---------- */
     algorithm.solve();
-
 
     /* ---------- STORING THE RESULTS ---------- */
     createTreePath(resultsPath);
