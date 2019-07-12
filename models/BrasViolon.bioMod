@@ -213,7 +213,7 @@ external_forces	0
 			0.000000	1.000000	0.000000	-0.271953
 			0.000000	0.000000	1.000000	0.035220
 			0.000000	0.000000	0.000000	1.000000
-		// rotations	    xy
+	    rotations	    xy
 		mass 0.20378
 		inertia
 			0.000580	0.000000	0.000000
@@ -243,20 +243,28 @@ external_forces	0
 		mesh 0.0 0.0 0.740
 	endsegment
     
-    marker Bouton
+    marker Bouton               //15
 	    parent Archet
 	    position 0 0 0
 	endmarker
-    marker COMarchet
+    marker Poucette             //16
+	    parent Archet
+	    position 0 0 0.1
+	endmarker
+    marker COMarchet            //17
 	    parent Archet
 	    position 0 0 0.370
 	endmarker
-    marker Tete
+    marker Tete                 //18
 	    parent Archet
 	    position 0 0 0.740
 	endmarker
-
-	
+/*
+    contact ViolonArchet
+        parent  Archet   
+        axis    xy   
+    end contact
+*/	
 // Deuxième bras
 
 // Spine2
@@ -474,7 +482,7 @@ external_forces	0
 		mesh 0.0 0.0 0.485
 	endsegment
 
-    marker COMviolon
+    marker COMviolon        //34
 	    parent Violon
 	    position 0 0 0.2425
 	endmarker
@@ -831,7 +839,7 @@ endmusclegroup
 			  parent 		Arm
 			  muscle 		BicepsLong
 			  musclegroup 	Scapula2LowerArm2
-			  position 		0.0298861 0.0000217669 0.000163252
+			  position 		0.0298861 0.000021767 0.000163252
 		endviapoint
 		viapoint via4
 			  parent 		Arm
