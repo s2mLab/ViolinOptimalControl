@@ -213,7 +213,7 @@ external_forces	0
 			0.000000	1.000000	0.000000	-0.271953
 			0.000000	0.000000	1.000000	0.035220
 			0.000000	0.000000	0.000000	1.000000
-		// rotations	    xy
+	    rotations	    xy
 		mass 0.20378
 		inertia
 			0.000580	0.000000	0.000000
@@ -227,7 +227,265 @@ external_forces	0
 	    position 0 0 0
 	endmarker
 
+//Archet
+	 segment Archet
+		parent	hand
+		RTinMatrix	0
+		RT 2.16    0.51   1.96   yxz  0   0   0
+		//rotations	    yxz
+		mass 0.06
+		inertia
+			0.00000048	0.000000	0.000000
+			0.000000	0.00000048	0.000000
+			0.000000	0.000000	0.00117637
+		com	0.000000	0.000000	0.370
+		mesh 0 0 0
+		mesh 0.0 0.0 0.740
+	endsegment
+    
+    marker Bouton               //15
+	    parent Archet
+	    position 0 0 0
+	endmarker
+    marker Poucette             //16
+	    parent Archet
+	    position 0 0 0.1
+	endmarker
+    marker COMarchet            //17
+	    parent Archet
+	    position 0 0 0.370
+	endmarker
+    marker Tete                 //18
+	    parent Archet
+	    position 0 0 0.740
+	endmarker
+/*
+    contact ViolonArchet
+        parent  Archet   
+        axis    xy   
+    end contact
+*/	
+// Deuxième bras
+
+// Spine2
+	 segment Spine2
+		parent	Thorax
+		RTinMatrix	1
+		RT
+			1.000000	0.000000	0.000000	0.000000
+			0.000000	1.000000	0.000000	0.000000
+			0.000000	0.000000	1.000000	0.000000
+			0.000000	0.000000	0.000000	1.000000
+		mass	0.0111087368881777
+		inertia
+			0.000111	0.000000	0.000000
+			0.000000	0.000111	0.000000
+			0.000000	0.000000	0.000111
+		com	0.000000	0.000000	0.000000
+		mesh 0 0 0
+		mesh 0.006440 0.007056 -0.025930
+	endsegment
+
+// Clavicle2
+	 segment Clavicle2
+		parent	Spine2
+		RTinMatrix	0
+		RT 0 0 0 zyx 0.006440 0.007056 -0.025930
+		//rotations	    x //yx
+		mass	0.0015
+		inertia
+			0.002521	0.000000	0.000000
+			0.000000	0.002521	0.000000
+			0.000000	0.000000	0.002521
+		com	0.000000	0.000000	0.000000
+		mesh 0 0 0
+		mesh -0.015177 0.021256 -0.143546
+	endsegment
 	
+	// Markers
+	marker	CLAV_SC2
+		parent	Clavicle2
+		position	0.017971 0.01041 0.0098314
+	endmarker
+	marker	CLAV_AC2
+		parent	Clavicle2
+		position	-0.0232435 0.0295153 -0.132847
+	endmarker
+	
+// Scapula2
+	 segment Scapula2
+		parent	Clavicle2
+		RTinMatrix	0
+		RT 0 0 0 zyx -0.015177 0.021256 -0.143546
+		//rotations	    z //yx
+		mass 0.0145
+		inertia
+			0.000272	0.000000	0.000000
+			0.000000	0.000272	0.000000
+			0.000000	0.000000	0.000272
+		com	0.000000	0.000000	0.000000
+		mesh 0 0 0
+		mesh -0.016223 -0.046533 0.001997
+	endsegment
+	
+	// Markers
+	marker	SCAP_CP2
+		parent	Scapula2
+		position	0.0371546697	0.0084525621	0.0264984195
+		technical 1 //0
+	endmarker
+	marker	SCAP_AA2
+		parent	Scapula2
+		position	-0.0536605 0.00557052 -0.00425289
+		technical 1
+	endmarker
+	marker	SCAP_TS2
+		parent	Scapula2
+		position	-0.1049 -0.0096004 0.103532 
+		technical 1 //0
+	endmarker
+	marker	SCAP_IA2
+		parent	Scapula2
+		position	-0.131943 -0.130753 0.0881354
+	endmarker
+	
+// Arm2
+	 segment Arm2
+		parent	Scapula2
+		RTinMatrix	0
+		RT 0.3 0.65 0.5 zyx -0.0162235668937676 -0.0465334917069568 0.00199722357227
+		//rotations xzy
+		mass 2.537
+		inertia
+			0.040215	0.000000	0.000000
+			0.000000	0.006150	0.000000
+			0.000000	0.000000	0.040215
+		com	0.000000	-0.144423	0.000000
+		mesh 0 0 0
+		mesh 0.0066386 -0.3160549 0.0133869
+	endsegment
+	
+	// Markers
+	marker	DELT2
+		parent	Arm2
+		position	-0.0135567 -0.114158 -0.0281827 
+		technical 1
+	endmarker
+	marker	ARMl2
+		parent	Arm2
+		position	-0.0130371 -0.174206 -0.0184148 
+		technical 1
+	endmarker
+	marker	EPICl2
+		parent	Arm2
+		position	-0.00240456 -0.308306 -0.0312526
+	endmarker
+	marker	EPICm2
+		parent	Arm2
+		position	-0.00424695 -0.308125 0.0579509
+	endmarker
+
+// LowerArm12
+	 segment LowerArm12
+		parent	Arm2
+		RTinMatrix	0
+		RT 1.57 0 0 zyx 0.0066386 -0.3160549 0.0133869 
+		//rotations	    z
+		mass 0.98205
+		inertia
+			0.008360	0.000000	0.000000
+			0.000000	0.000943	0.000000
+			0.000000	0.000000	0.008495
+		com	0.000000	-0.114073	0.000000
+		mesh 0 0 0
+		mesh 0.000403 -0.011572 -0.020117
+	endsegment
+	
+	// Markers
+	marker	LARM_ant2
+		parent	LowerArm12
+		position	0.0019484 -0.119207 -0.0453081 
+		technical 1
+	endmarker
+	marker	LARM_post2
+		parent	LowerArm12
+		position	-0.00526769 -0.0768437 -0.0247132 
+		technical 1
+	endmarker
+	marker	LARM_elb2
+		parent	LowerArm12
+		position	-0.0417853 0.00171698 0.00175961 
+		technical 1
+	endmarker
+	marker	LARM_dist2
+		parent	LowerArm12
+		position	0.0387092 -0.115899 -0.0183945 
+		technical 1
+	endmarker
+	
+// LowerArm22
+	 segment LowerArm22
+		parent	LowerArm12
+		RTinMatrix	1
+		RT
+			1.000000	0.000000	0.000000	0.000403 
+			0.000000	1.000000	0.000000	-0.011572
+			0.000000	0.000000	1.000000	-0.020117
+			0.000000	0.000000	0.000000	1.000000
+		//rotations	    y
+		mass 0.01099
+		inertia
+			0.000203	0.000000	0.000000
+			0.000000	0.000203	0.000000
+			0.000000	0.000000	0.000203
+		com	0.000000	0.000000	0.000000
+		mesh 0 0 0
+		mesh 0.020538 -0.271953 -0.035220
+	endsegment
+
+// HAND2 
+	 segment hand2
+		parent	LowerArm22
+		RTinMatrix	1
+		RT
+			1.000000	0.000000	0.000000	0.020538
+			0.000000	1.000000	0.000000	-0.271953
+			0.000000	0.000000	1.000000	-0.035220
+			0.000000	0.000000	0.000000	1.000000
+		// rotations	    xy
+		mass 0.20378
+		inertia
+			0.000580	0.000000	0.000000
+			0.000000	0.000355	0.000000
+			0.000000	0.000000	0.000871
+		com	0.000000	-0.068095	0.000000
+	endsegment
+	
+	marker wrist2
+	    parent hand2
+	    position 0 0 0
+	endmarker
+
+//Violon
+	 segment Violon
+		parent	hand2
+		RTinMatrix	0
+		RT 0.04    1.29   -0.66   zyx  0   0   0
+		//rotations	    zyx
+		mass 0.460
+		inertia
+			0.00000048	0.000000	0.000000
+			0.000000	0.00000048	0.000000
+			0.000000	0.000000	0.00117637
+		com	0.000000	0.000000	0.2425
+		mesh 0 0 0
+		mesh 0.0 0.0 0.485
+	endsegment
+
+    marker COMviolon        //34
+	    parent Violon
+	    position 0 0 0.2425
+	endmarker
 
 // DEFINITION DES MUSCLES
 
@@ -581,7 +839,7 @@ endmusclegroup
 			  parent 		Arm
 			  muscle 		BicepsLong
 			  musclegroup 	Scapula2LowerArm2
-			  position 		0.0298861 2.17669e-005 0.000163252
+			  position 		0.0298861 0.000021767 0.000163252
 		endviapoint
 		viapoint via4
 			  parent 		Arm
