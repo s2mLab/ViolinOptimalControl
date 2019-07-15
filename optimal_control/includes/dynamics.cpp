@@ -215,10 +215,10 @@ void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs
     std::vector<s2mMuscleStateActual> state; // controls
     for (unsigned int i = 0; i<nMus; ++i){
         state.push_back(s2mMuscleStateActual(0, x[i+nQ+nQdot]));
-        //std::cout<<"Activation:"<<x[i+nQ+nQdot]<<std::endl;
     }
+
     // Compute the torques from muscles
-    s2mTau Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
+    s2mTau Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
     for (unsigned int i=0; i<nTau; ++i){
         Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
         //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
@@ -228,12 +228,8 @@ void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs
     RigidBodyDynamics::ConstraintSet CS = m.getConstraints(m);
     RigidBodyDynamics::ForwardDynamicsContactsKokkevis(m, Q, Qdot, Tau, CS, Qddot);
 
-//    std::cout << CS.force << std::endl;
-//    std::cout <<"\n";
-
     for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];
     }
-
 }

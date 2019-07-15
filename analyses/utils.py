@@ -136,10 +136,8 @@ def dynamics_from_muscles_and_torques(t_int, states, biorbd_model, u):
     for i in range(nb_q):
         rsh[i] = states[nb_q+i]
         rsh[i + nb_q] = qddot[i]
-    # print(f"time : {t_int}, Tau: {tau_final}")
-    # print(f"Qddot : {qddot}")
-    # print(f"Qdot: {states[nb_q:]}\n")
     return rsh
+
 
 def dynamics_from_joint_torque(t_int, states, biorbd_model, u):
     nb_q = biorbd_model.nbQ()

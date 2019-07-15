@@ -50,24 +50,24 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp( t_Start, t_End , nPoints);
 
-    CFunction Mayer( 1, MayerVelocity);
-    CFunction LagrangeRT( 1, LagrangeResidualTorques);
-    CFunction LagrangeAcc(1, LagrangeAccelerations);
-    CFunction LagrangeT(1, LagrangeTime);
-    ocp.minimizeMayerTerm( Mayer(is) );
-    ocp.minimizeLagrangeTerm( LagrangeRT(is));
+    CFunction mayer( 1, mayerVelocity);
+    CFunction lagrangeRT( 1, lagrangeResidualTorques);
+    CFunction lagrangeAcc(1, lagrangeAccelerations);
+    CFunction lagrangeT(1, lagrangeTime);
+    ocp.minimizeMayerTerm( mayer(is) );
+    ocp.minimizeLagrangeTerm( lagrangeRT(is));
 
     /* ------------ CONSTRAINTS ----------- */
     DifferentialEquation    f(t_Start, t_End) ;
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
-    CFunction Frog( 4, ViolonUp);
-    CFunction Velocity(nQdot, VelocityZero);
-    CFunction Tip( 4, ViolonDown);
+    CFunction frog( 4, violonUp);
+    CFunction velocity(nQdot, velocityZero);
+    CFunction tip( 4, violonDown);
 
     ocp.subjectTo( (f << dot(x)) == F(is)); //*T);                          //  differential  equation,
-    ocp.subjectTo( AT_END, Tip(is) ==  0.0 );
-    ocp.subjectTo( AT_START, Velocity(is) ==  0.0 );
-    ocp.subjectTo( AT_START, Frog(is) ==  0.0 );
+    ocp.subjectTo( AT_END, tip(is) ==  0.0 );
+    ocp.subjectTo( AT_START, velocity(is) ==  0.0 );
+    ocp.subjectTo( AT_START, frog(is) ==  0.0 );
     //ocp.subjectTo(0.1 <= T <= 4.0);
 
     for (unsigned int i=0; i<nMus; ++i){

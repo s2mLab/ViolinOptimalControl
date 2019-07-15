@@ -50,19 +50,19 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp( t_Start, t_End , nPoints);
 
-    CFunction Mayer( 1, MayerVelocity);
-    CFunction LagrangeRT( 1, LagrangeResidualTorques);
-    CFunction LagrangeAcc(1, LagrangeAccelerations);
-    CFunction LagrangeT(1, LagrangeTime);
-    ocp.minimizeMayerTerm( Mayer(is) );
-    ocp.minimizeLagrangeTerm( LagrangeRT(is));
+    CFunction mayer( 1, mayerVelocity);
+    CFunction lagrangeRT( 1, lagrangeResidualTorques);
+    CFunction lagrangeAcc(1, lagrangeAccelerations);
+    CFunction lagrangeT(1, lagrangeTime);
+    ocp.minimizeMayerTerm( mayer(is) );
+    ocp.minimizeLagrangeTerm( lagrangeRT(is));
 
     /* ------------ CONSTRAINTS ----------- */
     DifferentialEquation    f(t_Start, t_End) ;
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
-    CFunction Init1( 3, ViolonUp);
-    CFunction Init2(nQdot, VelocityZero);
-    CFunction End( 3, ViolonDown);
+    CFunction Init1( 3, violonUp);
+    CFunction Init2(nQdot, velocityZero);
+    CFunction End( 3, violonDown);
 
     ocp.subjectTo( (f << dot(x)) == F(is)*T);                          //  differential  equation,
     ocp.subjectTo( AT_START, Init1(is) ==  0.0 );

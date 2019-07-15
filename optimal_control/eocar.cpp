@@ -22,12 +22,12 @@ const double t_Start = 0.0;
 const double t_End = 1.0;
 const int nPoints(31);
 
-void Position( double *x, double *g, void *){
+void position( double *x, double *g, void *){
     for (unsigned int i=0; i<nQ; ++i)
         g[i] = x[i];
 }
 
-void Velocity( double *x, double *g, void *){
+void velocity( double *x, double *g, void *){
     for (unsigned int i=0; i<nQ; ++i)
         g[i] = x[nQ+i];
 }
@@ -64,10 +64,10 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(  0.0 , t_End , 30);
 
-    CFunction Mayer(1, MayerVelocity);
-    CFunction Lagrange(1, LagrangeResidualTorques);
-    ocp.minimizeLagrangeTerm(Lagrange(is1) + Lagrange(is2));
-    ocp.minimizeMayerTerm(Mayer(is1) + Mayer(is2));
+    CFunction mayer(1, mayerVelocity);
+    CFunction lagrange(1, lagrangeResidualTorques);
+    ocp.minimizeLagrangeTerm(lagrange(is1) + lagrange(is2));
+    ocp.minimizeMayerTerm(mayer(is1) + mayer(is2));
 
     CFunction F(2*nQ, forwardDynamicsFromJointTorque);
     (f << dot( x1 )) == F(is1);
@@ -77,9 +77,9 @@ int  main ()
 
     ocp.subjectTo( f ) ;
 
-    CFunction Pos( nQ, Position);
-    CFunction Vel( nQ, Velocity);
-    CFunction Velocity(nQdot, VelocityZero);
+    CFunction pos( nQ, position);
+    CFunction vel( nQ, velocity);
+    CFunction velocity(nQdot, velocityZero);
 
     ocp.subjectTo( AT_START, x1(1) ==  -1.13 );
     ocp.subjectTo( AT_START, x1(2) ==  0.61 );
@@ -98,13 +98,13 @@ int  main ()
     ocp.subjectTo( AT_END, x2(3) ==  0.0 );
     ocp.subjectTo( AT_END, x2(4) ==  0.61 );
 
-    ocp.subjectTo(AT_START, Velocity(x1) == 0.0);
+    ocp.subjectTo(AT_START, velocity(x1) == 0.0);
 
-    ocp.subjectTo( -4 <= Pos(x1) <= 4);
-    ocp.subjectTo( -4 <= Pos(x2) <= 4);
+    ocp.subjectTo( -4 <= pos(x1) <= 4);
+    ocp.subjectTo( -4 <= pos(x2) <= 4);
 
-    ocp.subjectTo( -5.0 <= Vel(x1) <= 5.0);
-    ocp.subjectTo( -5.0 <= Vel(x2) <= 5.0);
+    ocp.subjectTo( -5.0 <= vel(x1) <= 5.0);
+    ocp.subjectTo( -5.0 <= vel(x2) <= 5.0);
 
     for (unsigned int i=0; i<nMus; ++i){
          ocp.subjectTo(0.01 <= u1(i) <= 1);

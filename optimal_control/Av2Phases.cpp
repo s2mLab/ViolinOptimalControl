@@ -61,8 +61,8 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(t_Start, t_End, nPoints);
 
-    CFunction Lagrange(1, LagrangeResidualTorques);
-    ocp.minimizeLagrangeTerm( Lagrange(is1) + Lagrange(is2));
+    CFunction lagrange(1, lagrangeResidualTorques);
+    ocp.minimizeLagrangeTerm( lagrange(is1) + lagrange(is2));
 
     /* ------------ CONSTRAINTS ----------- */
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorqueContact);
@@ -74,27 +74,28 @@ int  main ()
 
     ocp.subjectTo(f);
 
-    //m.AddContactConstraint()
+    //Position constraints
     int tagArchetPoucette = 16;
     int tagArchetCOM = 17;
     int tagArchetTete = 18;
     int tagViolon = 34;
-    CFunction MarkerArchetPoucette(3, MarkerPosition);
-    MarkerArchetPoucette.setUserData((void*) &tagArchetPoucette);
-    CFunction MarkerArchetCOM(3, MarkerPosition);
-    MarkerArchetCOM.setUserData((void*) &tagArchetCOM);
-    CFunction MarkerArchetTete(3, MarkerPosition);
-    MarkerArchetTete.setUserData((void*) &tagArchetTete);
-    CFunction MarkerViolon(3, MarkerPosition);
-    MarkerViolon.setUserData((void*) &tagViolon);
+    CFunction markerArchetPoucette(3, markerPosition);
+    markerArchetPoucette.setUserData((void*) &tagArchetPoucette);
+    CFunction markerArchetCOM(3, markerPosition);
+    markerArchetCOM.setUserData((void*) &tagArchetCOM);
+    CFunction markerArchetTete(3, markerPosition);
+    markerArchetTete.setUserData((void*) &tagArchetTete);
+    CFunction markerViolon(3, markerPosition);
+    markerViolon.setUserData((void*) &tagViolon);
 
 //    ocp.subjectTo( AT_START, MarkerArchetPoucette(x1) - MarkerViolon(x1) == 0.0 );
-    ocp.subjectTo( AT_START, MarkerArchetCOM(x1) - MarkerViolon(x1) == 0.0 );
-    ocp.subjectTo( AT_END, MarkerArchetCOM(x1) - MarkerViolon(x1) == 0.0 );
+    ocp.subjectTo( AT_START, markerArchetCOM(x1) - markerViolon(x1) == 0.0 );
+    ocp.subjectTo( AT_END, markerArchetCOM(x1) - markerViolon(x1) == 0.0 );
 //    ocp.subjectTo( AT_END, MarkerArchetTete(x1) - MarkerViolon(x1) == 0.0 );
     ocp.subjectTo( 0.0, x2, -x1, 0.0 );
     ocp.subjectTo( 0.0, x1, -x2, 0.0 );
 
+    //Controls constraints
     for (unsigned int i=0; i<nMus; ++i){
          ocp.subjectTo(0.01 <= u1(i) <= 1);
          ocp.subjectTo(0.01 <= u2(i) <= 1);
@@ -117,12 +118,12 @@ int  main ()
     ocp.subjectTo(-PI/2 <= x2(3) <= PI/2);
     ocp.subjectTo(-0.1 <= x2(4) <= PI);
 
-
-//    ocp.subjectTo(MarkerViolon(x1)(2) - MarkerArchetTete(x1)(2) <= 0.0);
-//    ocp.subjectTo(MarkerViolon(x2)(2) - MarkerArchetTete(x2)(2) <= 0.0);
-
-//    ocp.subjectTo(MarkerArchetPoucette(x1)(2) - MarkerViolon(x1)(2) <= 0.0);
-//    ocp.subjectTo(MarkerArchetPoucette(x2)(2) - MarkerViolon(x2)(2) <= 0.0);
+    //Contact force constraints
+    CFunction contactforce(2, forceConstraint);
+    ocp.subjectTo(1.5 <= contactforce(is1)(0) <= 4.5); // composante selon x: mu*y mu=0.3 d'après www.tangentex.com/CordeViolon.htm
+    ocp.subjectTo(1.5 <= contactforce(is2)(0) <= 4.5);
+    ocp.subjectTo(5 <= contactforce(is1)(1) <= 15); // composante selon y; normale au plan du mouvement
+    ocp.subjectTo(5 <= contactforce(is2)(1) <= 15);
 
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
