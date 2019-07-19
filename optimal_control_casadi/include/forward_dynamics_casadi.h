@@ -18,8 +18,11 @@ extern "C" {
 #define casadi_int long long int
 #endif
 
-BIORBD_API const char* libforward_dynamics_casadi_name(void);
+// Preparing stuff
+void fillSparsity();
 
+// Functions
+BIORBD_API const char* libforward_dynamics_casadi_name(void);
 BIORBD_API int libforward_dynamics_casadi(const casadi_real** arg,
                                                    casadi_real** res,
                                                    casadi_int* iw,
@@ -41,7 +44,6 @@ BIORBD_API int libforward_dynamics_casadi_work(casadi_int *sz_arg,
                                                casadi_int *sz_iw,
                                                casadi_int *sz_w);
 
-void fillSparsity();
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -18,7 +18,7 @@ find_package(Eigen3 REQUIRED)
 find_package(RBDL REQUIRED)
 find_package(Dlib REQUIRED)
 find_package(Biorbd REQUIRED)
-link_directories(${filename}
+link_directories(
   ${CMAKE_INSTALL_PREFIX}/lib
 )
 
@@ -60,4 +60,4 @@ foreach(src_file ${source_files})
       )
 endforeach()
 
-
+install(TARGETS forward_dynamics_casadi DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
