@@ -37,8 +37,8 @@ int libforward_dynamics_casadi(const casadi_real** arg, casadi_real** res, casad
     // Dispatch data
     for (unsigned int i = 0; i < m.nbQ(); ++i){
         Q[i] = arg[0][i];
-        Qdot[i] = arg[1][i];
-        Tau[i] = arg[2][i];
+        Qdot[i] = arg[0][i+m.nbQ()];
+        Tau[i] = arg[1][i];
     }
 
     // Perform the forward dynamics
@@ -49,31 +49,30 @@ int libforward_dynamics_casadi(const casadi_real** arg, casadi_real** res, casad
         res[0][i] = Qdot[i];
         res[0][i+m.nbQ()] = Qddot[i];
     }
-    std::cout << "Q = " << Q.transpose() << std::endl;
-    std::cout << "Qdot = " << Qdot.transpose() << std::endl;
-    std::cout << "Qddot = " << Qddot.transpose() << std::endl;
-    std::cout << "Tau = " << Tau.transpose() << std::endl;
+//    std::cout << "Q = " << Q.transpose() << std::endl;
+//    std::cout << "Qdot = " << Qdot.transpose() << std::endl;
+//    std::cout << "Qddot = " << Qddot.transpose() << std::endl;
+//    std::cout << "Tau = " << Tau.transpose() << std::endl;
+
     return 0;
 }
 
 // IN
 casadi_int libforward_dynamics_casadi_n_in(void){
-    return 3;
+    return 2;
 }
 const char* libforward_dynamics_casadi_name_in(casadi_int i){
     switch (i) {
-    case 0: return "Q";
-    case 1: return "Qdot";
-    case 2: return "Tau";
+    case 0: return "States";
+    case 1: return "Tau";
     default: return nullptr;
     }
 }
 const casadi_int* libforward_dynamics_casadi_sparsity_in(casadi_int i) {
     fillSparsity();
     switch (i) {
-        case 0: return Q_sparsity;
-        case 1: return Qdot_sparsity;
-        case 2: return Tau_sparsity;
+        case 0: return Xp_sparsity;
+        case 1: return Tau_sparsity;
         default: return nullptr;
     }
 }
@@ -84,7 +83,7 @@ casadi_int libforward_dynamics_casadi_n_out(void){
 }
 const char* libforward_dynamics_casadi_name_out(casadi_int i){
     switch (i) {
-        case 0: return "Xp";
+        case 0: return "StatesDot";
         default: return nullptr;
     }
 }
@@ -101,7 +100,7 @@ int libforward_dynamics_casadi_work(casadi_int *sz_arg,
                                                casadi_int *sz_iw,
                                                casadi_int *sz_w) {
     if (sz_arg) *sz_arg = m.nbQ() + m.nbQdot() + m.nbTau();
-    if (sz_res) *sz_res = m.nbQdot(); // + m.nbQddot();
+    if (sz_res) *sz_res = m.nbQdot() + m.nbQddot();
     if (sz_iw) *sz_iw = 0;
     if (sz_w) *sz_w = 0;
     return 0;

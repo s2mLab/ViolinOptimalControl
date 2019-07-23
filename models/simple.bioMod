@@ -8,15 +8,27 @@ external_forces	0
 
 // Thorax
 	 segment Thorax
-		translations	xyz
-		rotations	    xyz
+		translations	z
 		mass 1
 		inertie 
 		  1 0 0 
 		  0 1 0
 		  0 0 1
-		com 0 0 -0.5
-		mesh 0 0 0
-		mesh 0 0 -1
+		com 0 0 0
+		mesh -.5 0 0
+		mesh  .5 0 0
+	endsegment
+
+// Thorax
+	 segment Thorax2
+		translations	z
+		mass 1
+		inertie 
+		  1 0 0 
+		  0 1 0
+		  0 0 1
+		com 0 0 0
+		mesh -.5 0 0
+		mesh  .5 0 0
 	endsegment
 
