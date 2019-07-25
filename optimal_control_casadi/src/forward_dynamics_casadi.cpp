@@ -49,10 +49,6 @@ int libforward_dynamics_casadi(const casadi_real** arg, casadi_real** res, casad
         res[0][i] = Qdot[i];
         res[0][i+m.nbQ()] = Qddot[i];
     }
-//    std::cout << "Q = " << Q.transpose() << std::endl;
-//    std::cout << "Qdot = " << Qdot.transpose() << std::endl;
-//    std::cout << "Qddot = " << Qddot.transpose() << std::endl;
-//    std::cout << "Tau = " << Tau.transpose() << std::endl;
 
     return 0;
 }

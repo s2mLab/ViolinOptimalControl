@@ -73,8 +73,8 @@ int main(){
     }
 
     // Boundary conditions
-    opti.subject_to(x(N, 0) == 0);
-    opti.subject_to(x(N, 1) == 0);
+    opti.subject_to(x(N, 0) == 100);
+    opti.subject_to(x(N, 1) == 50);
     for (int j=0; j<nQ; ++j){
         opti.subject_to(x(0, j) == 0);
         opti.subject_to(v(0, j) == 0);

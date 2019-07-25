@@ -40,6 +40,7 @@ target_include_directories(forward_dynamics_casadi PUBLIC
 # Write down all files to include here
 set(source_files
     eocar.cpp
+    arm.cpp
 )
 
 # Setup each project
