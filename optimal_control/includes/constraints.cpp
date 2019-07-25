@@ -57,7 +57,7 @@ void markerPosition(double *x, double *g, void *user_data ){
     g[2]=tag[2];
 }
 
-void forceConstraint( double *x, double *g, void *user_data){
+void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data){
 //    RigidBodyDynamics::ConstraintSet CS = m.getConstraints();
 //    forwardDynamicsFromMuscleActivationAndTorqueContact(x, g, user_data);
     s2mGenCoord Q(static_cast<unsigned int>(nQ));           // states
@@ -84,8 +84,30 @@ void forceConstraint( double *x, double *g, void *user_data){
     // Compute the forward dynamics
     s2mGenCoord Qddot(nQdot);
     RigidBodyDynamics::ConstraintSet CS = m.getConstraints(m);
-    RigidBodyDynamics::ForwardDynamicsContactsKokkevis(m, Q, Qdot, Tau, CS, Qddot);
+    RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
     g[0]=CS.force(0);
     g[1]=CS.force(1);
+
+}
+
+void forceConstraintFromTorque(double *x, double *g, void *user_data)
+{
+        s2mGenCoord Q(static_cast<unsigned int>(nQ));           // states
+        s2mGenCoord Qdot(static_cast<unsigned int>(nQdot));     // derivated states
+        s2mTau Tau(m);
+
+        // Dispatch the inputs
+        for (unsigned int i = 0; i<nQ; ++i){
+            Q[i] = x[i];
+            Qdot[i] = x[i+nQ];
+            Tau[i]= x[i+nQ+nQdot];
+        }
+        // Compute the forward dynamics
+        s2mGenCoord Qddot(nQdot);
+        RigidBodyDynamics::ConstraintSet CS = m.getConstraints(m);
+        RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
+
+        g[0]=CS.force(0);
+        g[1]=CS.force(1);
 
 }

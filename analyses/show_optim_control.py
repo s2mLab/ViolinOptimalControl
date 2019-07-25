@@ -8,7 +8,7 @@ import utils
 # Options
 model_name = "BrasViolon"
 output_files = "Av2Phases"
-fun_dyn = utils.dynamics_from_muscles_and_torques
+fun_dyn = utils.dynamics_from_muscles_and_torques_and_contact
 nb_nodes = 30
 nb_phases = 2
 nb_frame_inter = 500
@@ -19,7 +19,8 @@ if fun_dyn == utils.dynamics_from_muscles:
     nb_controls = m.nbMuscleTotal()
 elif fun_dyn == utils.dynamics_from_joint_torque:
     nb_controls = m.nbTau()
-elif fun_dyn == utils.dynamics_from_muscles_and_torques:
+elif fun_dyn == utils.dynamics_from_muscles_and_torques \
+        or fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
     nb_controls = m.nbMuscleTotal()+m.nbTau()
 elif fun_dyn == utils.dynamics_from_accelerations:
     nb_controls = m.nbQ()

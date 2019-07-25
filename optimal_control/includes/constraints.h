@@ -11,7 +11,8 @@ void rotbras( double *x, double *g, void * );
 void violonUp( double *x, double *g, void * );
 void violonDown( double *x, double *g, void * );
 void markerPosition(double *x, double *g, void *user_data );
-void forceConstraint( double *x, double *rhs, void *user_data);
+void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data);
+void forceConstraintFromTorque(double *x, double *g, void *user_data);
 
 extern s2mMusculoSkeletalModel m;
 extern unsigned int nQ;

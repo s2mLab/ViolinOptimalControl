@@ -10,6 +10,7 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *user_dat
 void forwardDynamicsFromJointTorque( double *x, double *rhs, void *user_data);
 void forwardDynamicsFromMuscleActivationAndTorque(double *x, double *rhs, void *);
 void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs, void *user_data);
+void forwardDynamicsFromTorqueContact( double *x, double *rhs, void *user_data);
 
 extern s2mMusculoSkeletalModel m;
 extern unsigned int nQ;
