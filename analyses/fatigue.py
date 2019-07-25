@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 ### Muscle parameters ###
 
 ## Slow fibers ##
-
+# TODO give better name for variables
 S_Percent = 0.50 # percent of slow fibers in muscle
 S_Specific_Tension = 1.0
 F_S = 0.01 # fatigue rate
@@ -41,8 +41,8 @@ LR_FF = 10
 
 ### Load ###
 
-TL = 70 # percent of Maximal Voluntary Contraction
-t_Max = 1000
+TL = 10 # percent of Maximal Voluntary Contraction
+t_Max = 5000
 
 ### Initial States ###
 
@@ -98,36 +98,38 @@ def fatigue(T):
         return madot_S, mrdot_S, mfdot_S, madot_FR, mrdot_FR, mfdot_FR, madot_FF, mrdot_FF, mfdot_FF, activ_S, activ_FR, activ_FF
     return dyn
 
-#
-# X = integrate.solve_ivp(fatigue(TL), (0, t_Max), state_init_0)
-# t = X.t
-# X_S = (X.y[0, :], X.y[1, :], X.y[2, :])
-# X_FR = (X.y[3, :], X.y[4, :], X.y[5, :])
-# X_FF = (X.y[6, :], X.y[7, :], X.y[8, :])
-# activation =(X.y[9, :], X.y[10, :], X.y[11, :])
-#
-# ## Brain effort
-# BE_S = TL/(X.y[0, :] + X.y[1, :])
-# for i in range(len(BE_S)):
-#     if BE_S[i] >= 1:
-#         BE_S[i] = 1
-#
-# BE_FR = TL/(X.y[3, :] + X.y[4, :])
-# for i in range(len(BE_FR)):
-#     if BE_FR[i] >= 1:
-#         BE_FR[i] = 1
-#
-# BE_FF = TL/(X.y[6, :] + X.y[7, :])
-# for i in range(len(BE_FF)):
-#     if BE_FF[i] >= 1:
-#         BE_FF[i] = 1
-#
-# ## Total activity
-# ma_total = S_Percent*X.y[0, :] + FR_Percent*X.y[3, :] + FF_Percent*X.y[6, :]
-#
-# ## Endurance Time
+
+X = integrate.solve_ivp(fatigue(TL), (0, t_Max), state_init_0)
+t = X.t
+X_S = (X.y[0, :], X.y[1, :], X.y[2, :])
+X_FR = (X.y[3, :], X.y[4, :], X.y[5, :])
+X_FF = (X.y[6, :], X.y[7, :], X.y[8, :])
+activation =(X.y[9, :], X.y[10, :], X.y[11, :])
+
+## Brain effort
+BE_S = TL/(X.y[0, :] + X.y[1, :])
+for i in range(len(BE_S)):
+    if BE_S[i] >= 1:
+        BE_S[i] = 1
+
+BE_FR = TL/(X.y[3, :] + X.y[4, :])
+for i in range(len(BE_FR)):
+    if BE_FR[i] >= 1:
+        BE_FR[i] = 1
+
+BE_FF = TL/(X.y[6, :] + X.y[7, :])
+for i in range(len(BE_FF)):
+    if BE_FF[i] >= 1:
+        BE_FF[i] = 1
+
+## Total activity
+ma_total = S_Percent*X.y[0, :] + FR_Percent*X.y[3, :] + FF_Percent*X.y[6, :]
+
+## Endurance Time
 
 
+# TODO make sure when changing TL, endur_time is not affected (function outside of the file)
+# TODO verify why under 10% there is no fatiguability
 def endur_time(T, tmax, state_init):
     x = integrate.solve_ivp(fatigue(T), (0, tmax), state_init)
     t = x.t
@@ -141,74 +143,74 @@ def endur_time(T, tmax, state_init):
 
     return ET
 
-#
-# Target_Load = np.linspace(1, 100, 20)
-# ET = np.ndarray(len(Target_Load))
-# for i in range(len(Target_Load)):
-#     ET[i] = endur_time(Target_Load[i], 2000, state_init_0)
-#     print(ET[i])
-#
-# ### Plot ###
-# plt.figure(1)
-#
-# plt.subplot(4, 1, 1)
-# plt.plot(t, X_S[0], label='Activated')
-# plt.plot(t, X_S[1], label='Resting')
-# plt.plot(t, X_S[2], label='Fatigued')
-# plt.title("Slow fibers")
-# plt.xlabel('time')
-# plt.ylabel('%MVC')
-#
-# plt.subplot(4, 1, 2)
-# plt.plot(t, X_FR[0], label = 'Activated')
-# plt.plot(t, X_FR[1], label = 'Resting')
-# plt.plot(t, X_FR[2], label = 'Fatigued')
-# plt.title("Fast Fatigue Resistant fibers")
-# plt.xlabel('time')
-# plt.ylabel('%MVC')
-#
-# plt.subplot(4, 1, 3)
-# plt.plot(t, X_FF[0], label = 'Activated')
-# plt.plot(t, X_FF[1], label = 'Resting')
-# plt.plot(t, X_FF[2], label = 'Fatigued')
-# plt.title("Fast Fatigable fibers")
-# plt.xlabel('time')
-# plt.ylabel('%MVC')
-# plt.legend(bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0)
-#
-# plt.subplot(4, 1, 4)
-# plt.plot(t, ma_total)
-# plt.xlabel('time')
-# plt.ylabel('%MVC')
-#
-#
-# plt.figure(2)
-#
-# plt.subplot(3, 1, 1)
-# plt.plot(t, BE_S)
-# plt.title("Slow fibers")
-# plt.xlabel('time')
-# plt.ylabel('Brain effort')
-#
-# plt.subplot(3, 1, 2)
-# plt.plot(t, BE_FR)
-# plt.title("Fast Fatigue Resistant fibers")
-# plt.xlabel('time')
-# plt.ylabel('Brain effort')
-#
-# plt.subplot(3, 1, 3)
-# plt.plot(t, BE_FF)
-# plt.title("Fast Fatigable fibers")
-# plt.xlabel('time')
-# plt.ylabel('Brain effort')
-#
-#
-# plt.figure(3)
-#
-# plt.plot(Target_Load, ET)
-# plt.title("Endurance Time")
-# plt.xlabel('Target Load (%MVC)')
-# plt.ylabel('Time')
-#
-# plt.show()
+
+Target_Load = np.linspace(1, 100, 20)
+ET = np.ndarray(len(Target_Load))
+for i in range(len(Target_Load)):
+    ET[i] = endur_time(Target_Load[i], 2000, state_init_0)
+    print(ET[i])
+
+### Plot ###
+plt.figure(1)
+
+plt.subplot(4, 1, 1)
+plt.plot(t, X_S[0]*S_Percent, label='Force developed by active')
+plt.plot(t, X_S[1]*S_Percent, label='Potential force from resting')
+plt.plot(t, X_S[2]*S_Percent, label='Force lost from fatigue')
+plt.title("Slow fibers")
+plt.xlabel('time')
+plt.ylabel('%MVC')
+
+plt.subplot(4, 1, 2)
+plt.plot(t, X_FR[0]*FR_Percent, label = 'Force developed by active')
+plt.plot(t, X_FR[1]*FR_Percent, label = 'Potential force from resting')
+plt.plot(t, X_FR[2]*FR_Percent, label = 'Force lost from fatigue')
+plt.title("Fast Fatigue Resistant fibers")
+plt.xlabel('time')
+plt.ylabel('%MVC')
+
+plt.subplot(4, 1, 3)
+plt.plot(t, X_FF[0]*FF_Percent, label = 'Force developed by active')
+plt.plot(t, X_FF[1]*FF_Percent, label = 'Potential force from resting')
+plt.plot(t, X_FF[2]*FF_Percent, label = 'Force lost from fatigue')
+plt.title("Fast Fatigable fibers")
+plt.xlabel('time')
+plt.ylabel('%MVC')
+plt.legend(bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0)
+
+plt.subplot(4, 1, 4)
+plt.plot(t, ma_total)
+plt.xlabel('time')
+plt.ylabel('%MVC')
+
+
+plt.figure(2)
+
+plt.subplot(3, 1, 1)
+plt.plot(t, BE_S)
+plt.title("Slow fibers")
+plt.xlabel('time')
+plt.ylabel('Brain effort')
+
+plt.subplot(3, 1, 2)
+plt.plot(t, BE_FR)
+plt.title("Fast Fatigue Resistant fibers")
+plt.xlabel('time')
+plt.ylabel('Brain effort')
+
+plt.subplot(3, 1, 3)
+plt.plot(t, BE_FF)
+plt.title("Fast Fatigable fibers")
+plt.xlabel('time')
+plt.ylabel('Brain effort')
+
+
+plt.figure(3)
+
+plt.plot(Target_Load, ET)
+plt.title("Endurance Time")
+plt.xlabel('Target Load (%MVC)')
+plt.ylabel('Time')
+
+plt.show()
 
