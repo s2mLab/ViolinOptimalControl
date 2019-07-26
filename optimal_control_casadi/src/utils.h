@@ -57,6 +57,12 @@ struct InitialConditions{
     std::vector<double> val;
 };
 
+enum ODE_SOLVER{
+    COLLOCATION,
+    RK,
+    CVODES
+};
+
 void defineDifferentialVariables(
         ProblemSize &ps,
         casadi::MX &u,
