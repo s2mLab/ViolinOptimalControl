@@ -22,12 +22,12 @@ link_directories(
   ${CMAKE_INSTALL_PREFIX}/lib
 )
 
+# Forward dynamics library
 add_library(forward_dynamics_casadi SHARED src/forward_dynamics_casadi.cpp)
 target_link_libraries(forward_dynamics_casadi
     ${Biorbd_LIBRARY}
     ${RBDL_LIBRARY}
-  )
-
+)
 target_include_directories(forward_dynamics_casadi PUBLIC
     include
     ${CMAKE_INSTALL_PREFIX}/include
@@ -37,7 +37,16 @@ target_include_directories(forward_dynamics_casadi PUBLIC
     ${Boost_INCLUDE_DIRS}
 )
 
-# Write down all files to include here
+# NLP related functions
+add_library(utils SHARED src/utils.cpp)
+target_include_directories(utils PUBLIC
+    ${RBDL_INCLUDE_DIR}
+    ${EIGEN3_INCLUDE_DIR}
+    ${Biorbd_INCLUDE_DIR}
+    ${CASADI_INCLUDE_DIRS}
+)
+
+# Problem definitions
 set(source_files
     eocar.cpp
     arm.cpp
@@ -52,11 +61,13 @@ foreach(src_file ${source_files})
         ${filename}.cpp
     )
     target_include_directories(${filename} PUBLIC
+        src
         ${CASADI_INCLUDE_DIRS}
     )
 
     target_link_libraries(${filename}
         forward_dynamics_casadi
+        utils
         ${CASADI_LIBRARIES}
       )
 endforeach()
