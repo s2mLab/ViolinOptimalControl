@@ -12,7 +12,7 @@ int main(){
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
     ProblemSize probSize;
-    probSize.tf = 1.0;
+    probSize.tf = 2.5;
     probSize.ns = 30;
     probSize.dt = probSize.tf/probSize.ns; // length of a control interval
 
@@ -20,7 +20,7 @@ int main(){
     std::string dynamicsFunctionName(libforward_dynamics_casadi_name());
 
     // Chose the ODE solver
-    int odeSolver(ODE_SOLVER::CVODES);
+    int odeSolver(ODE_SOLVER::RK);
 
     // Chose the objective function
     void (*objectiveFunction)(
