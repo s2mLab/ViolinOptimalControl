@@ -16,7 +16,6 @@ struct ProblemSize{
 
 struct BoundaryConditions{
     BoundaryConditions(
-            std::vector<double> initialGuess = {},
             std::vector<double> min = {},
             std::vector<double> max = {},
             std::vector<double> starting_min = {},
@@ -24,9 +23,6 @@ struct BoundaryConditions{
             std::vector<double> end_min = {},
             std::vector<double> end_max = {}
             ){
-        // Dispatch initial guess
-        this->initialGuess = initialGuess;
-
         // Dispatch intermediate states
         this->min = min;
         this->max = max;
@@ -52,8 +48,13 @@ struct BoundaryConditions{
     std::vector<double> starting_max;
     std::vector<double> end_min;
     std::vector<double> end_max;
+};
 
-    std::vector<double> initialGuess;
+struct InitialConditions{
+    InitialConditions(std::vector<double> initialGuess = {}){
+        this->val = initialGuess;
+    }
+    std::vector<double> val;
 };
 
 void defineDifferentialVariables(
@@ -63,10 +64,13 @@ void defineDifferentialVariables(
 
 void defineMultipleShootingNodes(
         const ProblemSize& ps,
-        const BoundaryConditions &u,
-        const BoundaryConditions &x,
+        const BoundaryConditions &uBounds,
+        const BoundaryConditions &xBounds,
+        const InitialConditions &uInit,
+        const InitialConditions &xInit,
         casadi::MX &V,
-        BoundaryConditions &v,
+        BoundaryConditions &vBounds,
+        InitialConditions &vInit,
         std::vector<casadi::MX> &U,
         std::vector<casadi::MX> &X);
 
@@ -86,6 +90,7 @@ void minimizeControls(
 void solveProblemWithIpopt(
         const casadi::MX &V,
         const BoundaryConditions &vBounds,
+        const InitialConditions &vInit,
         const casadi::MX &obj,
         const std::vector<casadi::MX> &constraints,
         std::vector<double>& V_opt);

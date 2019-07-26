@@ -25,10 +25,13 @@ void defineDifferentialVariables(
 
 void defineMultipleShootingNodes(
         const ProblemSize& ps,
-        const BoundaryConditions &u,
-        const BoundaryConditions &x,
+        const BoundaryConditions &uBounds,
+        const BoundaryConditions &xBounds,
+        const InitialConditions &uInit,
+        const InitialConditions &xInit,
         casadi::MX &V,
-        BoundaryConditions &v,
+        BoundaryConditions &vBounds,
+        InitialConditions &vInit,
         std::vector<casadi::MX> &U,
         std::vector<casadi::MX> &X)
 {
@@ -46,28 +49,28 @@ void defineMultipleShootingNodes(
         // Local state
         X.push_back( V.nz(casadi::Slice(offset,offset+static_cast<int>(ps.nx))));
         if(k==0){
-            v.min.insert(v.min.end(), x.starting_min.begin(), x.starting_min.end());
-            v.max.insert(v.max.end(), x.starting_max.begin(), x.starting_max.end());
+            vBounds.min.insert(vBounds.min.end(), xBounds.starting_min.begin(), xBounds.starting_min.end());
+            vBounds.max.insert(vBounds.max.end(), xBounds.starting_max.begin(), xBounds.starting_max.end());
         } else {
-            v.min.insert(v.min.end(), x.min.begin(), x.min.end());
-            v.max.insert(v.max.end(), x.max.begin(), x.max.end());
+            vBounds.min.insert(vBounds.min.end(), xBounds.min.begin(), xBounds.min.end());
+            vBounds.max.insert(vBounds.max.end(), xBounds.max.begin(), xBounds.max.end());
         }
-        v.initialGuess.insert(v.initialGuess.end(), x.initialGuess.begin(), x.initialGuess.end());
+        vInit.val.insert(vInit.val.end(), xInit.val.begin(), xInit.val.end());
         offset += ps.nx;
 
         // Local control
         U.push_back( V.nz(casadi::Slice(offset,offset+static_cast<int>(ps.nu))));
-        v.min.insert(v.min.end(), u.min.begin(), u.min.end());
-        v.max.insert(v.max.end(), u.max.begin(), u.max.end());
-        v.initialGuess.insert(v.initialGuess.end(), u.initialGuess.begin(), u.initialGuess.end());
+        vBounds.min.insert(vBounds.min.end(), uBounds.min.begin(), uBounds.min.end());
+        vBounds.max.insert(vBounds.max.end(), uBounds.max.begin(), uBounds.max.end());
+        vInit.val.insert(vInit.val.end(), uInit.val.begin(), uInit.val.end());
         offset += ps.nu;
     }
 
     // State at end
     X.push_back(V.nz(casadi::Slice(offset,offset+static_cast<int>(ps.nx))));
-    v.min.insert(v.min.end(), x.end_min.begin(), x.end_min.end());
-    v.max.insert(v.max.end(), x.end_max.begin(), x.end_max.end());
-    v.initialGuess.insert(v.initialGuess.end(), x.initialGuess.begin(), x.initialGuess.end());
+    vBounds.min.insert(vBounds.min.end(), xBounds.end_min.begin(), xBounds.end_min.end());
+    vBounds.max.insert(vBounds.max.end(), xBounds.end_max.begin(), xBounds.end_max.end());
+    vInit.val.insert(vInit.val.end(), xInit.val.begin(), xInit.val.end());
     offset += ps.nx;
 
     // Make sure that the size of the variable vector is consistent with the number of variables that we have referenced
@@ -105,6 +108,7 @@ void minimizeControls(
 void solveProblemWithIpopt(
         const casadi::MX &V,
         const BoundaryConditions& vBounds,
+        const InitialConditions& vInit,
         const casadi::MX &obj,
         const std::vector<casadi::MX> &constraints,
         std::vector<double>& V_opt)
@@ -128,7 +132,7 @@ void solveProblemWithIpopt(
     arg["ubx"] = vBounds.max;
     arg["lbg"] = 0;
     arg["ubg"] = 0;
-    arg["x0"] = vBounds.initialGuess;
+    arg["x0"] = vInit.val;
 
     // Solve the problem
     res = solver(arg);

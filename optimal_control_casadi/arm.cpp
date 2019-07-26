@@ -31,22 +31,42 @@ int main(){
     defineDifferentialVariables(probSize, u, x);
 
     // Bounds and initial guess for the control
-    BoundaryConditions uBounds = {
-        { 0, 0 }, // initial guess
-        { -100, -100 }, // min
-        { 100, 100 }, // max
+    BoundaryConditions uBounds;
+    InitialConditions uInit;
+    for (unsigned int i=0; i<m.nbTau(); ++i) {
+        uBounds.min.push_back(-100);
+        uBounds.max.push_back(100);
+        uInit.val.push_back(0);
     };
 
     // Bounds and initial guess for the state
-    BoundaryConditions xBounds = {
-        { 0, 0, 0, 0}, // initial guess
-        { -500, -500, -500, -500 }, // min
-        { 500, 500, 500, 500 }, // max
-        { 0, 0, 0, 0 }, // starting_min
-        { 0, 0, 0, 0}, // starting_max
-        { 100, 50, 0, 0 }, // end_min
-        { 100, 50, 0, 0 } // end_max
+    BoundaryConditions xBounds;
+    InitialConditions xInit;
+    for (unsigned int i=0; i<m.nbQ(); ++i) {
+        xBounds.min.push_back(-500);
+        xBounds.starting_min.push_back(0);
+        if (i == 0) xBounds.end_min.push_back(100);
+        else if (i == 1) xBounds.end_min.push_back(50);
+
+        xBounds.max.push_back(500);
+        xBounds.starting_max.push_back(0);
+        if (i == 0) xBounds.end_max.push_back(100);
+        else if (i == 1) xBounds.end_max.push_back(50);
+
+        xInit.val.push_back(0);
     };
+    for (unsigned int i=0; i<m.nbQdot(); ++i) {
+        xBounds.min.push_back(-500);
+        xBounds.starting_min.push_back(0);
+        xBounds.end_min.push_back(0);
+
+        xBounds.max.push_back(500);
+        xBounds.starting_max.push_back(0);
+        xBounds.end_max.push_back(0);
+
+        xInit.val.push_back(0);
+    };
+
 
 
     // From here, unless one wants to fundamentally change the problem,
@@ -62,8 +82,11 @@ int main(){
     // Prepare the NLP problem
     casadi::MX V;
     BoundaryConditions vBounds;
-    std::vector<casadi::MX> U, X;
-    defineMultipleShootingNodes(probSize, uBounds, xBounds, V, vBounds, U, X);
+    InitialConditions vInit;
+    std::vector<casadi::MX> U;
+    std::vector<casadi::MX> X;
+    defineMultipleShootingNodes(probSize, uBounds, xBounds, uInit, xInit,
+                                V, vBounds, vInit, U, X);
 
     // Continuity constraints
     std::vector<casadi::MX> g;
@@ -75,7 +98,7 @@ int main(){
 
     // Optimize
     std::vector<double> V_opt;
-    solveProblemWithIpopt(V, vBounds, J, g, V_opt);
+    solveProblemWithIpopt(V, vBounds, vInit, J, g, V_opt);
 
     // Get the optimal state trajectory
     std::vector<s2mVector> Q;
