@@ -93,8 +93,8 @@ void solveProblemWithIpopt(
 void extractSolution(
         const std::vector<double>& V_opt,
         const ProblemSize& ps,
-        s2mVector& Q,
-        s2mVector& Qdot,
-        s2mVector& Tau);
+        std::vector<s2mVector>& Q,
+        std::vector<s2mVector>& Qdot,
+        std::vector<s2mVector>& Tau);
 
 #endif

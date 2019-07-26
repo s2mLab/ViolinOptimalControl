@@ -32,20 +32,20 @@ int main(){
 
     // Bounds and initial guess for the control
     BoundaryConditions uBounds = {
-        { 0 }, // initial guess
-        { -100 }, // min
-        { 100 }, // max
+        { 0, 0 }, // initial guess
+        { -100, -100 }, // min
+        { 100, 100 }, // max
     };
 
     // Bounds and initial guess for the state
     BoundaryConditions xBounds = {
-        { 0, 0 }, // initial guess
-        { -500, -500 }, // min
-        { 500, 500 }, // max
-        { 0, 0 }, // starting_min
-        { 0, 0 }, // starting_max
-        { 100, 0 }, // end_min
-        { 100, 0 } // end_max
+        { 0, 0, 0, 0}, // initial guess
+        { -500, -500, -500, -500 }, // min
+        { 500, 500, 500, 500 }, // max
+        { 0, 0, 0, 0 }, // starting_min
+        { 0, 0, 0, 0}, // starting_max
+        { 100, 50, 0, 0 }, // end_min
+        { 100, 50, 0, 0 } // end_max
     };
 
 
@@ -78,15 +78,17 @@ int main(){
     solveProblemWithIpopt(V, vBounds, J, g, V_opt);
 
     // Get the optimal state trajectory
-    s2mVector Q;
-    s2mVector Qdot;
-    s2mVector Tau;
+    std::vector<s2mVector> Q;
+    std::vector<s2mVector> Qdot;
+    std::vector<s2mVector> Tau;
     extractSolution(V_opt, probSize, Q, Qdot, Tau);
 
     // Show the solution
-    std::cout << "Q = " << Q.transpose() << std::endl;
-    std::cout << "Qdot = " << Qdot.transpose() << std::endl;
-    std::cout << "Tau = " << Tau.transpose() << std::endl;
-
+    for (unsigned int q=0; q<m.nbQ(); ++q){
+        std::cout << "Q[" << q <<"] = " << Q[q].transpose() << std::endl;
+        std::cout << "Qdot[" << q <<"] = " << Qdot[q].transpose() << std::endl;
+        std::cout << "Tau[" << q <<"] = " << Tau[q].transpose() << std::endl;
+        std::cout << std::endl;
+    }
     return 0;
 }

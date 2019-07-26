@@ -13,8 +13,8 @@ void defineDifferentialVariables(
     casadi::MX q;
     casadi::MX qdot;
     for (unsigned int i=0; i<m.nbQ(); ++i){
-        q = vertcat(q, casadi::MX::sym("Q" + m.nameDof()[i]));
-        qdot = vertcat(qdot, casadi::MX::sym("Qdot" + m.nameDof()[i]));
+        q = vertcat(q, casadi::MX::sym("Q_" + m.nameDof()[i]));
+        qdot = vertcat(qdot, casadi::MX::sym("Qdot_" + m.nameDof()[i]));
     }
     x = vertcat(q, qdot);
 
@@ -99,7 +99,7 @@ void minimizeControls(
 {
     obj = 0;
     for(unsigned int k=0; k<ps.ns; ++k)
-        obj += U[k] * U[k];
+        obj += casadi::MX::dot(U[k], U[k]);
 }
 
 void solveProblemWithIpopt(
@@ -140,24 +140,28 @@ void solveProblemWithIpopt(
 void extractSolution(
         const std::vector<double>& V_opt,
         const ProblemSize& ps,
-        s2mVector& Q,
-        s2mVector& Qdot,
-        s2mVector& Tau)
+        std::vector<s2mVector>& Q,
+        std::vector<s2mVector>& Qdot,
+        std::vector<s2mVector>& Tau)
 {
     // Resizing the output variables
-    Tau = s2mTau(ps.ns);
-    Q = s2mGenCoord(ps.ns+1);
-    Qdot = s2mGenCoord(ps.ns+1);
-
-    // Get the optimal controls
-    for(unsigned int i=0; i<ps.ns; ++i){
-        Tau[i] = V_opt.at(ps.nx + i*(ps.nx+1));
+    for (unsigned int q=0; q<m.nbQ(); ++q){
+        Tau.push_back(s2mTau(ps.ns));
+        Q.push_back(s2mGenCoord(ps.ns+1));
+        Qdot.push_back(s2mGenCoord(ps.ns+1));
     }
 
+    // Get the optimal controls
+    for(unsigned int i=0; i<ps.ns; ++i)
+        for (unsigned int q=0; q<m.nbQ(); ++q)
+            Tau[q][i] = V_opt.at(q + ps.nx + i*(ps.nx+m.nbQ()));
+
     // Get the states
-    for(unsigned int i=0; i<=ps.ns; ++i){
-        Q[i] = V_opt.at(i*(ps.nx+1));
-        Qdot[i] = V_opt.at(1+i*(ps.nx+1));
+    for(unsigned int i=0; i<ps.ns+1; ++i){
+        for (unsigned int q=0; q<m.nbQ(); ++q){
+            Q[q][i] = V_opt.at(q + i*(ps.nx+m.nbQ()));
+            Qdot[q][i] = V_opt.at(q + m.nbQ() + i*(ps.nx+m.nbQ()));
+        }
     }
 
 }
