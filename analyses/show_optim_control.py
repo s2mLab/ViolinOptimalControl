@@ -2,13 +2,14 @@ import matplotlib.pyplot as plt
 import biorbd
 from BiorbdViz import BiorbdViz
 
-import utils
+import analyses.utils as utils
 
 
 # Options
 model_name = "BrasViolon"
 output_files = "Av2Phases"
 fun_dyn = utils.dynamics_from_muscles_and_torques_and_contact
+runge_kutta_algo = 'rk4'
 nb_nodes = 30
 nb_phases = 2
 nb_frame_inter = 500
@@ -36,8 +37,9 @@ t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_fil
 
 
 # Integrate
-t_integrate, q_integrate = utils.integrate_states_from_controls(m, t_final, all_q, all_qdot, all_u, fun_dyn,
-                                                                verbose=False, use_previous_as_init=False)
+t_integrate, q_integrate = utils.integrate_states_from_controls(
+    m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=False, algo=runge_kutta_algo
+)
 
 # Interpolate
 t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_int=t_integrate, y_int=q_integrate)

@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import numpy as np
 import biorbd
 from scipy import integrate, interpolate
@@ -187,17 +189,42 @@ def dynamics_from_accelerations(t_int, states, biorbd_model, u):
     return rsh
 
 
+def runge_kutta_4(fun, t_span, y0, n_step):
+    h = (t_span[1] - t_span[0]) / n_step  # Length of steps
+    y = np.ndarray((y0.shape[0], n_step))
+    y[:, 0] = y0
+    t = np.linspace(t_span[0], t_span[1], n_step)
+
+    for i in range(1, n_step):
+        k1 = fun(i*h, y[:, i-1])
+        k2 = fun(i*h, y[:, i-1] + h/2 * k1)
+        k3 = fun(i*h, y[:, i-1] + h/2 * k2)
+        k4 = fun(i*h, y[:, i-1] + h * k3)
+        y[:, i] = y[:, i-1] + h/6 * (k1 + 2*k2 + 2*k3 + k4)
+
+    # Produce similar output as scipy integrator
+    out_keys = {'success': True, 't': t, 'y': y}
+    return SimpleNamespace(**out_keys)
+
+
 def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_fun, verbose=False,
-                                   use_previous_as_init=False):
+                                   use_previous_as_init=False, algo="rk45"):
     all_t = np.ndarray(0)
     integrated_state = np.ndarray((biorbd_model.nbQ() + biorbd_model.nbQdot(), 0))
 
     q_init = np.concatenate((all_q[:, 0], all_qdot[:, 0]))
     for interval in range(t.shape[0] - 1):  # integration between each point (but the last point)
         u = all_u[:, interval]
-        integrated_tp = integrate.solve_ivp(
-            fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
-            t_span=(t[interval], t[interval + 1]), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
+
+        if algo == "rk45":
+            integrated_tp = integrate.solve_ivp(
+                fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
+                t_span=(t[interval], t[interval + 1]), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
+        elif algo == "rk4":
+            integrated_tp = runge_kutta_4(fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
+                                          t_span=(t[interval], t[interval + 1]), y0=q_init, n_step=10)
+        else:
+            raise IndentationError(f"{algo} is not implemented")
 
         q_init_previous = q_init
         if use_previous_as_init:
