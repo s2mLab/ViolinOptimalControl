@@ -1,6 +1,5 @@
 // C++ (and CasADi) from here on
 #include <casadi/casadi.hpp>
-#include "casadi/core/optistack.hpp"
 
 #include "utils.h"
 #include "forward_dynamics_casadi.h"
@@ -47,17 +46,31 @@ int main(){
     BoundaryConditions xBounds;
     InitialConditions xInit;
     for (unsigned int i=0; i<m.nbQ(); ++i) {
+        // Starting boundaries
+        if (i == 0) xBounds.starting_min.push_back(0);
+        else if (i == 1) xBounds.starting_min.push_back(0);
+        else if (i == 2) xBounds.starting_min.push_back(0);
+        else if (i == 3) xBounds.starting_min.push_back(PI/4);
+        else if (i == 4) xBounds.starting_min.push_back(PI/6);
+        else if (i == 5) xBounds.starting_min.push_back(PI/8);
+        if (i == 0) xBounds.starting_max.push_back(0);
+        else if (i == 1) xBounds.starting_max.push_back(0);
+        else if (i == 2) xBounds.starting_max.push_back(0);
+        else if (i == 3) xBounds.starting_max.push_back(PI/4);
+        else if (i == 4) xBounds.starting_max.push_back(PI/6);
+        else if (i == 5) xBounds.starting_max.push_back(PI/8);
+
+        // Intermediate boundaries
         xBounds.min.push_back(-500);
-        xBounds.starting_min.push_back(0);
+        xBounds.max.push_back(500);
+
+        // End boundaries
         if (i == 0) xBounds.end_min.push_back(100);
         else if (i == 1) xBounds.end_min.push_back(50);
         else if (i == 2) xBounds.end_min.push_back(0);
         else if (i == 3) xBounds.end_min.push_back(PI/4);
         else if (i == 4) xBounds.end_min.push_back(PI/6);
         else if (i == 5) xBounds.end_min.push_back(PI/8);
-
-        xBounds.max.push_back(500);
-        xBounds.starting_max.push_back(0);
         if (i == 0) xBounds.end_max.push_back(100);
         else if (i == 1) xBounds.end_max.push_back(50);
         else if (i == 2) xBounds.end_max.push_back(0);
