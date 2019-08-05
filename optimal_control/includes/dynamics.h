@@ -9,6 +9,7 @@ void forwardDynamics(const s2mGenCoord& Q, const s2mGenCoord& Qdot, const s2mTau
 void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *user_data);
 void forwardDynamicsFromJointTorque( double *x, double *rhs, void *user_data);
 void forwardDynamicsFromMuscleActivationAndTorque(double *x, double *rhs, void *);
+void forwardDynamicsMultiStage( double *x, double *rhs, void *user_data);
 void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs, void *user_data);
 void forwardDynamicsFromTorqueContact( double *x, double *rhs, void *user_data);
 
