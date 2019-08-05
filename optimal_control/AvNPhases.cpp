@@ -35,23 +35,16 @@ int  main ()
     std::cout << "nb de marqueurs: " << nTags << std::endl;
 
     /* ---------- INITIALIZATION ---------- */
-    DifferentialState       x("", nPhases, nQ+nQdot);               //  the  differential states
-    Control                 u("", nPhases, nMus+nTau);                 //  the  control input  u
-    IntermediateState       is("", nPhases, nQ+nQdot+nMus+nTau);
+    DifferentialState       x("", nPhases*(nQ+nQdot), 1);               //  the  differential states
+    Control                 u("", nPhases*(nMus+nTau), 1);                 //  the  control input  u
+    IntermediateState       is("", nPhases*(nQ+nQdot+nMus+nTau), 1);
 
-    for (unsigned int i = 0; i < nPhases; ++i){
-        for (unsigned int j = 0; j < nQ; ++j){
-            is(i,j) = x(i,j);
-        }
-        for (unsigned int j = 0; j < nQdot; ++j){
-            is(i, j+nQ) = x(i, j+nQ);
-        }
-        for (unsigned int j = 0; j < nMus; ++j){
-            is(i, j+nQ+nQdot) = u(i, j);
-        }
-        for (unsigned int j = 0; j < nTau; ++j){
-            is(i, j+nQ+nQdot+nMus) = u(i, j+nMus);
-        }
+
+    for (unsigned int j = 0; j < nPhases*(nQ+nQdot); ++j){
+        is(i) = x(i);
+    }
+    for (unsigned int j = 0; j < nPhases*(nMus+nTau); ++j){
+        is(i+nPhases*(nQ+nQdot)) = u(i);
     }
 
     /* ----------- DEFINE OCP ------------- */
@@ -61,13 +54,9 @@ int  main ()
     ocp.minimizeLagrangeTerm( lagrange(u(0)));
 
     /* ------------ CONSTRAINTS ----------- */
-    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
-
+    CFunction F( nPhases*(nQ+nQdot), forwardDynamicsMultiStage);
     DifferentialEquation    f ;
-
-    for (unsigned int i = 0; i < nPhases; ++i){
-        (f << dot(x.getRow(i))) == F(is(i));
-    }
+    (f << dot(x)) == F(is);
     ocp.subjectTo(f);
 
     //Position constraints
@@ -84,8 +73,8 @@ int  main ()
     CFunction markerViolon(3, markerPosition);
     markerViolon.setUserData((void*) &tagViolon);
 
-    ocp.subjectTo( AT_START, markerArchetPoucette(x(0)) - markerViolon(x(0)) == 0.0 );
-    ocp.subjectTo( AT_END, markerArchetTete(x(0)) - markerViolon(x(0)) == 0.0 );
+    ocp.subjectTo( AT_START, markerArchetPoucette(x) - markerViolon(x) == 0.0 );
+    ocp.subjectTo( AT_END, markerArchetTete(x) - markerViolon(x) == 0.0 );
     for (unsigned int i = 0; i < nPhases; ++i){
         ocp.subjectTo( 0.0, x(i+1), -x(i), 0.0 );
         ocp.subjectTo( 0.0, x(i), -x(i+1), 0.0 );
@@ -223,8 +212,8 @@ int  main ()
 
     /* ---------- STORING THE RESULTS ---------- */
     createTreePath(resultsPath);
-    algorithm.getDifferentialStates((resultsPath + "StatesAv2Phases.txt").c_str());
-    algorithm.getControls((resultsPath + "ControlsAv2Phases.txt").c_str());
+    algorithm.getDifferentialStates((resultsPath + "StatesAvNPhases.txt").c_str());
+    algorithm.getControls((resultsPath + "ControlsAvNPhases.txt").c_str());
 
     end=clock();
     time_exec = double(end - start)/CLOCKS_PER_SEC;
