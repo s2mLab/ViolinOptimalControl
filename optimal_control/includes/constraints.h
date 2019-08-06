@@ -20,6 +20,7 @@ extern unsigned int nQdot;
 extern unsigned int nTau;
 extern unsigned int nTags;
 extern unsigned int nMus;
+extern unsigned int nPhases;
 
 
 

@@ -202,7 +202,7 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
 }
 
 void forwardDynamicsMultiStage( double *x, double *rhs, void *user_data){
-    for(unsigned int i=0; i<nPhases; ++i){
+    for(unsigned int i=0; i<2; ++i){
         forwardDynamicsFromMuscleActivationAndTorque(&x[i*(nQ+nQdot)], &rhs[i*(nQ+nQdot)], &user_data);
     }
 }
