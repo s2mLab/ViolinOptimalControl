@@ -34,6 +34,9 @@ int  main ()
     std::cout << "nb de muscles: " << nMus << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
     std::cout << "nb de marqueurs: " << nTags << std::endl;
+    if (nPhases % 2 != 0)
+        throw runtime_error("nPhases must be an even number");
+    std::cout << "nb de phases: " << nPhases << std::endl;
 
     /* ---------- INITIALIZATION ---------- */
     DifferentialState       x("", nPhases*(nQ+nQdot), 1);               //  the  differential states
@@ -66,21 +69,20 @@ int  main ()
     int tagArchetTete = 18;
     int tagViolon = 34;
     CFunction markerArchetPoucette(3, markerPosition);
-    markerArchetPoucette.setUserData((void*) &tagArchetPoucette);
+    markerArchetPoucette.setUserData(static_cast<void*>(&tagArchetPoucette));
     CFunction markerArchetCOM(3, markerPosition);
-    markerArchetCOM.setUserData((void*) &tagArchetCOM);
+    markerArchetCOM.setUserData(static_cast<void*>(&tagArchetCOM));
     CFunction markerArchetTete(3, markerPosition);
-    markerArchetTete.setUserData((void*) &tagArchetTete);
+    markerArchetTete.setUserData(static_cast<void*>(&tagArchetTete));
     CFunction markerViolon(3, markerPosition);
-    markerViolon.setUserData((void*) &tagViolon);
+    markerViolon.setUserData(static_cast<void*>(&tagViolon));
 
     ocp.subjectTo( AT_START, markerArchetPoucette(x) - markerViolon(x) == 0.0 );
     ocp.subjectTo( AT_END, markerArchetTete(x) - markerViolon(x) == 0.0 );
 
-    for(unsigned int i=0; i<nPhases-1; ++i){
+    for(unsigned int i=0; i<nPhases; ++i){
         for(unsigned int j=0; j< nQ+nQdot; ++j){
-            ocp.subjectTo( 0.0, x(((i+1)*(nQ+nQdot))+j), -x((i*(nQ+nQdot))+j), 0.0 );
-            ocp.subjectTo( 0.0, x((i*(nQ+nQdot))+j), -x(((i+1)*(nQ+nQdot))+j), 0.0 );
+            ocp.subjectTo( 0.0, x(( ((i+1) % 2)*(nQ+nQdot))+j), -x((i*(nQ+nQdot))+j), 0.0 );
         }
     }
 
