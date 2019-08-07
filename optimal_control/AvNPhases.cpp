@@ -43,7 +43,6 @@ int  main ()
     Control                 u("", nPhases*(nMus+nTau), 1);                 //  the  control input  u
     IntermediateState       is("", nPhases*(nQ+nQdot+nMus+nTau), 1);
 
-
     for (unsigned int j = 0; j < nPhases*(nQ+nQdot); ++j){
         is(j) = x(j);
     }
@@ -129,42 +128,42 @@ int  main ()
     algorithm.initializeControls(u_init);
 
     VariablesGrid x_init(nPhases*(nQ+nQdot), Grid(t_Start, t_End, 2));
-    for(unsigned int i=0; i<nPhases; ++i){
+    for(unsigned int i=0; i<nPhases/2; ++i){
         // poucette sur COM
-        x_init(0, 2*i*(nQ+nQdot)) = 0.1000001;
-        x_init(0, 2*i*(nQ+nQdot)+1) = 0.1000001;
-        x_init(0, 2*i*(nQ+nQdot)+2) = 1.0946872;
-        x_init(0, 2*i*(nQ+nQdot)+3) = 1.5707965;
-        x_init(0, 2*i*(nQ+nQdot)+4) = 1.0564277;
-        x_init(0, 2*i*(nQ+nQdot)+5) = 1.0607269;
-        x_init(0, 2*i*(nQ+nQdot)+6) = -1.725867;
+        x_init(0, (2*i*(nQ+nQdot))) = 0.1000001;
+        x_init(0, (2*i*(nQ+nQdot))+1) = 0.1000001;
+        x_init(0, (2*i*(nQ+nQdot))+2) = 1.0946872;
+        x_init(0, (2*i*(nQ+nQdot))+3) = 1.5707965;
+        x_init(0, (2*i*(nQ+nQdot))+4) = 1.0564277;
+        x_init(0, (2*i*(nQ+nQdot))+5) = 1.0607269;
+        x_init(0, (2*i*(nQ+nQdot))+6) = -1.725867;
 
         // bouton sur COM
-        x_init(1, 2*i*(nQ+nQdot)) = -0.39269915;
-        x_init(1, 2*i*(nQ+nQdot)+1) = -0.27353444;
-        x_init(1, 2*i*(nQ+nQdot)+2) = -0.05670261;
-        x_init(1, 2*i*(nQ+nQdot)+3) = 0.439974729;
-        x_init(1, 2*i*(nQ+nQdot)+4) = 0.511486204;
-        x_init(1, 2*i*(nQ+nQdot)+5) = 1.929967317;
-        x_init(1, 2*i*(nQ+nQdot)+6) = -3.35089080;
+        x_init(1, (2*i*(nQ+nQdot))) = -0.39269915;
+        x_init(1, (2*i*(nQ+nQdot))+1) = -0.27353444;
+        x_init(1, (2*i*(nQ+nQdot))+2) = -0.05670261;
+        x_init(1, (2*i*(nQ+nQdot))+3) = 0.439974729;
+        x_init(1, (2*i*(nQ+nQdot))+4) = 0.511486204;
+        x_init(1, (2*i*(nQ+nQdot))+5) = 1.929967317;
+        x_init(1, (2*i*(nQ+nQdot))+6) = -3.35089080;
 
         // bouton sur COM
-        x_init(0, (2*i+1)*(nQ+nQdot)) = -0.39269915;
-        x_init(0, (2*i+1)*(nQ+nQdot)+1) = -0.27353444;
-        x_init(0, (2*i+1)*(nQ+nQdot)+2) = -0.05670261;
-        x_init(0, (2*i+1)*(nQ+nQdot)+3) = 0.439974729;
-        x_init(0, (2*i+1)*(nQ+nQdot)+4) = 0.511486204;
-        x_init(0, (2*i+1)*(nQ+nQdot)+5) = 1.929967317;
-        x_init(0, (2*i+1)*(nQ+nQdot)+6) = -3.35089080;
+        x_init(0, (((2*i)+1)*(nQ+nQdot))) = -0.39269915;
+        x_init(0, (((2*i)+1)*(nQ+nQdot))+1) = -0.27353444;
+        x_init(0, (((2*i)+1)*(nQ+nQdot))+2) = -0.05670261;
+        x_init(0, (((2*i)+1)*(nQ+nQdot))+3) = 0.439974729;
+        x_init(0, (((2*i)+1)*(nQ+nQdot))+4) = 0.511486204;
+        x_init(0, (((2*i)+1)*(nQ+nQdot))+5) = 1.929967317;
+        x_init(0, (((2*i)+1)*(nQ+nQdot))+6) = -3.35089080;
 
         // poucette sur COM
-        x_init(1, (2*i+1)*(nQ+nQdot)) = 0.1000001;
-        x_init(1, (2*i+1)*(nQ+nQdot)+1) = 0.1000001;
-        x_init(1, (2*i+1)*(nQ+nQdot)+2) = 1.09468721;
-        x_init(1, (2*i+1)*(nQ+nQdot)+3) = 1.57079651;
-        x_init(1, (2*i+1)*(nQ+nQdot)+4) = 1.05642775;
-        x_init(1, (2*i+1)*(nQ+nQdot)+5) = 1.06072698;
-        x_init(1, (2*i+1)*(nQ+nQdot)+6) = -1.7258677;
+        x_init(1, (((2*i)+1)*(nQ+nQdot))) = 0.1000001;
+        x_init(1, (((2*i)+1)*(nQ+nQdot))+1) = 0.1000001;
+        x_init(1, (((2*i)+1)*(nQ+nQdot))+2) = 1.09468721;
+        x_init(1, (((2*i)+1)*(nQ+nQdot))+3) = 1.57079651;
+        x_init(1, (((2*i)+1)*(nQ+nQdot))+4) = 1.05642775;
+        x_init(1, (((2*i)+1)*(nQ+nQdot))+5) = 1.06072698;
+        x_init(1, (((2*i)+1)*(nQ+nQdot))+6) = -1.7258677;
 
     //    //COM sur COM :
     //    x_init(0, 0) = 0.0990382;
@@ -198,13 +197,14 @@ int  main ()
     //    x_init(1, 4+nQ+nQdot) = 0.79172476;
     //    x_init(1, 5+nQ+nQdot) = 1.26416757;
     //    x_init(1, 6+nQ+nQdot) = -0.6445338;
+    }
 
+    for(unsigned int i=0; i<nPhases; ++i){
         for(unsigned int j=nQ; j<nQ+nQdot; ++j){
              x_init(0, i*(nQ+nQdot)+j) = 0.01;
              x_init(1, i*(nQ+nQdot)+j) = 0.01;
         }
     }
-
     algorithm.initializeDifferentialStates(x_init);
 
     /* ---------- SOLVING THE PROBLEM ---------- */
