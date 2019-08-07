@@ -16,6 +16,7 @@ unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbTau());           // controls number
 unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
+unsigned int nPhases(2);
 
 const double t_Start = 0.0;
 const double t_End = 0.5;
