@@ -69,13 +69,13 @@ int  main ()
     int tagArchetTete = 18;
     int tagViolon = 34;
     CFunction markerArchetPoucette(3, markerPosition);
-    markerArchetPoucette.setUserData((void*) &tagArchetPoucette);
+    markerArchetPoucette.setUserData(static_cast<void*>(&tagArchetPoucette));
     CFunction markerArchetCOM(3, markerPosition);
-    markerArchetCOM.setUserData((void*) &tagArchetCOM);
+    markerArchetCOM.setUserData(static_cast<void*>(&tagArchetCOM));
     CFunction markerArchetTete(3, markerPosition);
-    markerArchetTete.setUserData((void*) &tagArchetTete);
+    markerArchetTete.setUserData(static_cast<void*>(&tagArchetTete));
     CFunction markerViolon(3, markerPosition);
-    markerViolon.setUserData((void*) &tagViolon);
+    markerViolon.setUserData(static_cast<void*>(&tagViolon));
 
     ocp.subjectTo( AT_START, markerArchetPoucette(x) - markerViolon(x) == 0.0 );
     ocp.subjectTo( AT_END, markerArchetTete(x) - markerViolon(x) == 0.0 );
