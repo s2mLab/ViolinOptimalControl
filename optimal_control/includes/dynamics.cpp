@@ -201,6 +201,12 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
     #endif
 }
 
+void forwardDynamicsMultiStage( double *x, double *rhs, void *user_data){
+    for(unsigned int i=0; i<2; ++i){
+        forwardDynamicsFromMuscleActivationAndTorque(&x[i*(nQ+nQdot)], &rhs[i*(nQ+nQdot)], &user_data);
+    }
+}
+
 void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs, void *user_data){
     s2mGenCoord Q(m);           // states
     s2mGenCoord Qdot(m);     // derivated states
