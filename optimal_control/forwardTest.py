@@ -15,20 +15,20 @@ biorbd_model = biorbd.s2mMusculoSkeletalModel(f"../models/testloop.bioMod")
 #               2.808e-02, 3.112e-02, 3.256e-01, 7.611e-01, 1.899e-02, 1.481e-01, 1.147e-01, 3.727e-01, 4.772e-02,
 #               5.7938e-03, -3.122e-02, -6.179e-02, -6.635e-02, 2.789e-02, -3.107e-01, 3.081e-01])
 
-q_init = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-u=np.array([0, 0, 0, 0, 0, 0])
+q_init = np.concatenate((np.zeros(biorbd_model.nbQ()), np.zeros(biorbd_model.nbQ())))
+u = np.zeros(biorbd_model.nbTau())
 
 integrated_tp = integrate.solve_ivp(fun=lambda t, y: fun_dyn(t, y, biorbd_model, u),
                                     t_span=(0, 5), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
 
-t_interp, q_interp = utils.interpolate_integration(nb_frames=5000, t_int=integrated_tp.t, y_int=integrated_tp.y)
+t_interp, q_interp = utils.interpolate_integration(nb_frames=1000, t_int=integrated_tp.t, y_int=integrated_tp.y)
 
 
 
 integrated_tp2 = integrate.solve_ivp(fun=lambda t, y: utils.dynamics_from_muscles_and_torques(t, y, biorbd_model, u),
                                     t_span=(0, 5), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
 
-t_interp2, q_interp2 = utils.interpolate_integration(nb_frames=5000, t_int=integrated_tp.t, y_int=integrated_tp.y)
+t_interp2, q_interp2 = utils.interpolate_integration(nb_frames=1000, t_int=integrated_tp2.t, y_int=integrated_tp2.y)
 
 from matplotlib import pyplot as plt
 plt.plot(t_interp, q_interp)
@@ -36,5 +36,20 @@ plt.plot(t_interp2, q_interp2, '-.')
 plt.show()
 
 bioviz = BiorbdViz(loaded_model=biorbd_model)
+bioviz2 = BiorbdViz(loaded_model=biorbd_model)
 bioviz.load_movement(q_interp)
-bioviz.exec()
+bioviz2.load_movement(q_interp2)
+
+bioviz.is_executing = True
+bioviz2.is_executing = True
+while bioviz.vtk_window.is_active and bioviz2.vtk_window.is_active:
+    if bioviz.show_options and bioviz.is_animating:
+        bioviz.movement_slider[0].setValue(
+            (bioviz.movement_slider[0].value() + 1) % bioviz.movement_slider[0].maximum()
+        )
+    if bioviz2.show_options and bioviz2.is_animating:
+        bioviz2.movement_slider[0].setValue(
+            (bioviz2.movement_slider[0].value() + 1) % bioviz2.movement_slider[0].maximum()
+        )
+    bioviz.refresh_window()
+    bioviz2.refresh_window()

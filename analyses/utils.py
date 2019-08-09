@@ -101,12 +101,12 @@ def dynamics_from_muscles(t_int, states, biorbd_model, u):
     nb_qdot = biorbd_model.nbQdot()
     nb_muscle = biorbd_model.nbMuscleTotal()
 
-    states_actual = biorbd.VecS2mMuscleStateActual(nb_muscle)
-    for i in range(len(states_actual)):
-        states_actual[i] = biorbd.s2mMuscleStateActual(0, u[i])
+    states_dynamics = biorbd.VecS2mMuscleStateDynamics(nb_muscle)
+    for i in range(len(states_dynamics)):
+        states_dynamics[i] = biorbd.s2mMuscleStateDynamics(0, u[i])
 
     biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
-    tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(biorbd_model, states_actual, states[:nb_q], states[nb_q:])
+    tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
     qddot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], tau).get_array()
 
     rsh = np.ndarray(nb_q + nb_qdot)
@@ -123,12 +123,12 @@ def dynamics_from_muscles_and_torques(t_int, states, biorbd_model, u):
     nb_tau = biorbd_model.nbTau()
     nb_muscle = biorbd_model.nbMuscleTotal()
 
-    states_actual = biorbd.VecS2mMuscleStateActual(nb_muscle)
-    for i in range(len(states_actual)):
-        states_actual[i] = biorbd.s2mMuscleStateActual(0, u[i])
+    states_dynamics = biorbd.VecS2mMuscleStateDynamics(nb_muscle)
+    for i in range(len(states_dynamics)):
+        states_dynamics[i] = biorbd.VecS2mMuscleStateDynamics(0, u[i])
 
     biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
-    tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(biorbd_model, states_actual, states[:nb_q], states[nb_q:])
+    tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
 
     tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
 
@@ -147,18 +147,18 @@ def dynamics_from_muscles_and_torques_and_contact(t_int, states, biorbd_model, u
     nb_tau = biorbd_model.nbTau()
     nb_muscle = biorbd_model.nbMuscleTotal()
 
-    # states_actual = biorbd.VecS2mMuscleStateActual(nb_muscle)
-    # for i in range(len(states_actual)):
-    #     states_actual[i] = biorbd.s2mMuscleStateActual(0, u[i])
-    #
-    # biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
-    # tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(biorbd_model, states_actual, states[:nb_q], states[nb_q:])
-    #
-    # tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
+    states_dynamics = biorbd.VecS2mMuscleStateDynamics(nb_muscle)
+    for i in range(len(states_dynamics)):
+        states_dynamics[i] = biorbd.s2mMuscleStateDynamics(0, u[i])
 
-    cs = biorbd_model.getConstraints(biorbd_model)
+    biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
+    tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
+
+    tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
+
+    cs = biorbd_model.getConstraints_nonConst(biorbd_model)
     qddot = biorbd.s2mMusculoSkeletalModel.ForwardDynamicsConstraintsDirect(biorbd_model, states[:nb_q], states[nb_q:],
-                                                                            u, cs).get_array()
+                                                                            tau_final, cs).get_array()
     rsh = np.ndarray(nb_q + nb_qdot)
     for i in range(nb_q):
         rsh[i] = states[nb_q+i]
