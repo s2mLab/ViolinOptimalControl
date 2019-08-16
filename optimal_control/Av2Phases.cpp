@@ -6,17 +6,24 @@
 #include "includes/utils.h"
 #include <time.h>
 
+#ifndef PI
+#define PI 3.141592
+#endif
+
 using namespace std;
 USING_NAMESPACE_ACADO
 
-s2mMusculoSkeletalModel m("../../models/BrasViolon.bioMod");
+biorbd::Model m("../../models/BrasViolon.bioMod");
 
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
-unsigned int nTau(m.nbTau());           // controls number
+unsigned int nTau(m.nbGeneralizedTorque());           // controls number
 unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 unsigned int nPhases(2);
+GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
+GeneralizedTorque Tau(nTau);
+std::vector<biorbd::muscles::StateDynamics> state(nMus); // controls
 
 const double t_Start = 0.0;
 const double t_End = 0.5;
@@ -120,12 +127,12 @@ int  main ()
     ocp.subjectTo(-0.1 <= x2(4) <= PI);
 
     //Contact force constraints
-    CFunction contactforce(2, forceConstraintFromMuscleActivation);
-    double coeffFriction(0.3);
-//    ocp.subjectTo(0 <= contactforce(is1)(0) <= coeffFriction*contactforce(is1)(1)); // composante selon x: mu*y mu=0.3 d'après www.tangentex.com/CordeViolon.htm
-//    ocp.subjectTo(0 <= contactforce(is2)(0) <= coeffFriction*contactforce(is2)(1));
-//    ocp.subjectTo(5 <= contactforce(is1)(1) <= 15); // composante selon y; normale au plan du mouvement
-    ocp.subjectTo(5 <= contactforce(is2)(1) <= 15);
+//    CFunction contactforce(2, forceConstraintFromMuscleActivation);
+//    double coeffFriction(0.3);
+////    ocp.subjectTo(0 <= contactforce(is1)(0) <= coeffFriction*contactforce(is1)(1)); // composante selon x: mu*y mu=0.3 d'après www.tangentex.com/CordeViolon.htm
+////    ocp.subjectTo(0 <= contactforce(is2)(0) <= coeffFriction*contactforce(is2)(1));
+////    ocp.subjectTo(5 <= contactforce(is1)(1) <= 15); // composante selon y; normale au plan du mouvement
+//    ocp.subjectTo(5 <= contactforce(is2)(1) <= 15);
 
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
@@ -138,13 +145,13 @@ int  main ()
     VariablesGrid u_init(2*(nTau + nMus), Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<2; ++i){
         for(unsigned int j=0; j<nMus; ++j){
-            u_init(i, j) = 0.2;
+            u_init(i, j) = 0.3;
         }
         for(unsigned int j=nMus; j<nMus+nTau; ++j){
             u_init(i, j) = 0.01;
         }
         for(unsigned int j=nMus+nTau; j<(2*nMus)+nTau; ++j){
-            u_init(i, j) = 0.2;
+            u_init(i, j) = 0.3;
         }
         for(unsigned int j=(2*nMus)+nTau; j<2*(nMus+nTau); ++j){
             u_init(i, j) = 0.01;
