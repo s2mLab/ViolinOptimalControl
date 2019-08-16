@@ -1,6 +1,9 @@
 #ifndef __CONSTRAINTS_H
 #define __CONSTRAINTS_H
-#include "s2mMusculoSkeletalModel.h"
+#include "biorbd/BiorbdModel.h"
+#include "RigidBody/GeneralizedCoordinates.h"
+#include "RigidBody/GeneralizedTorque.h"
+#include "Muscles/StateDynamics.h"
 #include "dynamics.h"
 
 void statesZero( double *x, double *g, void * );
@@ -14,14 +17,16 @@ void markerPosition(double *x, double *g, void *user_data );
 void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data);
 void forceConstraintFromTorque(double *x, double *g, void *user_data);
 
-extern s2mMusculoSkeletalModel m;
+extern biorbd::Model m;
 extern unsigned int nQ;
 extern unsigned int nQdot;
 extern unsigned int nTau;
 extern unsigned int nTags;
 extern unsigned int nMus;
 extern unsigned int nPhases;
-
+extern GeneralizedCoordinates Q, Qdot, Qddot;
+extern GeneralizedTorque Tau;
+extern std::vector<biorbd::muscles::StateDynamics> state; // controls
 
 
 #endif

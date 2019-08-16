@@ -1,30 +1,35 @@
 #include "dynamics.h"
+#include <rbdl/Dynamics.h>
+#include "BiorbdModel.h"
+#include "RigidBody/GeneralizedCoordinates.h"
+#include "RigidBody/GeneralizedTorque.h"
+#include "Muscles/StateDynamics.h"
 
 //#define CHECK_MAX_FORCE
 //#define CHECK_FORCE_IF_LOW_ACTIVATION
 //#define CHECK_MUSCLE_LENGTH_IS_POSITIVE
 
-void forwardDynamics(const s2mGenCoord& Q, const s2mGenCoord& Qdot, const s2mTau& Tau, double *rhs){
-    s2mGenCoord Qddot(nQdot);
+void forwardDynamics(const GeneralizedCoordinates& Q, const GeneralizedCoordinates& Qdot, const GeneralizedTorque& Tau, double *rhs){
+    GeneralizedCoordinates Qddot(nQ);
+
     RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
 
-    for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
+    for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];
     }
 }
 
 void forwardDynamicsFromJointTorque( double *x, double *rhs, void *){
-    s2mGenCoord Q(nQ);
-    s2mGenCoord Qdot(nQdot);
-    s2mTau Tau(nTau); // controls
+    GeneralizedCoordinates Q(nQ), Qdot(nQ);
+    GeneralizedTorque Tau(nQ);
 
     // Dispatch the inputs
-    for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
+    for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
     }
-    for (unsigned int i = 0; i<nTau; ++i)
+    for(unsigned int i = 0; i<nTau; ++i)
         Tau[i] = x[i+nQ+nQdot];
 
     // Compute the forward dynamics
@@ -33,22 +38,22 @@ void forwardDynamicsFromJointTorque( double *x, double *rhs, void *){
 
 
 void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
-    s2mGenCoord Q(static_cast<unsigned int>(nQ));           // states
-    s2mGenCoord Qdot(static_cast<unsigned int>(nQdot));     // derivated states
+    GeneralizedCoordinates Q(nQ), Qdot(nQ);
+    GeneralizedTorque Tau(nQ);
+    std::vector<biorbd::muscles::StateDynamics> state(nMus);
 
     // Dispatch the inputs
-    for (unsigned int i = 0; i<nQ; ++i){
+    for(unsigned int i = 0; i<nQ; ++i){
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
     }
     m.updateMuscles(m, Q, Qdot, true);
 
-    std::vector<s2mMuscleStateActual> state;// controls
-    for (unsigned int i = 0; i<nMus; ++i)
-        state.push_back(s2mMuscleStateActual(0, x[i+nQ+nQdot]));
+    for(unsigned int i = 0; i<nMus; ++i)
+        state[i] = biorbd::muscles::StateDynamics(0, x[i+nQ+nQdot]);
 
     // Compute the torques from muscles
-    s2mTau Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
+    Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
 
     // Compute the forward dynamics
     forwardDynamics(Q, Qdot, Tau, rhs);
@@ -57,10 +62,10 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
     // Error checker
     // Check if Forces are not too high
     #ifdef CHECK_MAX_FORCE
-        for(int i=0; i<m.nbTau(); ++i){
+        for(unsigned int int i=0; i<m.nbTau(); ++i){
             if (Tau[i]>1e5){
                 std::vector<int> L;
-                for(int j=0; j<nMus; ++j){
+                for(unsigned int int j=0; j<nMus; ++j){
                     if (m.musclesLengthJacobian(m, true, &Q).coeff(j,i)!=0){
                         L.push_back(j);
                     }
@@ -74,11 +79,11 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
 
     // Check if muscle forces are not too high if muscle activation is low
     #ifdef CHECK_FORCE_IF_LOW_ACTIVATION
-        for(int i=0; i<m.nbTau(); ++i){
+        for(unsigned int int i=0; i<m.nbTau(); ++i){
             if (Tau[i]>0.1){
                 int c=0;
                 std::vector<int> L;
-                for(int j=0; j<nMus; ++j){
+                for(unsigned int int j=0; j<nMus; ++j){
                     if (m.musclesLengthJacobian(m, true, &Q).coeff(j,i)!=0){
                         L.push_back(j);
                         if(state[j].activation()>0.015)
@@ -92,8 +97,8 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
     #endif
 
     #ifdef CHECK_MUSCLE_LENGTH_IS_POSITIVE
-        for(int i=0; i<m.nbMuscleGroups(); ++i){
-            for(int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
+        for(unsigned int int i=0; i<m.nbMuscleGroups(); ++i){
+            for(unsigned int int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
                 if (m.muscleGroup(i).muscle(j).get()->length(m, Q) <= 0)
                     std::cout << "La longueur du muscle " << i << " est inférieur á 0" <<std::endl;
         }
@@ -102,32 +107,31 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
 
 
 void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void *user_data){
-    s2mGenCoord Q(static_cast<unsigned int>(nQ));           // states
-    s2mGenCoord Qdot(static_cast<unsigned int>(nQdot));     // derivated states
+    GeneralizedCoordinates Q(nQ), Qdot(nQ);
+    GeneralizedTorque Tau(nQ);
+    std::vector<biorbd::muscles::StateDynamics> state(nMus);
 
     // Dispatch the inputs
-    for (unsigned int i = 0; i<nQ; ++i){
+    for(unsigned int i = 0; i<nQ; ++i){
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
     }
     m.updateMuscles(m, Q, Qdot, true);
 
-    std::vector<s2mMuscleStateActual> state; // controls
-    for (unsigned int i = 0; i<nMus; ++i){
-        state.push_back(s2mMuscleStateActual(0, x[i+nQ+nQdot]));
+    for(unsigned int i = 0; i<nMus; ++i){
+        state[i] = biorbd::muscles::StateDynamics(0, x[nQ+nQdot + i]);
         //std::cout<<"Activation:"<<x[i+nQ+nQdot]<<std::endl;
     }
     // Compute the torques from muscles
-    s2mTau Tau = m.muscularJointTorque(m, state, true, &Q, &Qdot);
-    for (unsigned int i=0; i<nTau; ++i){
-        Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
+    Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
+    for(unsigned int i=0; i<nTau; ++i){
+        Tau[i] += x[nQ+nQdot+nMus + i];
         //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
     }
 
     // Compute the forward dynamics
     forwardDynamics(Q, Qdot, Tau, rhs);
 
-//    s2mGenCoord Qddot(nQdot);
 //    RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
 
 //    std::cout << "\n";
@@ -147,8 +151,8 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
 //    std::cout << std::setprecision(15) << "Qdot = " << Qdot.transpose() << std::endl;
 //    std::cout << std::setprecision(15) << "Qddot = " << Qddot.transpose() << std::endl;
 
-//    for(int i=0; i<m.nbMuscleGroups(); ++i){
-//        for(int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
+//    for(unsigned int int i=0; i<m.nbMuscleGroups(); ++i){
+//        for(unsigned int int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
 //           std::cout << std::setprecision(15) <<m.muscleGroup(i).muscle(j).get()->name()<< ": "<<m.muscleGroup(i).muscle(j).get()->length(m, Q)<< std::endl;
 //    }
 //    std::cout <<"\n";
@@ -158,10 +162,10 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
     // Error checker
     // Check if Forces are not too high
     #ifdef CHECK_MAX_FORCE
-        for(int i=0; i<m.nbTau(); ++i){
+        for(unsigned int int i=0; i<m.nbTau(); ++i){
             if (Tau[i]>1e5){
                 std::vector<int> L;
-                for(int j=0; j<nMus; ++j){
+                for(unsigned int int j=0; j<nMus; ++j){
                     if (m.musclesLengthJacobian(m, true, &Q).coeff(j,i)!=0){
                         L.push_back(j);
                     }
@@ -175,11 +179,11 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
 
     // Check if muscle forces are not too high if muscle activation is low
     #ifdef CHECK_FORCE_IF_LOW_ACTIVATION
-        for(int i=0; i<m.nbTau(); ++i){
+        for(unsigned int int i=0; i<m.nbTau(); ++i){
             if (Tau[i]>0.1){
                 int c=0;
                 std::vector<int> L;
-                for(int j=0; j<nMus; ++j){
+                for(unsigned int int j=0; j<nMus; ++j){
                     if (m.musclesLengthJacobian(m, true, &Q).coeff(j,i)!=0){
                         L.push_back(j);
                         if(state[j].activation()>0.015)
@@ -193,8 +197,8 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
     #endif
 
     #ifdef CHECK_MUSCLE_LENGTH_IS_POSITIVE
-        for(int i=0; i<m.nbMuscleGroups(); ++i){
-            for(int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
+        for(unsigned int int i=0; i<m.nbMuscleGroups(); ++i){
+            for(unsigned int int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
                 if (m.muscleGroup(i).muscle(j).get()->length(m, Q) <= 0)
                     std::cout << "La longueur du muscle " << i << " est inférieur á 0" <<std::endl;
         }
@@ -203,39 +207,38 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
 
 void forwardDynamicsMultiStage( double *x, double *rhs, void *user_data){
     for(unsigned int i=0; i<nPhases; ++i){
-        forwardDynamicsFromMuscleActivationAndTorque(&x[i*(nQ+nQdot)], &rhs[i*(nQ+nQdot)], &user_data);
+        forwardDynamicsFromMuscleActivationAndTorque(&x[i*(nQ+nQdot+nMus+nTau)], &rhs[i*(nQ+nQdot)], &user_data);
     }
 }
 
 void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs, void *user_data){
-    s2mGenCoord Q(m);           // states
-    s2mGenCoord Qdot(m);     // derivated states
+    GeneralizedCoordinates Q(nQ), Qdot(nQ), Qddot(nQ);
+    GeneralizedTorque Tau(nQ);
+    std::vector<biorbd::muscles::StateDynamics> state(nMus);
 
     // Dispatch the inputs
-    for (unsigned int i = 0; i<nQ; ++i){
+    for(unsigned int i = 0; i<nQ; ++i){
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
     }
     m.updateMuscles(m, Q, Qdot, true);
 
-    std::vector<s2mMuscleStateActual> state; // controls
-    for (unsigned int i = 0; i<nMus; ++i){
-        state.push_back(s2mMuscleStateActual(0, x[i+nQ+nQdot]));
+    for(unsigned int i = 0; i<nMus; ++i){
+        state[i] = biorbd::muscles::StateDynamics(0, x[i+nQ+nQdot]);
     }
 
     // Compute the torques from muscles
-    s2mTau Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
-    for (unsigned int i=0; i<nTau; ++i){
+    Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
+    for(unsigned int i=0; i<nTau; ++i){
         Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
         //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
     }
     // Compute the forward dynamics
-    s2mGenCoord Qddot(nQdot);
-    RigidBodyDynamics::ConstraintSet CS = m.getConstraints(m);
+    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints_nonConst(m);
     RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
     //RigidBodyDynamics::ForwardDynamicsContactsKokkevis(m, Q, Qdot, Tau, CS, Qddot);
 
-    for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
+    for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];
     }
@@ -243,12 +246,11 @@ void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs
 }
 
 void forwardDynamicsFromTorqueContact( double *x, double *rhs, void *user_data){
-    s2mGenCoord Q(m);           // states
-    s2mGenCoord Qdot(m);     // derivated states
-    s2mTau Tau(m);
+    GeneralizedCoordinates Q(nQ), Qdot(nQ), Qddot(nQ);
+    GeneralizedTorque Tau(nQ);
 
     // Dispatch the inputs
-    for (unsigned int i = 0; i<nQ; ++i){
+    for(unsigned int i = 0; i<nQ; ++i){
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
         Tau[i]= x[i+nQ+nQdot];
@@ -256,12 +258,11 @@ void forwardDynamicsFromTorqueContact( double *x, double *rhs, void *user_data){
 
 
     // Compute the forward dynamics
-    s2mGenCoord Qddot(nQdot);
-    RigidBodyDynamics::ConstraintSet CS = m.getConstraints(m);
+    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints_nonConst(m);
     RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
     //RigidBodyDynamics::ForwardDynamicsContactsKokkevis(m, Q, Qdot, Tau, CS, Qddot);
 
-    for (unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
+    for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];
     }

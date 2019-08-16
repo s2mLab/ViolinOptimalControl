@@ -7,7 +7,7 @@ import analyses.utils as utils
 
 fun_dyn = utils.dynamics_from_muscles_and_torques_and_contact
 
-biorbd_model = biorbd.s2mMusculoSkeletalModel(f"../models/testloop.bioMod")
+biorbd_model = biorbd.Model(f"../models/testloop.bioMod")
 
 # q_init = np.array([1.000e-01, 1.000e-01, 1.095, 1.571, 1.056, 1.061, -1.726, -3.746e-01, -3.882e-01, -3.993e-01,
 #                    -9.2626e-02, -1.327e-01, -1.322e-01, 5.593e-02])
@@ -16,17 +16,17 @@ biorbd_model = biorbd.s2mMusculoSkeletalModel(f"../models/testloop.bioMod")
 #               5.7938e-03, -3.122e-02, -6.179e-02, -6.635e-02, 2.789e-02, -3.107e-01, 3.081e-01])
 
 q_init = np.concatenate((np.zeros(biorbd_model.nbQ()), np.zeros(biorbd_model.nbQ())))
-u = np.zeros(biorbd_model.nbTau())
+u = np.zeros(biorbd_model.nbGeneralizedTorque())
 
 integrated_tp = integrate.solve_ivp(fun=lambda t, y: fun_dyn(t, y, biorbd_model, u),
-                                    t_span=(0, 5), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
+                                    t_span=(0, 1), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
 
 t_interp, q_interp = utils.interpolate_integration(nb_frames=1000, t_int=integrated_tp.t, y_int=integrated_tp.y)
 
 
 
 integrated_tp2 = integrate.solve_ivp(fun=lambda t, y: utils.dynamics_from_muscles_and_torques(t, y, biorbd_model, u),
-                                    t_span=(0, 5), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
+                                    t_span=(0, 1), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
 
 t_interp2, q_interp2 = utils.interpolate_integration(nb_frames=1000, t_int=integrated_tp2.t, y_int=integrated_tp2.y)
 

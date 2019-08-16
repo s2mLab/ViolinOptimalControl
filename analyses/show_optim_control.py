@@ -15,14 +15,14 @@ nb_phases = 2
 nb_frame_inter = 500
 
 # Load the model
-m = biorbd.s2mMusculoSkeletalModel(f"../models/{model_name}.bioMod")
+m = biorbd.Model(f"../models/{model_name}.bioMod")
 if fun_dyn == utils.dynamics_from_muscles:
     nb_controls = m.nbMuscleTotal()
 elif fun_dyn == utils.dynamics_from_joint_torque:
-    nb_controls = m.nbTau()
+    nb_controls = m.nbGeneralizedTorque()
 elif fun_dyn == utils.dynamics_from_muscles_and_torques \
         or fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
-    nb_controls = m.nbMuscleTotal()+m.nbTau()
+    nb_controls = m.nbMuscleTotal()+m.nbGeneralizedTorque()
 elif fun_dyn == utils.dynamics_from_accelerations:
     nb_controls = m.nbQ()
 else:
@@ -67,8 +67,8 @@ for i in range(m.nbQ()):
 #     utils.plot_piecewise_constant(t_final, all_u[i, :])
 #     plt.title("Acceleration %i" % i)
 
-for i in range(m.nbTau()):
-    plt.subplot(m.nbTau(), 3, 3 + (3 * i))
+for i in range(m.nbGeneralizedTorque()):
+    plt.subplot(m.nbGeneralizedTorque(), 3, 3 + (3 * i))
     utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
     plt.title("Torques %i" % i)
 
@@ -82,7 +82,7 @@ for i in range(m.nbMuscleGroups()):
     for j in range(m.muscleGroup(i).nbMuscles()):
         plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
         utils.plot_piecewise_constant(t_final, all_u[cmp, :])
-        plt.title(biorbd.s2mMuscleHillType.getRef(m.muscleGroup(i).muscle(j)).name())
+        plt.title(biorbd.HillType.getRef(m.muscleGroup(i).muscle(j)).name().getString())
         plt.ylim((0, 1))
         cmp += 1
 

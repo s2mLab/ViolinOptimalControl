@@ -1,26 +1,37 @@
 #include "constraints.h"
 
+#ifndef PI
+#define PI 3.141592
+#endif
+
+#include "RigidBody/GeneralizedCoordinates.h"
+#include "RigidBody/GeneralizedTorque.h"
+#include "RigidBody/NodeBone.h"
+#include "Muscles/StateDynamics.h"
+
+// Preallocate the variables
+static biorbd::rigidbody::NodeBone tag;
 
 void statesZero( double *x, double *g, void * ){
-    for (unsigned int i =0; i<nQ + nQdot; ++i) {
+    for(unsigned int i=0; i<nQ + nQdot; ++i) {
         g[i] =  x[i];
     }
 }
 
 void velocityZero( double *x, double *g, void * ){
-    for (unsigned int i =0; i<nQdot; ++i) {
+    for(unsigned int i=0; i<nQdot; ++i) {
         g[i] =  x[nQ+i];
     }
 }
 
 void activationsZero( double *x, double *g, void * ){
-    for (unsigned int i =0; i<nMus; ++i) {
+    for(unsigned int i=0; i<nMus; ++i) {
         g[i] =  x[i+nQ+nQdot];
     }
 }
 
 void torquesZero( double *x, double *g, void * ){
-    for (unsigned int i =0; i<nTau; ++i) {
+    for(unsigned int i=0; i<nTau; ++i) {
         g[i] =  x[i+nQ+nQdot+nMus];
     }
 }
@@ -44,12 +55,12 @@ void violonDown( double *x, double *g, void * ){
 }
 
 void markerPosition(double *x, double *g, void *user_data ){
-    int numTag = ((int*) user_data)[0];
-    s2mGenCoord Q(nQ);
-    for (unsigned int i = 0; i<nQ; ++i){
+    static int numTag = static_cast<int*>(user_data)[0];
+
+    for(unsigned int i = 0; i<nQ; ++i){
         Q[i] = x[i];
     }
-    s2mNodeBone tag(m.Tags(m, Q, numTag, true, true));
+    tag = m.Tags(m, Q, numTag, true, true);
 //    std::cout << tag.name() <<std::endl;
 //    std::cout << tag << std::endl;
     g[0]=tag[0];
@@ -58,32 +69,28 @@ void markerPosition(double *x, double *g, void *user_data ){
 }
 
 void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data){
-//    RigidBodyDynamics::ConstraintSet CS = m.getConstraints();
 //    forwardDynamicsFromMuscleActivationAndTorqueContact(x, g, user_data);
-    s2mGenCoord Q(static_cast<unsigned int>(nQ));           // states
-    s2mGenCoord Qdot(static_cast<unsigned int>(nQdot));     // derivated states
 
     // Dispatch the inputs
-    for (unsigned int i = 0; i<nQ; ++i){
+    for(unsigned int i = 0; i<nQ; ++i){
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
     }
     m.updateMuscles(m, Q, Qdot, true);
 
-    std::vector<s2mMuscleStateActual> state; // controls
-    for (unsigned int i = 0; i<nMus; ++i){
-        state.push_back(s2mMuscleStateActual(0, x[i+nQ+nQdot]));
+
+    for(unsigned int i = 0; i<nMus; ++i){
+        state[i] = biorbd::muscles::StateDynamics(0, x[i+nQ+nQdot]);
     }
 
     // Compute the torques from muscles
-    s2mTau Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
-    for (unsigned int i=0; i<nTau; ++i){
-        Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
+    Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
+    for(unsigned int i=0; i<nTau; ++i){
+        Tau[i] += x[i+nQ+nQdot+nMus];
         //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
     }
     // Compute the forward dynamics
-    s2mGenCoord Qddot(nQdot);
-    RigidBodyDynamics::ConstraintSet CS = m.getConstraints(m);
+    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints_nonConst(m);
     RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
     g[0]=CS.force(0);
     g[1]=CS.force(1);
@@ -92,19 +99,14 @@ void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data)
 
 void forceConstraintFromTorque(double *x, double *g, void *user_data)
 {
-        s2mGenCoord Q(static_cast<unsigned int>(nQ));           // states
-        s2mGenCoord Qdot(static_cast<unsigned int>(nQdot));     // derivated states
-        s2mTau Tau(m);
-
         // Dispatch the inputs
-        for (unsigned int i = 0; i<nQ; ++i){
+        for(unsigned int i = 0; i<nQ; ++i){
             Q[i] = x[i];
             Qdot[i] = x[i+nQ];
             Tau[i]= x[i+nQ+nQdot];
         }
         // Compute the forward dynamics
-        s2mGenCoord Qddot(nQdot);
-        RigidBodyDynamics::ConstraintSet CS = m.getConstraints(m);
+        RigidBodyDynamics::ConstraintSet& CS = m.getConstraints_nonConst(m);
         RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
 
         g[0]=CS.force(0);

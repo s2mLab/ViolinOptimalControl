@@ -1,6 +1,6 @@
 #include <acado_optimal_control.hpp>
 #include <bindings/acado_gnuplot/gnuplot_window.hpp>
-#include "s2mMusculoSkeletalModel.h"
+#include "BiorbdModel.h"
 #include "includes/dynamics.h"
 #include "includes/objectives.h"
 #include "includes/constraints.h"
@@ -11,13 +11,16 @@ USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m("../../models/Bras.bioMod");
+biorbd::Model m("../../models/Bras.bioMod");
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
-unsigned int nTau(m.nbTau());           // controls number
+unsigned int nTau(m.nbGeneralizedTorque());           // controls number
 unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 unsigned int nPhases(1);
+GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
+GeneralizedTorque Tau(nTau);
+std::vector<biorbd::muscles::StateDynamics> state(nMus); // controls
 
 const double t_Start = 0.0;
 const double t_End = 1.0;
