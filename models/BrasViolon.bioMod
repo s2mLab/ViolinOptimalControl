@@ -447,7 +447,7 @@ external_forces	0
 			0.000000	1.000000	0.000000	-0.271953
 			0.000000	0.000000	1.000000	-0.035220
 			0.000000	0.000000	0.000000	1.000000
-		// rotations	    xy
+		//rotations	    xy
 		mass 0.20378
 		inertia
 			0.000580	0.000000	0.000000
@@ -486,7 +486,7 @@ external_forces	0
         predecessor Archet
         successor Violon
         RTpredecessor 0 0 0 xyz 0 0 0.370
-        RTsuccessor 0 0.78 0.78 xyz 0 0 0.2425
+        RTsuccessor 0 1.57 3.1415 xyz 0 0 0.2425
         axis 1 1 1 1 1 0
         stabilizationParameter 0.1
     endloopcontact
@@ -999,4 +999,5 @@ endmusclegroup
 		PCSA				1.8
 		maxVelocity 		10
 	endmuscle
+
 
