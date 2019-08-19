@@ -47,79 +47,80 @@ int  main ()
     std::cout << "nb de torques: " << nTau << std::endl;
     std::cout << "nb de marqueurs: " << nTags << std::endl;
 
-
-
     /* ---------- INITIALIZATION ---------- */
-    DifferentialState* x = new DifferentialState[nPhases];
-    Control* u = new Control[nPhases];
-    IntermediateState* is = new IntermediateState[nPhases];
+//    std::vector<DifferentialState> x(nPhases);
+//    std::vector<Control> u(nPhases);
+//    std::vector<IntermediateState> is(nPhases);
 
-    for (unsigned int p=0; p<nPhases; ++p){
-        x[p] = DifferentialState("",nQ+nQdot,1);
-        u[p] = Control("", nMus+nTau, 1);
-        is[p] = IntermediateState(nQ + nQdot + nMus + nTau);
-        for (unsigned int i = 0; i < nQ; ++i)
-            is[p](i) = x[p](i);
-        for (unsigned int i = 0; i < nQdot; ++i)
-            is[p](i+nQ) = x[p](i+nQ);
-        for (unsigned int i = 0; i < nMus; ++i)
-            is[p](i+nQ+nQdot) = u[p](i);
-        for (unsigned int i = 0; i < nTau; ++i)
-            is[p](i+nQ+nQdot+nMus) = u[p](i+nMus);
-    }
+//    x[0] = DifferentialState("",nQ+nQdot,1);
+//    u[0] = Control("", nMus+nTau, 1);
+//    is[0] = IntermediateState("", nQ + nQdot + nMus + nTau, 1);
+
+    DifferentialState       x("",nQ+nQdot,1);
+    Control                 u("", nMus+nTau, 1);
+    IntermediateState       is(nQ + nQdot + nMus + nTau);
+
+    for (unsigned int i = 0; i < nQ; ++i)
+        is(i) = x(i);
+    for (unsigned int i = 0; i < nQdot; ++i)
+        is(i+nQ) = x(i+nQ);
+    for (unsigned int i = 0; i < nMus; ++i)
+        is(i+nQ+nQdot) = u(i);
+    for (unsigned int i = 0; i < nTau; ++i)
+        is(i+nQ+nQdot+nMus) = u(i+nMus);
+
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(t_Start, t_End, nPoints);
     CFunction lagrange(1, lagrangeResidualTorques);
-    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
+    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorqueContact);
     DifferentialEquation f ;
 
-    for (unsigned int p=0; p<nPhases; ++p){
-
-        /* ------------ CONSTRAINTS ----------- */
-        (f << dot(x[p])) == F(is[p]);
-
-        if (p == 0){
-            //Position constraints
-            CFunction markerArchetPoucette(3, markerPosition);
-            markerArchetPoucette.setUserData((void*) &tagArchetPoucette);
-            CFunction markerArchetCOM(3, markerPosition);
-            markerArchetCOM.setUserData((void*) &tagArchetCOM);
-            CFunction markerArchetTete(3, markerPosition);
-            markerArchetTete.setUserData((void*) &tagArchetTete);
-            CFunction markerViolon(3, markerPosition);
-            markerViolon.setUserData((void*) &tagViolon);
-
-            ocp.subjectTo( AT_START, markerArchetPoucette(x[p]) - markerViolon(x[p]) == 0.0 );
-            ocp.subjectTo( AT_END, markerArchetTete(x[p]) - markerViolon(x[p]) == 0.0 );
-        }
-
-        //Controls constraints
-        for (unsigned int i=0; i<nMus; ++i)
-             ocp.subjectTo(0.01 <= u[p](i) <= 1);
-        for (unsigned int i=nMus; i<nMus+nTau; ++i)
-             ocp.subjectTo(-100 <= u[p](i) <= 100);
-
-        // path constraints
-        ocp.subjectTo(-PI/8 <= x[p](0) <= 0.1);
-        ocp.subjectTo(-PI/2 <= x[p](1) <= 0.1);
-        ocp.subjectTo(-PI/4 <= x[p](2) <= PI);
-        ocp.subjectTo(-PI/2 <= x[p](3) <= PI/2);
-        ocp.subjectTo(-0.1  <= x[p](4) <= PI);
-        ocp.subjectTo(-PI   <= x[p](5) <= PI);
-        ocp.subjectTo(-PI   <= x[p](6) <= PI);
-        for (unsigned int j=0; j<nQdot; ++j)
-            ocp.subjectTo(-50 <= x[p](nQ + j) <= 50);
-
-    }
-
-    /* ------------ OBJECTIVE ----------- */
-    ocp.minimizeLagrangeTerm( lagrange(is[0]) );
 
     /* ------------ CONSTRAINTS ----------- */
+    (f << dot(x)) == F(is);
     ocp.subjectTo(f);
 
-//    ocp.subjectTo( 0.0, x[1], -x[0], 0.0 );
-//    ocp.subjectTo( 0.0, x[0], -x[1], 0.0 );
+
+    //Position constraints
+    CFunction markerArchetPoucette(3, markerPosition);
+    markerArchetPoucette.setUserData((void*) &tagArchetPoucette);
+    CFunction markerArchetCOM(3, markerPosition);
+    markerArchetCOM.setUserData((void*) &tagArchetCOM);
+    CFunction markerArchetTete(3, markerPosition);
+    markerArchetTete.setUserData((void*) &tagArchetTete);
+    CFunction markerViolon(3, markerPosition);
+    markerViolon.setUserData((void*) &tagViolon);
+
+    ocp.subjectTo( AT_START, markerArchetPoucette(x) - markerViolon(x) == 0.0 );
+    ocp.subjectTo( AT_END, markerArchetTete(x) - markerViolon(x) == 0.0 );
+
+
+    //Controls constraints
+    for (unsigned int i=0; i<nMus; ++i)
+         ocp.subjectTo(0.01 <= u(i) <= 1);
+    for (unsigned int i=0; i<nTau; ++i)
+         ocp.subjectTo(-100 <= u(nMus+i) <= 100);
+
+    // path constraints
+    ocp.subjectTo(-PI/8 <= x(0) <= 0.1);
+    ocp.subjectTo(-PI/2 <= x(1) <= 0.1);
+    ocp.subjectTo(-PI/4 <= x(2) <= PI);
+    ocp.subjectTo(-PI/2 <= x(3) <= PI/2);
+    ocp.subjectTo(-0.1  <= x(4) <= PI);
+    ocp.subjectTo(-PI   <= x(5) <= PI);
+    ocp.subjectTo(-PI   <= x(6) <= PI);
+
+    for (unsigned int j=0; j<nQdot; ++j)
+        ocp.subjectTo(-50 <= x(nQ + j) <= 50);
+
+
+    //    ocp.subjectTo( 0.0, x[1], -x[0], 0.0 );
+    //    ocp.subjectTo( 0.0, x[0], -x[1], 0.0 );
+
+
+    /* ------------ OBJECTIVE ----------- */
+    ocp.minimizeLagrangeTerm( lagrange(u) );
+
 
 
     /* ---------- OPTIMIZATION  ------------ */
@@ -130,24 +131,18 @@ int  main ()
     algorithm.set(KKT_TOLERANCE, 1e-4);
 
     /* ---------- INITIAL SOLUTION ---------- */
-    VariablesGrid u_init(nPhases*(nTau + nMus), Grid(t_Start, t_End, 2));
-    for(unsigned int i=0; i<2; ++i){
+    VariablesGrid u_init(nTau + nMus, Grid(t_Start, t_End, 2));
         for(unsigned int j=0; j<nMus; ++j){
-            u_init(i, j) = 0.2;
+            u_init(0, j) = 0.2;
+            u_init(1, j) = 0.2;
         }
         for(unsigned int j=nMus; j<nMus+nTau; ++j){
-            u_init(i, j) = 0.01;
+            u_init(0, j) = 0.01;
+            u_init(1, j) = 0.01;
         }
-        for(unsigned int j=nMus+nTau; j<(2*nMus)+nTau; ++j){
-            u_init(i, j) = 0.2;
-        }
-        for(unsigned int j=(2*nMus)+nTau; j<2*(nMus+nTau); ++j){
-            u_init(i, j) = 0.01;
-        }
-    }
     algorithm.initializeControls(u_init);
 
-    VariablesGrid x_init(nPhases*(nQ+nQdot), Grid(t_Start, t_End, 2));
+    VariablesGrid x_init(nQ+nQdot, Grid(t_Start, t_End, 2));
 
     // poucette sur COM
     x_init(0, 0) = 0.1000001;
@@ -167,29 +162,9 @@ int  main ()
     x_init(1, 5) = 1.929967317;
     x_init(1, 6) = -3.35089080;
 
-//    // bouton sur COM
-//    x_init(0, nQ+nQdot) = -0.39269915;
-//    x_init(0, 1+nQ+nQdot) = -0.27353444;
-//    x_init(0, 2+nQ+nQdot) = -0.05670261;
-//    x_init(0, 3+nQ+nQdot) = 0.439974729;
-//    x_init(0, 4+nQ+nQdot) = 0.511486204;
-//    x_init(0, 5+nQ+nQdot) = 1.929967317;
-//    x_init(0, 6+nQ+nQdot) = -3.35089080;
-
-//    // poucette sur COM
-//    x_init(1, nQ+nQdot) = 0.1000001;
-//    x_init(1, 1+nQ+nQdot) = 0.1000001;
-//    x_init(1, 2+nQ+nQdot) = 1.09468721;
-//    x_init(1, 3+nQ+nQdot) = 1.57079651;
-//    x_init(1, 4+nQ+nQdot) = 1.05642775;
-//    x_init(1, 5+nQ+nQdot) = 1.06072698;
-//    x_init(1, 6+nQ+nQdot) = -1.7258677;
-
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
          x_init(1, i) = 0.01;
-//         x_init(0, i+nQ+nQdot) = 0.01;
-//         x_init(1, i+nQ+nQdot) = 0.01;
 
     }
     algorithm.initializeDifferentialStates(x_init);
@@ -206,9 +181,6 @@ int  main ()
     time_exec = double(end - start)/CLOCKS_PER_SEC;
     std::cout<<"Execution time: "<<time_exec<<std::endl;
 
-    delete[] x;
-    delete[] u;
-    delete[] is;
 
     return 0;
 }

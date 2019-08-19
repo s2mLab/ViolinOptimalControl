@@ -73,7 +73,7 @@ int  main ()
     ocp.minimizeLagrangeTerm( lagrange(is1) + lagrange(is2));
 
     /* ------------ CONSTRAINTS ----------- */
-    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorqueContact);
+    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
 
     DifferentialEquation    f ;
 
