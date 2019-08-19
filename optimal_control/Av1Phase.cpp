@@ -19,7 +19,8 @@ unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbGeneralizedTorque());           // controls number
 unsigned int nTags(m.nTags());          // markers number
-unsigned int nMus(0);   // muscles number
+unsigned int nMus(m.nbMuscleTotal());   // muscles number
+
 unsigned int nPhases(1);
 GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
 GeneralizedTorque Tau(nTau);
@@ -42,35 +43,35 @@ int  main ()
     std::cout << "nb de marqueurs: " << nTags << std::endl;
 
     /* ---------- INITIALIZATION ---------- */
-    DifferentialState       x1("",nQ+nQdot,1);               //  the  differential states
-    Control                 u1("", nMus+nTau, 1);                 //  the  control input  u
-    IntermediateState       is1(nQ + nQdot + nMus + nTau); // + 1);
+    DifferentialState       x("",nQ+nQdot,1);               //  the  differential states
+    Control                 u("", nMus+nTau, 1);                 //  the  control input  u
+    IntermediateState       is(nQ + nQdot + nMus + nTau); // + 1);
 
     for (unsigned int i = 0; i < nQ; ++i){
-        is1(i) = x1(i);
+        is(i) = x(i);
     }
     for (unsigned int i = 0; i < nQdot; ++i){
-        is1(i+nQ) = x1(i+nQ);
+        is(i+nQ) = x(i+nQ);
     }
     for (unsigned int i = 0; i < nMus; ++i){
-        is1(i+nQ+nQdot) = u1(i);
+        is(i+nQ+nQdot) = u(i);
     }
     for (unsigned int i = 0; i < nTau; ++i){
-        is1(i+nQ+nQdot+nMus) = u1(i+nMus);
+        is(i+nQ+nQdot+nMus) = u(i+nMus);
     }
 
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(t_Start, t_End, nPoints);
 
     CFunction lagrange(1, lagrangeResidualTorques);
-    ocp.minimizeLagrangeTerm( lagrange(is1));
+    ocp.minimizeLagrangeTerm( lagrange(u));
 
     /* ------------ CONSTRAINTS ----------- */
-    CFunction F( nQ+nQdot, forwardDynamicsFromTorqueContact);
+    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
 
     DifferentialEquation    f ;
 
-    (f << dot(x1)) == F(is1);
+    (f << dot(x)) == F(is);
 
     ocp.subjectTo(f);
 
@@ -88,32 +89,27 @@ int  main ()
     CFunction markerViolon(3, markerPosition);
     markerViolon.setUserData((void*) &tagViolon);
 
-    ocp.subjectTo( AT_START, markerArchetPoucette(x1) - markerViolon(x1) == 0.0 );
-//    ocp.subjectTo( AT_START, markerArchetCOM(x1) - markerViolon(x1) == 0.0 );
-//    ocp.subjectTo( AT_END, markerArchetCOM(x1) - markerViolon(x1) == 0.0 );
-    ocp.subjectTo( AT_END, markerArchetTete(x1) - markerViolon(x1) == 0.0 );
+    ocp.subjectTo( AT_START, markerArchetPoucette(x) - markerViolon(x) == 0.0 );
+    ocp.subjectTo( AT_END, markerArchetTete(x) - markerViolon(x) == 0.0 );
 
     //Controls constraints
     for (unsigned int i=0; i<nMus; ++i){
-         ocp.subjectTo(0.01 <= u1(i) <= 1);
+         ocp.subjectTo(0.01 <= u(i) <= 1);
     }
-
     for (unsigned int i=nMus; i<nMus+nTau; ++i){
-         ocp.subjectTo(-100 <= u1(i) <= 100);
+         ocp.subjectTo(-100 <= u(i) <= 100);
     }
 
-    ocp.subjectTo(-PI/8 <= x1(0) <= 0.1);
-    ocp.subjectTo(-PI/2 <= x1(1) <= 0.1);
-    ocp.subjectTo(-PI/4 <= x1(2) <= PI);
-    ocp.subjectTo(-PI/2 <= x1(3) <= PI/2);
-    ocp.subjectTo(-0.1 <= x1(4) <= PI);
+    ocp.subjectTo(-PI/8 <= x(0) <= 0.1);
+    ocp.subjectTo(-PI/2 <= x(1) <= 0.1);
+    ocp.subjectTo(-PI/4 <= x(2) <= PI);
+    ocp.subjectTo(-PI/2 <= x(3) <= PI/2);
+    ocp.subjectTo(-0.1  <= x(4) <= PI);
+    ocp.subjectTo(-PI   <= x(5) <= PI);
+    ocp.subjectTo(-PI   <= x(6) <= PI);
 
-//    //Contact force constraints
-//    CFunction contactforce(2, forceConstraint);
-//    double coeffFriction(0.3);
-//    ocp.subjectTo(contactforce(is1)(0) - coeffFriction*contactforce(is1)(1) <= 0); // composante selon x: mu*y mu=0.3 d'après www.tangentex.com/CordeViolon.htm
-//    ocp.subjectTo(contactforce(is1)(0) + coeffFriction*contactforce(is1)(1) >= 0); // composante selon x: mu*y mu=0.3 d'après www.tangentex.com/CordeViolon.htm
-//    ocp.subjectTo(5 <= contactforce(is1)(1) <= 15); // composante selon y; normale au plan du mouvement
+    for (unsigned int j=0; j<nQdot; ++j)
+        ocp.subjectTo(-50 <= x(nQ + j) <= 50);
 
     /* ---------- OPTIMIZATION  ------------ */
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
@@ -153,23 +149,6 @@ int  main ()
     x_init(1, 4) = 0.511486204;
     x_init(1, 5) = 1.929967317;
     x_init(1, 6) = -3.35089080;
-
-//    //COM sur COM :
-//    x_init(0, 0) = 0.0990382;
-//    x_init(0, 1) = -0.3329108;
-//    x_init(0, 2) = 0.63740231;
-//    x_init(0, 3) = 0.71742303;
-//    x_init(0, 4) = 0.79172476;
-//    x_init(0, 5) = 1.26416757;
-//    x_init(0, 6) = -0.6445338;
-
-//    x_init(1, 0) = 0.0990382;
-//    x_init(1, 1) = -0.3329108;
-//    x_init(1, 2) = 0.63740231;
-//    x_init(1, 3) = 0.71742303;
-//    x_init(1, 4) = 0.79172476;
-//    x_init(1, 5) = 1.26416757;
-//    x_init(1, 6) = -0.6445338;
 
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
