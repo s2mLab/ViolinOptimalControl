@@ -41,7 +41,7 @@ endsegment
 
 segment Segment2
   parent Segment1
-  RT 1.57 0 0 xyz 0.75 0 0
+  RT 0 0 0 xyz 0.75 0 0
   rotations xyz
   mass 1
   com 0 0 -0.5
@@ -83,7 +83,7 @@ endsegment
 
 segment Segment3
   parent Segment2
-  RT -1.75 0 0 xyz 0 0 -1.50
+  RT 0 1.57 0 xyz 0 0 -1.50
   rotations xyz
   mass 1
   com 0 0 -0.5
@@ -209,7 +209,7 @@ loopconstraint
   predecessor Segment5
   successor Segment3
   RTpredecessor 0 0 0 xyz 0 0 0
-  RTsuccessor 0 0 0 xyz 0 0 0
-  axis 0 0 0 0 0 1
+  RTsuccessor 0 1.57 0 xyz 0 0 0
+  axis 1 1 1 0 1 1
   stabilizationParameter 0.1
 loopconstraint

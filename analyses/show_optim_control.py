@@ -9,9 +9,9 @@ import analyses.utils as utils
 model_name = "BrasViolon"
 output_files = "Av2Phases"
 fun_dyn = utils.dynamics_from_muscles_and_torques_and_contact
-runge_kutta_algo = 'rk4'
+runge_kutta_algo = 'rk45'
 nb_nodes = 30
-nb_phases = 2
+nb_phases = 1
 nb_frame_inter = 500
 
 # Load the model
