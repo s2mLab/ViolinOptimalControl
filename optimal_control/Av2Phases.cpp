@@ -70,7 +70,7 @@ int  main ()
     OCP ocp(t_Start, t_End, nPoints);
 
     CFunction lagrange(1, lagrangeResidualTorques);
-    ocp.minimizeLagrangeTerm( lagrange(is1) + lagrange(is2));
+    ocp.minimizeLagrangeTerm( lagrange(u1) + lagrange(u2));
 
     /* ------------ CONSTRAINTS ----------- */
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
@@ -162,73 +162,40 @@ int  main ()
     VariablesGrid x_init(2*(nQ+nQdot), Grid(t_Start, t_End, 2));
 
     // poucette sur COM
-    x_init(0, 0) = 0.1000001;
-    x_init(0, 1) = 0.1000001;
-    x_init(0, 2) = 1.0946872;
-    x_init(0, 3) = 1.5707965;
-    x_init(0, 4) = 1.0564277;
-    x_init(0, 5) = 1.0607269;
-    x_init(0, 6) = -1.725867;
+    x_init(0, 0) = 0.09973;
+    x_init(0, 1) = 0.09733;
+    x_init(0, 2) = 1.05710;
+    x_init(0, 3) = 1.56950;
+    x_init(0, 4) = 1.07125;
+    x_init(0, 5) = 0.95871;
+    x_init(0, 6) = -1.7687;
 
     // bouton sur COM
-    x_init(1, 0) = -0.39269915;
-    x_init(1, 1) = -0.27353444;
-    x_init(1, 2) = -0.05670261;
-    x_init(1, 3) = 0.439974729;
-    x_init(1, 4) = 0.511486204;
-    x_init(1, 5) = 1.929967317;
-    x_init(1, 6) = -3.35089080;
+    x_init(1, 0) = -0.39107;
+    x_init(1, 1) = -0.495383;
+    x_init(1, 2) = -0.089030;
+    x_init(1, 3) = 0.1485315;
+    x_init(1, 4) = 0.8569764;
+    x_init(1, 5) = 1.9126840;
+    x_init(1, 6) = -0.490220;
 
     // bouton sur COM
-    x_init(0, nQ+nQdot) = -0.39269915;
-    x_init(0, 1+nQ+nQdot) = -0.27353444;
-    x_init(0, 2+nQ+nQdot) = -0.05670261;
-    x_init(0, 3+nQ+nQdot) = 0.439974729;
-    x_init(0, 4+nQ+nQdot) = 0.511486204;
-    x_init(0, 5+nQ+nQdot) = 1.929967317;
-    x_init(0, 6+nQ+nQdot) = -3.35089080;
+    x_init(0, nQ+nQdot) = -0.39107;
+    x_init(0, 1+nQ+nQdot) = -0.495383;
+    x_init(0, 2+nQ+nQdot) = -0.089030;
+    x_init(0, 3+nQ+nQdot) = 0.1485315;
+    x_init(0, 4+nQ+nQdot) = 0.8569764;
+    x_init(0, 5+nQ+nQdot) = 1.9126840;
+    x_init(0, 6+nQ+nQdot) = -0.490220;
 
     // poucette sur COM
-    x_init(1, nQ+nQdot) = 0.1000001;
-    x_init(1, 1+nQ+nQdot) = 0.1000001;
-    x_init(1, 2+nQ+nQdot) = 1.09468721;
-    x_init(1, 3+nQ+nQdot) = 1.57079651;
-    x_init(1, 4+nQ+nQdot) = 1.05642775;
-    x_init(1, 5+nQ+nQdot) = 1.06072698;
-    x_init(1, 6+nQ+nQdot) = -1.7258677;
-
-//    //COM sur COM :
-//    x_init(0, 0) = 0.0990382;
-//    x_init(0, 1) = -0.3329108;
-//    x_init(0, 2) = 0.63740231;
-//    x_init(0, 3) = 0.71742303;
-//    x_init(0, 4) = 0.79172476;
-//    x_init(0, 5) = 1.26416757;
-//    x_init(0, 6) = -0.6445338;
-
-//    x_init(1, 0) = 0.0990382;
-//    x_init(1, 1) = -0.3329108;
-//    x_init(1, 2) = 0.63740231;
-//    x_init(1, 3) = 0.71742303;
-//    x_init(1, 4) = 0.79172476;
-//    x_init(1, 5) = 1.26416757;
-//    x_init(1, 6) = -0.6445338;
-
-//    x_init(0, nQ+nQdot) = 0.0990382382;
-//    x_init(0, 1+nQ+nQdot) = -0.3329108;
-//    x_init(0, 2+nQ+nQdot) = 0.63740231;
-//    x_init(0, 3+nQ+nQdot) = 0.71742303;
-//    x_init(0, 4+nQ+nQdot) = 0.79172476;
-//    x_init(0, 5+nQ+nQdot) = 1.26416757;
-//    x_init(0, 6+nQ+nQdot) = -0.6445338;
-
-//    x_init(1, nQ+nQdot) = 0.0990382382;
-//    x_init(1, 1+nQ+nQdot) = -0.3329108;
-//    x_init(1, 2+nQ+nQdot) = 0.63740231;
-//    x_init(1, 3+nQ+nQdot) = 0.71742303;
-//    x_init(1, 4+nQ+nQdot) = 0.79172476;
-//    x_init(1, 5+nQ+nQdot) = 1.26416757;
-//    x_init(1, 6+nQ+nQdot) = -0.6445338;
+    x_init(1, nQ+nQdot) = 0.09973;
+    x_init(1, 1+nQ+nQdot) = 0.09733;
+    x_init(1, 2+nQ+nQdot) = 1.05710;
+    x_init(1, 3+nQ+nQdot) = 1.56950;
+    x_init(1, 4+nQ+nQdot) = 1.07125;
+    x_init(1, 5+nQ+nQdot) = 0.95871;
+    x_init(1, 6+nQ+nQdot) = -1.7687;
 
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
