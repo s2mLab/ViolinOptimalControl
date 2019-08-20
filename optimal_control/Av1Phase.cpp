@@ -45,7 +45,7 @@ int  main ()
     /* ---------- INITIALIZATION ---------- */
     DifferentialState       x("",nQ+nQdot,1);               //  the  differential states
     Control                 u("", nMus+nTau, 1);                 //  the  control input  u
-    IntermediateState       is(nQ + nQdot + nMus + nTau); // + 1);
+    IntermediateState       is(nQ + nQdot + nMus + nTau);
 
     for (unsigned int i = 0; i < nQ; ++i){
         is(i) = x(i);
@@ -67,7 +67,7 @@ int  main ()
     ocp.minimizeLagrangeTerm( lagrange(u));
 
     /* ------------ CONSTRAINTS ----------- */
-    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
+    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorqueContact);
 
     DifferentialEquation    f ;
 
@@ -132,23 +132,21 @@ int  main ()
 
     VariablesGrid x_init(nQ+nQdot, Grid(t_Start, t_End, 2));
 
-    // poucette sur COM
-    x_init(0, 0) = 0.1000001;
-    x_init(0, 1) = 0.1000001;
-    x_init(0, 2) = 1.0946872;
-    x_init(0, 3) = 1.5707965;
-    x_init(0, 4) = 1.0564277;
-    x_init(0, 5) = 1.0607269;
-    x_init(0, 6) = -1.725867;
+    x_init(0, 0) = 0.09973;
+    x_init(0, 1) = 0.09733;
+    x_init(0, 2) = 1.05710;
+    x_init(0, 3) = 1.56950;
+    x_init(0, 4) = 1.07125;
+    x_init(0, 5) = 0.95871;
+    x_init(0, 6) = -1.7687;
 
-    // bouton sur COM
-    x_init(1, 0) = -0.39269915;
-    x_init(1, 1) = -0.27353444;
-    x_init(1, 2) = -0.05670261;
-    x_init(1, 3) = 0.439974729;
-    x_init(1, 4) = 0.511486204;
-    x_init(1, 5) = 1.929967317;
-    x_init(1, 6) = -3.35089080;
+    x_init(1, 0) = -0.39107;
+    x_init(1, 1) = -0.495383;
+    x_init(1, 2) = -0.089030;
+    x_init(1, 3) = 0.1485315;
+    x_init(1, 4) = 0.8569764;
+    x_init(1, 5) = 1.9126840;
+    x_init(1, 6) = -0.490220;
 
     for(unsigned int i=nQ; i<nQ+nQdot; ++i){
          x_init(0, i) = 0.01;
