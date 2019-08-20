@@ -1,4 +1,5 @@
 #include <acado_optimal_control.hpp>
+#include <memory>
 #include <bindings/acado_gnuplot/gnuplot_window.hpp>
 #include "includes/dynamics.h"
 #include "includes/objectives.h"
@@ -20,15 +21,20 @@ unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbGeneralizedTorque());           // controls number
 unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
-unsigned int nPhases(2);
+unsigned int nPhases(4);
+
 GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
 GeneralizedTorque Tau(nTau);
-std::vector<biorbd::muscles::StateDynamics> state(nMus); // controls
+std::vector<biorbd::muscles::StateDynamics> state(nMus);
+
+int tagArchetPoucette = 16;
+int tagArchetCOM = 17;
+int tagArchetTete = 18;
+int tagViolon = 34;
 
 const double t_Start = 0.0;
 const double t_End = 0.5;
 const int nPoints(31);
-
 
 int  main ()
 {
@@ -41,98 +47,83 @@ int  main ()
     std::cout << "nb de muscles: " << nMus << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
     std::cout << "nb de marqueurs: " << nTags << std::endl;
-    if (nPhases % 2 != 0)
-        throw runtime_error("nPhases must be an even number");
-    std::cout << "nb de phases: " << nPhases << std::endl;
 
     /* ---------- INITIALIZATION ---------- */
-    DifferentialState       x("", nPhases*(nQ+nQdot), 1);
-    Control                 u("", nPhases*(nMus+nTau), 1);
-    IntermediateState       is("", nPhases*(nQ+nQdot+nMus+nTau), 1);
-
-
-
-
-    for (unsigned int i=0; i< nPhases; i++){
-        for (unsigned int j = 0; j < nQ+nQdot; ++j){
-            is(j+(i*(nQ+nQdot+nMus+nTau))) = x(j+(i*(nQ+nQdot)));
-        }
-        for (unsigned int j = 0; j < nMus+nTau; ++j){
-            is(j+nQ+nQdot+(i*(nQ+nQdot+nMus+nTau))) = u(j+(i*(nMus+nTau)));
-        }
-    }
+    std::vector<DifferentialState> x;
+    std::vector<Control> u;
+    std::vector<IntermediateState> is;
 
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(t_Start, t_End, nPoints);
-
-    CFunction lagrange(1, lagrangeResidualTorquesMultistage);
-    ocp.minimizeLagrangeTerm(lagrange(u));
-
-    /* ------------ CONSTRAINTS ----------- */
-    CFunction F( nPhases*(nQ+nQdot), forwardDynamicsMultiStage);
-    DifferentialEquation    f ;
-    (f << dot(x)) == F(is);
-    ocp.subjectTo(f);
+    CFunction lagrange(1, lagrangeResidualTorques);
+    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
+    DifferentialEquation f ;
 
     //Position constraints
-    int tagArchetPoucette = 16;
-    int tagArchetCOM = 17;
-    int tagArchetTete = 18;
-    int tagViolon = 34;
     CFunction markerArchetPoucette(3, markerPosition);
-    markerArchetPoucette.setUserData(static_cast<void*>(&tagArchetPoucette));
+    markerArchetPoucette.setUserData((void*) &tagArchetPoucette);
     CFunction markerArchetCOM(3, markerPosition);
-    markerArchetCOM.setUserData(static_cast<void*>(&tagArchetCOM));
+    markerArchetCOM.setUserData((void*) &tagArchetCOM);
     CFunction markerArchetTete(3, markerPosition);
-    markerArchetTete.setUserData(static_cast<void*>(&tagArchetTete));
+    markerArchetTete.setUserData((void*) &tagArchetTete);
     CFunction markerViolon(3, markerPosition);
-    markerViolon.setUserData(static_cast<void*>(&tagViolon));
+    markerViolon.setUserData((void*) &tagViolon);
 
-    ocp.subjectTo( AT_START, markerArchetPoucette(x) - markerViolon(x) == 0.0 );
-    ocp.subjectTo( AT_END, markerArchetTete(x) - markerViolon(x) == 0.0 );
+    for (unsigned int p=0; p<nPhases; ++p){
+        x.push_back(DifferentialState("",nQ+nQdot,1));
+        u.push_back(Control("", nMus+nTau, 1));
+        is.push_back(IntermediateState(nQ + nQdot + nMus + nTau));
 
-//    for(unsigned int i=0; i<nPhases-1; ++i){
-//        for(unsigned int j=0; j< nQ+nQdot; ++j){
-//            //ocp.subjectTo( 0.0, x(( ((i+1) % 2)*(nQ+nQdot))+j), -x((i*(nQ+nQdot))+j), 0.0 );
-//            ocp.subjectTo( 0.0, x(((i+1)*(nQ+nQdot))+j), -x((i*(nQ+nQdot))+j), 0.0 );
-//            ocp.subjectTo( 0.0, x((i*(nQ+nQdot))+j), -x(((i+1)*(nQ+nQdot))+j), 0.0 );
-//        }
-//    }
+        for (unsigned int i = 0; i < nQ; ++i)
+            is[p](i) = x[p](i);
+        for (unsigned int i = 0; i < nQdot; ++i)
+            is[p](i+nQ) = x[p](i+nQ);
+        for (unsigned int i = 0; i < nMus; ++i)
+            is[p](i+nQ+nQdot) = u[p](i);
+        for (unsigned int i = 0; i < nTau; ++i)
+            is[p](i+nQ+nQdot+nMus) = u[p](i+nMus);
 
-    for(unsigned int j=0; j<nQ+nQdot; ++j){
-        ocp.subjectTo( 0.0, x(nQ+nQdot + j), -x(j), 0.0 );
-        ocp.subjectTo( 0.0, x(j), -x(nQ+nQdot + j), 0.0 );
-    }
+        /* ------------ CONSTRAINTS ----------- */
+        (f << dot(x[p])) == F(is[p]);
 
-    //Controls constraints
-    for (unsigned int i=0; i<nPhases; ++i){
-        for (unsigned int j=0; j<nMus; ++j){
-             ocp.subjectTo(0.01 <= u( i*(nMus+nTau) + j ) <= 1);
+        if(p==0){
+            ocp.subjectTo( AT_START, markerArchetPoucette(x[p]) - markerViolon(x[p]) == 0.0 );
+            ocp.subjectTo( AT_END, markerArchetTete(x[p]) - markerViolon(x[p]) == 0.0 );
         }
-    }
-
-    for (unsigned int i=0; i<nPhases; ++i){
-        for (unsigned int j=0; j<nTau; ++j){
-             ocp.subjectTo(-100 <= u( i*(nMus+nTau) + nMus + j ) <= 100);
+        else{
+            ocp.subjectTo( 0.0, x[p], -x[p-1], 0.0 );
+            ocp.subjectTo( 0.0, x[p-1], -x[p], 0.0 );
         }
-    }
 
-    for (unsigned int i=0; i<nPhases; ++i){
-        ocp.subjectTo(-PI/8 <= x(i*(nQ+nQdot)+0) <= 0.1);
-        ocp.subjectTo(-PI/2 <= x(i*(nQ+nQdot)+1) <= 0.1);
-        ocp.subjectTo(-PI/4 <= x(i*(nQ+nQdot)+2) <= PI);
-        ocp.subjectTo(-PI/2 <= x(i*(nQ+nQdot)+3) <= PI/2);
-        ocp.subjectTo(-0.1  <= x(i*(nQ+nQdot)+4) <= PI);
-        ocp.subjectTo(-PI   <= x(i*(nQ+nQdot)+5) <= PI);
-        ocp.subjectTo(-PI   <= x(i*(nQ+nQdot)+6) <= PI);
-    }
-    for (unsigned int i=0; i<nPhases; ++i){
-        for (unsigned int q=0; q<nQ; ++q)
-            ocp.subjectTo(-50 <= x(i*(nQ+nQdot)+nQ+q) <= 50);
-    }
+        //Controls constraints
+        for (unsigned int i=0; i<nMus; ++i)
+             ocp.subjectTo(0.01 <= u[p](i) <= 1);
+        for (unsigned int i=0; i<nTau; ++i)
+             ocp.subjectTo(-100 <= u[p](nMus+i) <= 100);
+
+        // path constraints
+        ocp.subjectTo(-PI/8 <= x[p](0) <= 0.1);
+        ocp.subjectTo(-PI/2 <= x[p](1) <= 0.1);
+        ocp.subjectTo(-PI/4 <= x[p](2) <= PI);
+        ocp.subjectTo(-PI/2 <= x[p](3) <= PI/2);
+        ocp.subjectTo(-0.1  <= x[p](4) <= PI);
+        ocp.subjectTo(-PI   <= x[p](5) <= PI);
+        ocp.subjectTo(-PI   <= x[p](6) <= PI);
+
+        for (unsigned int j=0; j<nQdot; ++j)
+            ocp.subjectTo(-50 <= x[p](nQ + j) <= 50);
+
+}
+    ocp.subjectTo(f);
+
+    /* ------------ OBJECTIVE ----------- */
+    Expression sumLagrange = lagrange(u[0]);
+    for(unsigned int p=1; p<nPhases; ++p)
+        sumLagrange += lagrange(u[p]);
+    ocp.minimizeLagrangeTerm( sumLagrange ); // WARNING
 
     /* ---------- OPTIMIZATION  ------------ */
-    OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
+    OptimizationAlgorithm  algorithm( ocp ) ;
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
     algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
@@ -155,41 +146,42 @@ int  main ()
     VariablesGrid x_init(nPhases*(nQ+nQdot), Grid(t_Start, t_End, 2));
     for(unsigned int i=0; i<nPhases/2; ++i){
         // poucette sur COM
-        x_init(0, 2*i*(nQ+nQdot)+0) = 0.1000001;
-        x_init(0, 2*i*(nQ+nQdot)+1) = 0.1000001;
-        x_init(0, 2*i*(nQ+nQdot)+2) = 1.0946872;
-        x_init(0, 2*i*(nQ+nQdot)+3) = 1.5707965;
-        x_init(0, 2*i*(nQ+nQdot)+4) = 1.0564277;
-        x_init(0, 2*i*(nQ+nQdot)+5) = 1.0607269;
-        x_init(0, 2*i*(nQ+nQdot)+6) = -1.725867;
+        x_init(0, 2*i*(nQ+nQdot)+0) = 0.09973;
+        x_init(0, 2*i*(nQ+nQdot)+1) = 0.09733;
+        x_init(0, 2*i*(nQ+nQdot)+2) = 1.05710;
+        x_init(0, 2*i*(nQ+nQdot)+3) = 1.56950;
+        x_init(0, 2*i*(nQ+nQdot)+4) = 1.07125;
+        x_init(0, 2*i*(nQ+nQdot)+5) = 0.95871;
+        x_init(0, 2*i*(nQ+nQdot)+6) = -1.7687;
 
         // bouton sur COM
-        x_init(1, 2*i*(nQ+nQdot)+0) = -0.39269915;
-        x_init(1, 2*i*(nQ+nQdot)+1) = -0.27353444;
-        x_init(1, 2*i*(nQ+nQdot)+2) = -0.05670261;
-        x_init(1, 2*i*(nQ+nQdot)+3) = 0.439974729;
-        x_init(1, 2*i*(nQ+nQdot)+4) = 0.511486204;
-        x_init(1, 2*i*(nQ+nQdot)+5) = 1.929967317;
-        x_init(1, 2*i*(nQ+nQdot)+6) = -3.35089080;
+        x_init(1, 2*i*(nQ+nQdot)+0) = -0.39107;
+        x_init(1, 2*i*(nQ+nQdot)+1) = -0.495383;
+        x_init(1, 2*i*(nQ+nQdot)+2) = -0.089030;
+        x_init(1, 2*i*(nQ+nQdot)+3) = 0.1485315;
+        x_init(1, 2*i*(nQ+nQdot)+4) = 0.8569764;
+        x_init(1, 2*i*(nQ+nQdot)+5) = 1.9126840;
+        x_init(1, 2*i*(nQ+nQdot)+6) = -0.490220;
 
         // bouton sur COM
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+0) = -0.39269915;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+1) = -0.27353444;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+2) = -0.05670261;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+3) = 0.439974729;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+4) = 0.511486204;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+5) = 1.929967317;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+6) = -3.35089080;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+0) = -0.39107;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+1) = -0.495383;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+2) = -0.089030;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+3) = 0.1485315;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+4) = 0.8569764;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+5) = 1.9126840;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+6) = -0.490220;
 
         // poucette sur COM
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+0) = 0.1000001;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+1) = 0.1000001;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+2) = 1.09468721;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+3) = 1.57079651;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+4) = 1.05642775;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+5) = 1.06072698;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+6) = -1.7258677;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+0) = 0.09973;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+1) = 0.09733;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+2) = 1.05710;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+3) = 1.56950;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+4) = 1.07125;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+5) = 0.95871;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+6) = -1.7687;
     }
+
 
     for(unsigned int i=0; i<nPhases; ++i){
         for(unsigned int j=0; j<nQdot; ++j){
@@ -210,6 +202,7 @@ int  main ()
     end=clock();
     time_exec = double(end - start)/CLOCKS_PER_SEC;
     std::cout<<"Execution time: "<<time_exec<<std::endl;
+
 
     return 0;
 }
