@@ -55,14 +55,13 @@ void violonDown( double *x, double *g, void * ){
 }
 
 void markerPosition(double *x, double *g, void *user_data ){
-    static int numTag = static_cast<int*>(user_data)[0];
+    int numTag = static_cast<int*>(user_data)[0];
 
     for(unsigned int i = 0; i<nQ; ++i){
         Q[i] = x[i];
     }
     tag = m.Tags(m, Q, numTag, true, true);
-//    std::cout << tag.name() <<std::endl;
-//    std::cout << tag << std::endl;
+
     g[0]=tag[0];
     g[1]=tag[1];
     g[2]=tag[2];
