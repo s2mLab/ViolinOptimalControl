@@ -7,11 +7,11 @@ import analyses.utils as utils
 
 # Options
 model_name = "BrasViolon"
-output_files = "Av2Phases"
-fun_dyn = utils.dynamics_from_muscles_and_torques_and_contact
+output_files = "AvNPhases"
+fun_dyn = utils.dynamics_from_muscles_and_torques
 runge_kutta_algo = 'rk45'
 nb_nodes = 30
-nb_phases = 1
+nb_phases = 2
 nb_frame_inter = 500
 
 # Load the model
@@ -72,15 +72,16 @@ for i in range(m.nbGeneralizedTorque()):
     utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
     plt.title("Torques %i" % i)
 
-L = []
-for i in range(m.nbMuscleGroups()):
-    L.append(m.muscleGroup(i).nbMuscles())
-nb_muscles_max = max(L)
+# L = []
+# for i in range(m.nbMuscleGroups()):
+#     L.append(m.muscleGroup(i).nbMuscles())
+# nb_muscles_max = max(L)
 plt.figure("Activations")
 cmp = 0
 for i in range(m.nbMuscleGroups()):
     for j in range(m.muscleGroup(i).nbMuscles()):
-        plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
+        #plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
+        plt.subplot(3, 6, cmp+1)
         utils.plot_piecewise_constant(t_final, all_u[cmp, :])
         plt.title(biorbd.HillType.getRef(m.muscleGroup(i).muscle(j)).name().getString())
         plt.ylim((0, 1))

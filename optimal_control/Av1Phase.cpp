@@ -63,11 +63,12 @@ int  main ()
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(t_Start, t_End, nPoints);
 
-    CFunction lagrange(1, lagrangeResidualTorques);
-    ocp.minimizeLagrangeTerm( lagrange(u));
+    CFunction lagrange1(1, lagrangeActivations);
+    CFunction lagrange2(1, lagrangeResidualTorques);
+    ocp.minimizeLagrangeTerm( lagrange1(u)+lagrange2(u));
 
     /* ------------ CONSTRAINTS ----------- */
-    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorqueContact);
+    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
 
     DifferentialEquation    f ;
 

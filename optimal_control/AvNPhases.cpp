@@ -18,10 +18,10 @@ biorbd::Model m("../../models/BrasViolon.bioMod");
 
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
-unsigned int nTau(m.nbGeneralizedTorque());           // controls number
+unsigned int nTau(m.nbGeneralizedTorque());           // torques number
 unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
-unsigned int nPhases(4);
+unsigned int nPhases(2);
 
 GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
 GeneralizedTorque Tau(nTau);
@@ -55,7 +55,8 @@ int  main ()
 
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(t_Start, t_End, nPoints);
-    CFunction lagrange(1, lagrangeResidualTorques);
+    CFunction lagrangeRT(1, lagrangeResidualTorques);
+    CFunction lagrangeA(1, lagrangeActivations);
     CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
     DifferentialEquation f ;
 
@@ -117,9 +118,9 @@ int  main ()
     ocp.subjectTo(f);
 
     /* ------------ OBJECTIVE ----------- */
-    Expression sumLagrange = lagrange(u[0]);
+    Expression sumLagrange = lagrangeRT(u[0])+ lagrangeA(u[0]);
     for(unsigned int p=1; p<nPhases; ++p)
-        sumLagrange += lagrange(u[p]);
+        sumLagrange += lagrangeRT(u[p]) + lagrangeA(u[p]);
     ocp.minimizeLagrangeTerm( sumLagrange ); // WARNING
 
     /* ---------- OPTIMIZATION  ------------ */

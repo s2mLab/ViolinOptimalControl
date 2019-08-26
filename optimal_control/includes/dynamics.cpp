@@ -120,89 +120,15 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
 
     for(unsigned int i = 0; i<nMus; ++i){
         state[i] = biorbd::muscles::StateDynamics(0, x[nQ+nQdot + i]);
-        //std::cout<<"Activation:"<<x[i+nQ+nQdot]<<std::endl;
     }
     // Compute the torques from muscles
     Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
     for(unsigned int i=0; i<nTau; ++i){
         Tau[i] += x[nQ+nQdot+nMus + i];
-        //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
     }
 
     // Compute the forward dynamics
     forwardDynamics(Q, Qdot, Tau, rhs);
-
-//    RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
-
-//    std::cout << "\n";
-//    std::cout << std::setprecision(15) << "Time = " << x[nQ+nQdot+nMus+nTau] << std::endl;
-//    std::cout << "Activation = ";
-//    for(unsigned int i=0; i<nMus; ++i){
-//        std::cout << std::setprecision(15) <<  x[i+nQ+nQdot] << '\t';
-//    }
-//    std::cout << "\n";
-//    std::cout << "Tau res = " ;
-//    for(unsigned int i=0; i<nTau; ++i){
-//        std::cout << std::setprecision(15) << x[i+nQ+nQdot+nMus] << '\t';
-//    }
-//    std::cout << "\n";
-//    std::cout << std::setprecision(15) << "Tau = " << Tau.transpose() << std::endl;
-//    std::cout << std::setprecision(15) << "Q = " << Q.transpose() << std::endl;
-//    std::cout << std::setprecision(15) << "Qdot = " << Qdot.transpose() << std::endl;
-//    std::cout << std::setprecision(15) << "Qddot = " << Qddot.transpose() << std::endl;
-
-//    for(unsigned int int i=0; i<m.nbMuscleGroups(); ++i){
-//        for(unsigned int int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
-//           std::cout << std::setprecision(15) <<m.muscleGroup(i).muscle(j).get()->name()<< ": "<<m.muscleGroup(i).muscle(j).get()->length(m, Q)<< std::endl;
-//    }
-//    std::cout <<"\n";
-
-
-
-    // Error checker
-    // Check if Forces are not too high
-    #ifdef CHECK_MAX_FORCE
-        for(unsigned int int i=0; i<m.nbTau(); ++i){
-            if (Tau[i]>1e5){
-                std::vector<int> L;
-                for(unsigned int int j=0; j<nMus; ++j){
-                    if (m.musclesLengthJacobian(m, true, &Q).coeff(j,i)!=0){
-                        L.push_back(j);
-                    }
-                }
-             std::cout << "Torque "<<i<<" is too high" << std::endl;
-             std::cout << "Check the optimal lenth, the maximal force or the tendon slack lenth of muscles " << L <<std::endl;
-             L.clear();
-             }
-        }
-    #endif
-
-    // Check if muscle forces are not too high if muscle activation is low
-    #ifdef CHECK_FORCE_IF_LOW_ACTIVATION
-        for(unsigned int int i=0; i<m.nbTau(); ++i){
-            if (Tau[i]>0.1){
-                int c=0;
-                std::vector<int> L;
-                for(unsigned int int j=0; j<nMus; ++j){
-                    if (m.musclesLengthJacobian(m, true, &Q).coeff(j,i)!=0){
-                        L.push_back(j);
-                        if(state[j].activation()>0.015)
-                            c++;
-                    }
-                }
-                if (c=0)
-                    std::cout << "Passive force of the muscles " <<L<< " is too high. Check the tendon slack lenth."<<std::endl;
-             }
-        }
-    #endif
-
-    #ifdef CHECK_MUSCLE_LENGTH_IS_POSITIVE
-        for(unsigned int int i=0; i<m.nbMuscleGroups(); ++i){
-            for(unsigned int int j=0; j<m.muscleGroup(i).nbMuscles(); ++j)
-                if (m.muscleGroup(i).muscle(j).get()->length(m, Q) <= 0)
-                    std::cout << "La longueur du muscle " << i << " est inférieur á 0" <<std::endl;
-        }
-    #endif
 }
 
 void forwardDynamicsMultiStage( double *x, double *rhs, void *user_data){
@@ -231,13 +157,11 @@ void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs
     Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
     for(unsigned int i=0; i<nTau; ++i){
         Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
-        //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
     }
     // Compute the forward dynamics
     RigidBodyDynamics::ConstraintSet& CS = m.getConstraints_nonConst(m);
     RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
     //RigidBodyDynamics::ForwardDynamicsContactsKokkevis(m, Q, Qdot, Tau, CS, Qddot);
-
     for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];

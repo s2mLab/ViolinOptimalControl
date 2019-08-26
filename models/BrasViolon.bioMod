@@ -466,7 +466,7 @@ external_forces	0
 		parent	hand2
 		RTinMatrix	0
 		RT 0.04    1.29   -0.66   zyx  0   0   0
-		//rotations	    zyx
+                //rotations	    zyx
 		mass 0.460
 		inertia
 			0.00000048	0.000000	0.000000
@@ -482,14 +482,14 @@ external_forces	0
 	    position 0 0 0.2425
 	endmarker
 
-    loopcontact
+    loopconstraint
         predecessor Archet
         successor Violon
         RTpredecessor 0 0 0 xyz 0 0 0.370
-        RTsuccessor 0 1.57 3.1415 xyz 0 0 0.2425
+        RTsuccessor -1.57 0 -2 xyz 0 0 0.2425
         axis 1 1 1 1 1 0
-        stabilizationParameter 0.1
-    endloopcontact
+        stabilizationParameter 0.6
+   endloopconstraint
 
 // DEFINITION DES MUSCLES
 

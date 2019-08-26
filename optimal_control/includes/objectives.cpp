@@ -19,7 +19,7 @@ void lagrangeResidualTorquesMultistage(double *u, double *g, void *){
 void lagrangeActivations( double *x, double *g, void *){
     g[0]=0;
     for (i=0; i<nMus; ++i)
-        g[0]+=(x[i+nQ+nQdot]*x[i+nQ+nQdot]);
+        g[0]+=(x[i]*x[i]);
 }
 
 void lagrangeAccelerations( double *x, double *g, void *user_data){
