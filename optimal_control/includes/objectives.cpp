@@ -8,14 +8,6 @@ void lagrangeResidualTorques( double *x, double *g, void *){
         g[0]+=(x[i+nMus]*x[i+nMus]);
 }
 
-void lagrangeResidualTorquesMultistage(double *u, double *g, void *){
-    for(i=0; i<nPhases; ++i){
-        for (unsigned int j=0; j<nTau; ++j){
-            g[0]+=(u[i*(nMus+nTau) + nMus + j]*u[i*(nMus+nTau) + nMus + j]);
-        }
-    }
-}
-
 void lagrangeActivations( double *x, double *g, void *){
     g[0]=0;
     for (i=0; i<nMus; ++i)

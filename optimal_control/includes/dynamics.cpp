@@ -131,12 +131,6 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
     forwardDynamics(Q, Qdot, Tau, rhs);
 }
 
-void forwardDynamicsMultiStage( double *x, double *rhs, void *user_data){
-    for(unsigned int i=0; i<nPhases; ++i){
-        forwardDynamicsFromMuscleActivationAndTorque(&x[i*(nQ+nQdot+nMus+nTau)], &rhs[i*(nQ+nQdot)], &user_data);
-    }
-}
-
 void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs, void *user_data){
     GeneralizedCoordinates Q(nQ), Qdot(nQ), Qddot(nQ);
     GeneralizedTorque Tau(nQ);
@@ -179,7 +173,6 @@ void forwardDynamicsFromTorqueContact( double *x, double *rhs, void *user_data){
         Qdot[i] = x[i+nQ];
         Tau[i]= x[i+nQ+nQdot];
     }
-
 
     // Compute the forward dynamics
     RigidBodyDynamics::ConstraintSet& CS = m.getConstraints_nonConst(m);
