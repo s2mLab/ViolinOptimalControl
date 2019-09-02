@@ -45,7 +45,7 @@ t_integrate, q_integrate = utils.integrate_states_from_controls(
 t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_int=t_integrate, y_int=q_integrate)
 qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
-print(all_q[4, :])
+
 # Show data
 plt.figure("States and torques res")
 for i in range(m.nbQ()):
