@@ -13,6 +13,7 @@ IF(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 ENDIF()
 
 find_package(ACADO REQUIRED)
+find_package(IPOPT REQUIRED)
 find_package(Boost REQUIRED)
 set(EIGEN3_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include/acado/external_packages/eigen3)
 find_package(RBDL REQUIRED)
@@ -21,12 +22,13 @@ find_package(Biorbd REQUIRED)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
 # Build the dynamics
-add_library(utils
+add_library(utils SHARED
     includes/dynamics.cpp
     includes/constraints.cpp
     includes/objectives.cpp
     includes/utils.cpp
 )
+
 target_include_directories(utils PUBLIC
     ${ACADO_INCLUDE_DIRS} ${ACADO_INCLUDE_DIRS}/..
     ${Biorbd_INCLUDE_DIR}
@@ -43,6 +45,9 @@ set(source_files
     Av2Phases.cpp
     Violon.cpp
     eocar.cpp
+    Av1Phase.cpp
+    Av2NPhases.cpp
+    AvNPhases.cpp
 )
 
 # Setup each project
@@ -63,7 +68,7 @@ foreach(src_file ${source_files})
 
     target_link_libraries(${filename}
       utils
-      ${Biorbd_LIBRARY}
+      ${Biorbd_LIBRARIES}
       ${RBDL_LIBRARY}
       ${ACADO_SHARED_LIBRARIES}
       )

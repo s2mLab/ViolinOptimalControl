@@ -2,24 +2,27 @@ import matplotlib.pyplot as plt
 import biorbd
 from BiorbdViz import BiorbdViz
 
-import utils
+import analyses.utils as utils
+
 
 # Options
 model_name = "BrasViolon"
-output_files = "Av2Phases"
+output_files = "AvNPhases"
 fun_dyn = utils.dynamics_from_muscles_and_torques
+runge_kutta_algo = 'rk45'
 nb_nodes = 30
 nb_phases = 2
 nb_frame_inter = 500
 
 # Load the model
-m = biorbd.s2mMusculoSkeletalModel(f"../models/{model_name}.bioMod")
+m = biorbd.Model(f"../models/{model_name}.bioMod")
 if fun_dyn == utils.dynamics_from_muscles:
     nb_controls = m.nbMuscleTotal()
 elif fun_dyn == utils.dynamics_from_joint_torque:
-    nb_controls = m.nbTau()
-elif fun_dyn == utils.dynamics_from_muscles_and_torques:
-    nb_controls = m.nbMuscleTotal()+m.nbTau()
+    nb_controls = m.nbGeneralizedTorque()
+elif fun_dyn == utils.dynamics_from_muscles_and_torques \
+        or fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
+    nb_controls = m.nbMuscleTotal()+m.nbGeneralizedTorque()
 elif fun_dyn == utils.dynamics_from_accelerations:
     nb_controls = m.nbQ()
 else:
@@ -34,8 +37,9 @@ t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_fil
 
 
 # Integrate
-t_integrate, q_integrate = utils.integrate_states_from_controls(m, t_final, all_q, all_qdot, all_u, fun_dyn,
-                                                                verbose=False, use_previous_as_init=False)
+t_integrate, q_integrate = utils.integrate_states_from_controls(
+    m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=False, algo=runge_kutta_algo
+)
 
 # Interpolate
 t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_int=t_integrate, y_int=q_integrate)
@@ -63,22 +67,23 @@ for i in range(m.nbQ()):
 #     utils.plot_piecewise_constant(t_final, all_u[i, :])
 #     plt.title("Acceleration %i" % i)
 
-for i in range(m.nbTau()):
-    plt.subplot(m.nbTau(), 3, 3 + (3 * i))
+for i in range(m.nbGeneralizedTorque()):
+    plt.subplot(m.nbGeneralizedTorque(), 3, 3 + (3 * i))
     utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
     plt.title("Torques %i" % i)
 
-L = []
-for i in range(m.nbMuscleGroups()):
-    L.append(m.muscleGroup(i).nbMuscles())
-nb_muscles_max = max(L)
+# L = []
+# for i in range(m.nbMuscleGroups()):
+#     L.append(m.muscleGroup(i).nbMuscles())
+# nb_muscles_max = max(L)
 plt.figure("Activations")
 cmp = 0
 for i in range(m.nbMuscleGroups()):
     for j in range(m.muscleGroup(i).nbMuscles()):
-        plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
+        #plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
+        plt.subplot(3, 6, cmp+1)
         utils.plot_piecewise_constant(t_final, all_u[cmp, :])
-        plt.title(biorbd.s2mMuscleHillType.getRef(m.muscleGroup(i).muscle(j)).name())
+        plt.title(biorbd.HillType.getRef(m.muscleGroup(i).muscle(j)).name().getString())
         plt.ylim((0, 1))
         cmp += 1
 

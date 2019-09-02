@@ -259,12 +259,7 @@ external_forces	0
 	    parent Archet
 	    position 0 0 0.740
 	endmarker
-/*
-    contact ViolonArchet
-        parent  Archet   
-        axis    xy   
-    end contact
-*/	
+	
 // Deuxième bras
 
 // Spine2
@@ -452,7 +447,7 @@ external_forces	0
 			0.000000	1.000000	0.000000	-0.271953
 			0.000000	0.000000	1.000000	-0.035220
 			0.000000	0.000000	0.000000	1.000000
-		// rotations	    xy
+		//rotations	    xy
 		mass 0.20378
 		inertia
 			0.000580	0.000000	0.000000
@@ -471,7 +466,7 @@ external_forces	0
 		parent	hand2
 		RTinMatrix	0
 		RT 0.04    1.29   -0.66   zyx  0   0   0
-		//rotations	    zyx
+                //rotations	    zyx
 		mass 0.460
 		inertia
 			0.00000048	0.000000	0.000000
@@ -486,6 +481,15 @@ external_forces	0
 	    parent Violon
 	    position 0 0 0.2425
 	endmarker
+
+    loopconstraint
+        predecessor Archet
+        successor Violon
+        RTpredecessor 0 0 0 xyz 0 0 0.370
+        RTsuccessor -1.57 0 -2 xyz 0 0 0.2425
+        axis 1 1 1 1 1 0
+        stabilizationParameter 0.6
+   endloopconstraint
 
 // DEFINITION DES MUSCLES
 
@@ -995,4 +999,5 @@ endmusclegroup
 		PCSA				1.8
 		maxVelocity 		10
 	endmuscle
+
 

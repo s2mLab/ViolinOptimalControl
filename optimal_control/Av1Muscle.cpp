@@ -2,6 +2,10 @@
 #include <bindings/acado_gnuplot/gnuplot_window.hpp>
 #include "includes/dynamics.h"
 
+#ifndef PI
+#define PI 3.141592
+#endif
+
 //#define DebugForce ;
 //#define DebugActivation ;
 //#define DebugLongueur ;
@@ -10,13 +14,17 @@ USING_NAMESPACE_ACADO
 
 /* ---------- Model ---------- */
 
-s2mMusculoSkeletalModel m("../../models/ModeleAv1Muscle.bioMod");
+biorbd::Model m("../../models/ModeleAv1Muscle.bioMod");
 
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
-unsigned int nTau(m.nbTau());           // torque number
+unsigned int nTau(m.nbGeneralizedTorque());           // torque number
 unsigned int nTags(m.nTags());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
+unsigned int nPhases(1);
+GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
+GeneralizedTorque Tau(nTau);
+std::vector<biorbd::muscles::StateDynamics> state(nMus); // controls
 
 const double t_Start=0.0;
 const double t_End= 1.0;
