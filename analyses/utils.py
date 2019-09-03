@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import numpy as np
 import biorbd
 from scipy import integrate, interpolate
@@ -99,13 +101,13 @@ def dynamics_from_muscles(t_int, states, biorbd_model, u):
     nb_qdot = biorbd_model.nbQdot()
     nb_muscle = biorbd_model.nbMuscleTotal()
 
-    states_actual = biorbd.VecS2mMuscleStateActual(nb_muscle)
-    for i in range(len(states_actual)):
-        states_actual[i] = biorbd.s2mMuscleStateActual(0, u[i])
+    states_dynamics = biorbd.VecBiorbdMuscleStateDynamics(nb_muscle)
+    for i in range(len(states_dynamics)):
+        states_dynamics[i] = biorbd.StateDynamics(0, u[i])
 
     biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
-    tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(biorbd_model, states_actual, states[:nb_q], states[nb_q:])
-    qddot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], tau).get_array()
+    tau = biorbd.Model.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
+    qddot = biorbd.Model.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], tau).get_array()
 
     rsh = np.ndarray(nb_q + nb_qdot)
     for i in range(nb_q):
@@ -118,39 +120,63 @@ def dynamics_from_muscles(t_int, states, biorbd_model, u):
 def dynamics_from_muscles_and_torques(t_int, states, biorbd_model, u):
     nb_q = biorbd_model.nbQ()
     nb_qdot = biorbd_model.nbQdot()
-    nb_tau = biorbd_model.nbTau()
+    nb_tau = biorbd_model.nbGeneralizedTorque()
     nb_muscle = biorbd_model.nbMuscleTotal()
 
-    states_actual = biorbd.VecS2mMuscleStateActual(nb_muscle)
-    for i in range(len(states_actual)):
-        states_actual[i] = biorbd.s2mMuscleStateActual(0, u[i])
+    states_dynamics = biorbd.VecBiorbdMuscleStateDynamics(nb_muscle)
+    for i in range(len(states_dynamics)):
+        states_dynamics[i] = biorbd.StateDynamics(0, u[i])
 
     biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
-    tau = biorbd.s2mMusculoSkeletalModel.muscularJointTorque(biorbd_model, states_actual, states[:nb_q], states[nb_q:])
+    tau = biorbd.Model.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
 
     tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
 
+    qddot = biorbd.Model.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], tau_final).get_array()
 
-    qddot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], tau_final).get_array()
     rsh = np.ndarray(nb_q + nb_qdot)
     for i in range(nb_q):
         rsh[i] = states[nb_q+i]
         rsh[i + nb_q] = qddot[i]
-    # print(f"time : {t_int}, Tau: {tau_final}")
-    # print(f"Qddot : {qddot}")
-    # print(f"Qdot: {states[nb_q:]}\n")
     return rsh
+
+
+def dynamics_from_muscles_and_torques_and_contact(t_int, states, biorbd_model, u):
+    nb_q = biorbd_model.nbQ()
+    nb_qdot = biorbd_model.nbQdot()
+    nb_tau = biorbd_model.nbGeneralizedTorque()
+    nb_muscle = biorbd_model.nbMuscleTotal()
+
+    states_dynamics = biorbd.VecBiorbdMuscleStateDynamics(nb_muscle)
+    for i in range(len(states_dynamics)):
+        states_dynamics[i] = biorbd.StateDynamics(0, u[i])
+
+    biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
+    tau = biorbd.Model.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
+
+    tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
+
+    cs = biorbd_model.getConstraints_nonConst(biorbd_model)
+    qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(biorbd_model, states[:nb_q], states[nb_q:],
+                                                                            tau_final, cs).get_array()
+    rsh = np.ndarray(nb_q + nb_qdot)
+    for i in range(nb_q):
+        rsh[i] = states[nb_q+i]
+        rsh[i + nb_q] = qddot[i]
+    return rsh
+
 
 def dynamics_from_joint_torque(t_int, states, biorbd_model, u):
     nb_q = biorbd_model.nbQ()
     nb_qdot = biorbd_model.nbQdot()
-    qddot = biorbd.s2mMusculoSkeletalModel.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], u).get_array()
+    qddot = biorbd.Model.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], u).get_array()
     rsh = np.ndarray(nb_q + nb_qdot)
     for i in range(nb_q):
         rsh[i] = states[nb_q+i]
         rsh[i + nb_q] = qddot[i]
 
     return rsh
+
 
 def dynamics_from_accelerations(t_int, states, biorbd_model, u):
     nb_q = biorbd_model.nbQ()
@@ -162,17 +188,43 @@ def dynamics_from_accelerations(t_int, states, biorbd_model, u):
 
     return rsh
 
+
+def runge_kutta_4(fun, t_span, y0, n_step):
+    h = (t_span[1] - t_span[0]) / n_step  # Length of steps
+    y = np.ndarray((y0.shape[0], n_step))
+    y[:, 0] = y0
+    t = np.linspace(t_span[0], t_span[1], n_step)
+
+    for i in range(1, n_step):
+        k1 = fun(i*h, y[:, i-1])
+        k2 = fun(i*h, y[:, i-1] + h/2 * k1)
+        k3 = fun(i*h, y[:, i-1] + h/2 * k2)
+        k4 = fun(i*h, y[:, i-1] + h * k3)
+        y[:, i] = y[:, i-1] + h/6 * (k1 + 2*k2 + 2*k3 + k4)
+
+    # Produce similar output as scipy integrator
+    out_keys = {'success': True, 't': t, 'y': y}
+    return SimpleNamespace(**out_keys)
+
+
 def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_fun, verbose=False,
-                                   use_previous_as_init=False):
+                                   use_previous_as_init=False, algo="rk45"):
     all_t = np.ndarray(0)
     integrated_state = np.ndarray((biorbd_model.nbQ() + biorbd_model.nbQdot(), 0))
 
     q_init = np.concatenate((all_q[:, 0], all_qdot[:, 0]))
     for interval in range(t.shape[0] - 1):  # integration between each point (but the last point)
         u = all_u[:, interval]
-        integrated_tp = integrate.solve_ivp(
-            fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
-            t_span=(t[interval], t[interval + 1]), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
+
+        if algo == "rk45":
+            integrated_tp = integrate.solve_ivp(
+                fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
+                t_span=(t[interval], t[interval + 1]), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
+        elif algo == "rk4":
+            integrated_tp = runge_kutta_4(fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
+                                          t_span=(t[interval], t[interval + 1]), y0=q_init, n_step=10)
+        else:
+            raise IndentationError(f"{algo} is not implemented")
 
         q_init_previous = q_init
         if use_previous_as_init:
