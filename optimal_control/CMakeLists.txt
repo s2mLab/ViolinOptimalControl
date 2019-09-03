@@ -39,15 +39,7 @@ target_include_directories(utils PUBLIC
 
 # Write down all files to include here
 set(source_files
-    SansMuscle.cpp
-    Av1Muscle.cpp
-    Av2Muscles.cpp
-    Av2Phases.cpp
-    Violon.cpp
-    eocar.cpp
-    Av1Phase.cpp
-    Av2NPhases.cpp
-    AvNPhases.cpp
+    RepeatedUpAndDownBow.cpp
 )
 
 # Setup each project

@@ -20,7 +20,7 @@ biorbd::Model m("../../models/Bras.bioMod");
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbGeneralizedTorque());           // torque number
-unsigned int nTags(m.nTags());          // markers number
+unsigned int nMarkers(m.nMarkers());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 unsigned int nPhases(1);
 GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
