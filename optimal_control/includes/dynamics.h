@@ -20,7 +20,7 @@ extern biorbd::Model m;
 extern unsigned int nQ;
 extern unsigned int nQdot;
 extern unsigned int nTau;
-extern unsigned int nTags;
+extern unsigned int nMarkers;
 extern unsigned int nMus;
 extern unsigned int nPhases;
 //extern GeneralizedCoordinates Q, Qdot, Qddot;

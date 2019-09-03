@@ -47,13 +47,13 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
     }
-    m.updateMuscles(m, Q, Qdot, true);
+    m.updateMuscles(Q, Qdot, true);
 
     for(unsigned int i = 0; i<nMus; ++i)
         state[i] = biorbd::muscles::StateDynamics(0, x[i+nQ+nQdot]);
 
     // Compute the torques from muscles
-    Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
+    Tau = m.muscularJointTorque(state, false, &Q, &Qdot);
 
     // Compute the forward dynamics
     forwardDynamics(Q, Qdot, Tau, rhs);
@@ -116,13 +116,13 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
     }
-    m.updateMuscles(m, Q, Qdot, true);
+    m.updateMuscles(Q, Qdot, true);
 
     for(unsigned int i = 0; i<nMus; ++i){
         state[i] = biorbd::muscles::StateDynamics(0, x[nQ+nQdot + i]);
     }
     // Compute the torques from muscles
-    Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
+    Tau = m.muscularJointTorque(state, false, &Q, &Qdot);
     for(unsigned int i=0; i<nTau; ++i){
         Tau[i] += x[nQ+nQdot+nMus + i];
     }
@@ -141,19 +141,19 @@ void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
     }
-    m.updateMuscles(m, Q, Qdot, true);
+    m.updateMuscles(Q, Qdot, true);
 
     for(unsigned int i = 0; i<nMus; ++i){
         state[i] = biorbd::muscles::StateDynamics(0, x[i+nQ+nQdot]);
     }
 
     // Compute the torques from muscles
-    Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
+    Tau = m.muscularJointTorque(state, false, &Q, &Qdot);
     for(unsigned int i=0; i<nTau; ++i){
         Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
     }
     // Compute the forward dynamics
-    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints_nonConst(m);
+    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints();
     RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
     //RigidBodyDynamics::ForwardDynamicsContactsKokkevis(m, Q, Qdot, Tau, CS, Qddot);
     for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
@@ -175,7 +175,7 @@ void forwardDynamicsFromTorqueContact( double *x, double *rhs, void *user_data){
     }
 
     // Compute the forward dynamics
-    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints_nonConst(m);
+    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints();
     RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
     //RigidBodyDynamics::ForwardDynamicsContactsKokkevis(m, Q, Qdot, Tau, CS, Qddot);
 

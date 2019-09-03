@@ -55,12 +55,12 @@ void violonDown( double *x, double *g, void * ){
 }
 
 void markerPosition(double *x, double *g, void *user_data ){
-    int numTag = static_cast<int*>(user_data)[0];
+    unsigned int numTag = static_cast<unsigned int*>(user_data)[0];
 
     for(unsigned int i = 0; i<nQ; ++i){
         Q[i] = x[i];
     }
-    tag = m.Tags(m, Q, numTag, true, true);
+    tag = m.marker(Q, numTag, true, true);
 
     g[0]=tag[0];
     g[1]=tag[1];
@@ -75,7 +75,7 @@ void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data)
         Q[i] = x[i];
         Qdot[i] = x[i+nQ];
     }
-    m.updateMuscles(m, Q, Qdot, true);
+    m.updateMuscles(Q, Qdot, true);
 
 
     for(unsigned int i = 0; i<nMus; ++i){
@@ -83,13 +83,13 @@ void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data)
     }
 
     // Compute the torques from muscles
-    Tau = m.muscularJointTorque(m, state, false, &Q, &Qdot);
+    Tau = m.muscularJointTorque(state, false, &Q, &Qdot);
     for(unsigned int i=0; i<nTau; ++i){
         Tau[i] += x[i+nQ+nQdot+nMus];
         //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;
     }
     // Compute the forward dynamics
-    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints_nonConst(m);
+    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints();
     RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
     g[0]=CS.force(0);
     g[1]=CS.force(1);
@@ -105,7 +105,7 @@ void forceConstraintFromTorque(double *x, double *g, void *user_data)
             Tau[i]= x[i+nQ+nQdot];
         }
         // Compute the forward dynamics
-        RigidBodyDynamics::ConstraintSet& CS = m.getConstraints_nonConst(m);
+        RigidBodyDynamics::ConstraintSet& CS = m.getConstraints();
         RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
 
         g[0]=CS.force(0);
