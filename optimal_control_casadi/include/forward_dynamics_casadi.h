@@ -3,8 +3,8 @@
 
 #include <math.h>
 
-#include "s2mMusculoSkeletalModel.h"
-extern s2mMusculoSkeletalModel m;
+#include "BiorbdModel.h"
+extern biorbd::Model m;
 
 #ifdef __cplusplus
 extern "C" {

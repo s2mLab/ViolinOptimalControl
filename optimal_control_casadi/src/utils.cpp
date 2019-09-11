@@ -1,12 +1,16 @@
 #include "utils.h"
 
+
+#include "RigidBody/GeneralizedCoordinates.h"
+#include "RigidBody/GeneralizedTorque.h"
+
 void defineDifferentialVariables(
         ProblemSize& ps,
         casadi::MX& u,
         casadi::MX& x)
 {
     // Controls
-    for (unsigned int i=0; i<m.nbTau(); ++i)
+    for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i)
         u = vertcat(u, casadi::MX::sym("Control_" + m.nameDof()[i]));
 
     // States
@@ -150,15 +154,15 @@ void solveProblemWithIpopt(
 void extractSolution(
         const std::vector<double>& V_opt,
         const ProblemSize& ps,
-        std::vector<s2mVector>& Q,
-        std::vector<s2mVector>& Qdot,
-        std::vector<s2mVector>& Tau)
+        std::vector<biorbd::utils::Vector>& Q,
+        std::vector<biorbd::utils::Vector>& Qdot,
+        std::vector<biorbd::utils::Vector>& Tau)
 {
     // Resizing the output variables
     for (unsigned int q=0; q<m.nbQ(); ++q){
-        Tau.push_back(s2mTau(ps.ns));
-        Q.push_back(s2mGenCoord(ps.ns+1));
-        Qdot.push_back(s2mGenCoord(ps.ns+1));
+        Tau.push_back(biorbd::rigidbody::GeneralizedTorque(ps.ns));
+        Q.push_back(biorbd::rigidbody::GeneralizedCoordinates(ps.ns+1));
+        Qdot.push_back(biorbd::rigidbody::GeneralizedCoordinates(ps.ns+1));
     }
 
     // Get the optimal controls

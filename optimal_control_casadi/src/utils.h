@@ -2,8 +2,14 @@
 #define UTILS_CASADI_H
 
 #include "casadi/casadi.hpp"
-#include "s2mMusculoSkeletalModel.h"
-extern s2mMusculoSkeletalModel m;
+#include "BiorbdModel.h"
+extern biorbd::Model m;
+
+namespace biorbd {
+namespace utils {
+class Vector;
+}
+}
 
 struct ProblemSize{
     unsigned int ns; // number of shooting
@@ -104,8 +110,8 @@ void solveProblemWithIpopt(
 void extractSolution(
         const std::vector<double>& V_opt,
         const ProblemSize& ps,
-        std::vector<s2mVector>& Q,
-        std::vector<s2mVector>& Qdot,
-        std::vector<s2mVector>& Tau);
+        std::vector<biorbd::utils::Vector>& Q,
+        std::vector<biorbd::utils::Vector>& Qdot,
+        std::vector<biorbd::utils::Vector>& Tau);
 
 #endif

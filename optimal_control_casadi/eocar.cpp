@@ -3,16 +3,16 @@
 #include "casadi/core/optistack.hpp"
 
 #include "forward_dynamics_casadi.h"
-#include "s2mMusculoSkeletalModel.h"
-extern s2mMusculoSkeletalModel m;
-s2mMusculoSkeletalModel m("../../models/simple.bioMod");
+#include "BiorbdModel.h"
+extern biorbd::Model m;
+biorbd::Model m("../../models/simple.bioMod");
 
 int main(){
     // PREPARING THE PROBLEM
     double T(5.0);
     int N(30);
     int nQ(static_cast<int>(m.nbQ()));
-    int nu(static_cast<int>(m.nbTau()));
+    int nu(static_cast<int>(m.nbGeneralizedTorque()));
     double dt = T/static_cast<double>(N); // length of a control interval
     casadi::Opti opti;
     casadi::MX x(opti.variable(N+1, nQ));
@@ -73,8 +73,11 @@ int main(){
     }
 
     // Boundary conditions
-    opti.subject_to(x(N, 0) == 100);
-    opti.subject_to(x(N, 1) == 50);
+    opti.subject_to(x(N, 0) == 10);
+    opti.subject_to(x(N, 1) == 10);
+    opti.subject_to(x(N, 2) == 10);
+    opti.subject_to(x(N, 3) == 1);
+    opti.subject_to(x(N, 4) == 1);
     for (int j=0; j<nQ; ++j){
         opti.subject_to(x(0, j) == 0);
         opti.subject_to(v(0, j) == 0);

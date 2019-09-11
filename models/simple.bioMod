@@ -9,7 +9,7 @@ external_forces	0
 // Thorax
 	 segment Thorax
     translations	xyz
-		rotations xyz
+    rotations	xy
 		mass 1
 		inertie 
 		  1 0 0 

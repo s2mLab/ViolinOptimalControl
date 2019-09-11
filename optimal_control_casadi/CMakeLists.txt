@@ -25,7 +25,7 @@ link_directories(
 # Forward dynamics library
 add_library(forward_dynamics_casadi SHARED src/forward_dynamics_casadi.cpp)
 target_link_libraries(forward_dynamics_casadi
-    ${Biorbd_LIBRARY}
+    ${Biorbd_LIBRARIES}
     ${RBDL_LIBRARY}
 )
 target_include_directories(forward_dynamics_casadi PUBLIC

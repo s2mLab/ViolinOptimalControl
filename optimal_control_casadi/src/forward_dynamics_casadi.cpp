@@ -1,5 +1,9 @@
 #include "forward_dynamics_casadi.h"
 
+#include "rbdl/Dynamics.h"
+#include "RigidBody/GeneralizedCoordinates.h"
+#include "RigidBody/GeneralizedTorque.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -15,12 +19,12 @@ static casadi_int Xp_sparsity[3] = {-1, 1, 1};
 void fillSparsity(){
     if (!isSparsityFilled){
         assert(m.nbQ() == m.nbQdot()); // Quaternions are not implemented so far
-        assert(m.nbQdot() == m.nbTau()); // Free falling model
+        assert(m.nbQdot() == m.nbGeneralizedTorque()); // Free falling model
 
         Q_sparsity[0] = m.nbQ();
         Qdot_sparsity[0] = m.nbQdot();
         Qddot_sparsity[0] = m.nbQdot();
-        Tau_sparsity[0] = m.nbTau();
+        Tau_sparsity[0] = m.nbGeneralizedTorque();
         Xp_sparsity[0] = m.nbQ() + m.nbQdot();
         isSparsityFilled = true;
     }
@@ -31,8 +35,8 @@ const char* libforward_dynamics_casadi_name(void){
 }
 
 int libforward_dynamics_casadi(const casadi_real** arg, casadi_real** res, casadi_int*, casadi_real*, void*){
-    s2mGenCoord Q(m), Qdot(m), Qddot(m);
-    s2mTau Tau(m);
+    biorbd::rigidbody::GeneralizedCoordinates Q(m), Qdot(m), Qddot(m);
+    biorbd::rigidbody::GeneralizedTorque Tau(m);
 
     // Dispatch data
     for (unsigned int i = 0; i < m.nbQ(); ++i){
@@ -95,7 +99,7 @@ int libforward_dynamics_casadi_work(casadi_int *sz_arg,
                                                casadi_int* sz_res,
                                                casadi_int *sz_iw,
                                                casadi_int *sz_w) {
-    if (sz_arg) *sz_arg = m.nbQ() + m.nbQdot() + m.nbTau();
+    if (sz_arg) *sz_arg = m.nbQ() + m.nbQdot() + m.nbGeneralizedTorque();
     if (sz_res) *sz_res = m.nbQdot() + m.nbQddot();
     if (sz_iw) *sz_iw = 0;
     if (sz_w) *sz_w = 0;
