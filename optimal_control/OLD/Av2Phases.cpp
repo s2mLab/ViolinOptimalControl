@@ -18,7 +18,7 @@ biorbd::Model m("../../models/BrasViolon.bioMod");
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbGeneralizedTorque());           // controls number
-unsigned int nTags(m.nTags());          // markers number
+unsigned int nMarkers(m.nMarkers());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 unsigned int nPhases(2);
 GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
@@ -39,7 +39,7 @@ int  main ()
 
     std::cout << "nb de muscles: " << nMus << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
-    std::cout << "nb de marqueurs: " << nTags << std::endl;
+    std::cout << "nb de marqueurs: " << nMarkers << std::endl;
 
     /* ---------- INITIALIZATION ---------- */
     DifferentialState       x1("",nQ+nQdot,1);               //  the  differential states

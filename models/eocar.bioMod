@@ -99,7 +99,7 @@ musclegroup Cube1Cube2
 endmusclegroup 	
 
 	muscle	Coin1
-		Type 				hillsimple
+		Type 				IdealizedActuator
 		statetype			buchanan
 		musclegroup 		Cube1Cube2
 		OriginPosition		0.5 -0.5 -1
@@ -108,7 +108,7 @@ endmusclegroup
 	endmuscle
 
 	muscle	Coin2
-		Type 				hillsimple
+		Type 				IdealizedActuator
 		statetype			buchanan
 		musclegroup 		Cube1Cube2
 		OriginPosition		-0.5 -0.5 -1
@@ -117,7 +117,7 @@ endmusclegroup
 	endmuscle
 
 	muscle	Coin3
-		Type 				hillsimple
+		Type 				IdealizedActuator
 		statetype			buchanan
 		musclegroup 		Cube1Cube2
 		OriginPosition		-0.5 0.5 -1
@@ -126,7 +126,7 @@ endmusclegroup
 	endmuscle
 
 	muscle	Coin4
-		Type 				hillsimple
+		Type 				IdealizedActuator
 		statetype			buchanan
 		musclegroup 		Cube1Cube2
 		OriginPosition		0.5 0.5 -1

@@ -19,7 +19,7 @@ biorbd::Model m("../../models/BrasViolon.bioMod");
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbGeneralizedTorque());           // controls number
-unsigned int nTags(m.nTags());          // markers number
+unsigned int nMarkers(m.nMarkers());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 unsigned int nPhases(2);
 
@@ -27,10 +27,10 @@ GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
 GeneralizedTorque Tau(nTau);
 std::vector<biorbd::muscles::StateDynamics> state(nMus);
 
-int tagArchetPoucette = 16;
-int tagArchetCOM = 17;
-int tagArchetTete = 18;
-int tagViolon = 34;
+static int tagArchetPoucette = 16;
+static int tagArchetCOM = 17;
+static int tagArchetTete = 18;
+static int tagViolon = 34;
 
 const double t_Start = 0.0;
 const double t_End = 0.5;
@@ -46,7 +46,7 @@ int  main ()
 
     std::cout << "nb de muscles: " << nMus << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
-    std::cout << "nb de marqueurs: " << nTags << std::endl;
+    std::cout << "nb de marqueurs: " << nMarkers << std::endl;
 
     /* ---------- INITIALIZATION ---------- */
     std::vector<DifferentialState> x;
@@ -61,13 +61,13 @@ int  main ()
 
     //Position constraints
     CFunction markerArchetPoucette(3, markerPosition);
-    markerArchetPoucette.setUserData((void*) &tagArchetPoucette);
+    markerArchetPoucette.setUserData(static_cast<void*>(&tagArchetPoucette));
     CFunction markerArchetCOM(3, markerPosition);
-    markerArchetCOM.setUserData((void*) &tagArchetCOM);
+    markerArchetCOM.setUserData(static_cast<void*>(&tagArchetCOM));
     CFunction markerArchetTete(3, markerPosition);
-    markerArchetTete.setUserData((void*) &tagArchetTete);
+    markerArchetTete.setUserData(static_cast<void*>(&tagArchetTete));
     CFunction markerViolon(3, markerPosition);
-    markerViolon.setUserData((void*) &tagViolon);
+    markerViolon.setUserData(static_cast<void*>(&tagViolon));
 
     for (unsigned int p=0; p<nPhases; ++p){
         x.push_back(DifferentialState("",nQ+nQdot,1));

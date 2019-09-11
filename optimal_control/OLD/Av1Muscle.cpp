@@ -19,7 +19,7 @@ biorbd::Model m("../../models/ModeleAv1Muscle.bioMod");
 unsigned int nQ(m.nbQ());               // states number
 unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbGeneralizedTorque());           // torque number
-unsigned int nTags(m.nTags());          // markers number
+unsigned int nMarkers(m.nMarkers());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
 unsigned int nPhases(1);
 GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
@@ -63,7 +63,7 @@ void myEndPointConstraint( double *x, double *g, void * ){
 
 int  main ()
 {
-    std::cout << "nb de marqueurs: " << nTags << std::endl<< std::endl;
+    std::cout << "nb de marqueurs: " << nMarkers << std::endl<< std::endl;
     std::cout << "nb de muscles: " << nMus << std::endl<< std::endl;
 
     /* ---------- INITIALIZATION ---------- */
