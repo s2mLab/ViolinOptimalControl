@@ -30,7 +30,7 @@ void forwardDynamicsFromJointTorque( double *x, double *rhs, void *){
         Qdot[i] = x[i+nQ];
     }
     for(unsigned int i = 0; i<nTau; ++i)
-        Tau[i] = x[i+nQ+nQdot];
+        Tau[i] = x[i+nQ+nQdot+nMus];
 
     // Compute the forward dynamics
     forwardDynamics(Q, Qdot, Tau, rhs);
