@@ -10,7 +10,7 @@ model_name = "BrasViolon"
 output_files = "AvNPhases"
 fun_dyn = utils.dynamics_from_muscles_and_torques
 runge_kutta_algo = 'rk45'
-nb_nodes = 30
+nb_intervals = 30
 nb_phases = 2
 nb_frame_inter = 500
 
@@ -29,11 +29,11 @@ else:
     raise NotImplementedError("Dynamic not implemented yet")
 
 # Read values
-t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results/States{output_files}.txt", m, nb_nodes,
+t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results/States{output_files}.txt", m, nb_intervals,
                                                     nb_phases)
-all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{output_files}.txt", nb_nodes, nb_phases,
+all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{output_files}.txt", nb_intervals, nb_phases,
                                          nb_controls)
-t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_nodes, parameter=False)
+t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_intervals, parameter=False)
 
 
 # Integrate
