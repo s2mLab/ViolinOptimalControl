@@ -6,9 +6,9 @@ import analyses.utils as utils
 
 
 # Options
-model_name = "BrasViolon"
-output_files = "AvNPhases"
-fun_dyn = utils.dynamics_from_muscles_and_torques
+model_name = "ModelTest"
+output_files = "Eocar"
+fun_dyn = utils.dynamics_from_joint_torque
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
 nb_phases = 2
