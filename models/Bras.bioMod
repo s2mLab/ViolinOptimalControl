@@ -109,7 +109,7 @@ external_forces	0
 		parent	Scapula
 		position	-0.131943 -0.130753 -0.0881354
 	endmarker
-	
+
 // Arm
 	 segment Arm
 		parent	Scapula
@@ -452,7 +452,6 @@ endmusclegroup
 			  position 		0.0294097 -0.0168886 0.020477
 		endviapoint
 		
-
 // Arm > Scapula
 
 musclegroup Arm2Scapula
