@@ -37,11 +37,11 @@ develop_factor_ff = 10
 recover_factor_ff = 10
 
 # Target Load
-target_load = 60  # percent of Maximal Voluntary Contraction
+target_load = 20  # percent of Maximal Voluntary Contraction
 delta_t = 0.5  # time to reach target load - smoother rise
-t_Max = 100
-freq_load = 20
-delta_amp = 0.20
+t_Max = 500
+freq_load = 0.1
+delta_amp = 0.05
 
 # Normalize contribution of each fiber
 total = (S_Specific_Tension * S_Percent + FR_Specific_Tension * FR_Percent + FF_Specific_Tension * FF_Percent)
@@ -127,7 +127,7 @@ def fatigue(fun_load):
     return dyn
 
 
-X = integrate.solve_ivp(fatigue(var_load), (0, t_Max), state_init_0)
+X = integrate.solve_ivp(fatigue(var_sin_load), (0, t_Max), state_init_0)
 t = X.t
 X_S = (X.y[0, :], X.y[1, :], X.y[2, :])
 X_FR = (X.y[3, :], X.y[4, :], X.y[5, :])
@@ -175,6 +175,7 @@ def find_endur_time(_load, _t_max, state_init):
 #    print(endur_time[i])
 
 # Plot
+
 plt.figure(1)
 plt.subplots_adjust(left=0.06, bottom=0.06, right=0.81, top=0.96, wspace=0.20, hspace=0.78)
 plt.subplot(4, 1, 1)
@@ -210,8 +211,16 @@ plt.plot([0, t_Max], [(1+delta_amp)*target_load, (1+delta_amp)*target_load], 'r-
 plt.xlabel('time')
 plt.ylabel('%MVC')
 
-
 plt.figure(2)
+plt.plot(t, ma_total)
+plt.plot([0.0, t_Max], [target_load, target_load], 'r-', lw=0.8)  # Red straight line
+plt.plot([0, t_Max], [(1-delta_amp)*target_load, (1-delta_amp)*target_load], 'r--', lw=0.8)  # Red dashed straight line
+plt.plot([0, t_Max], [(1+delta_amp)*target_load, (1+delta_amp)*target_load], 'r--', lw=0.8)  # Red dashed straight line
+plt.xlabel('time')
+plt.ylabel('%MVC')
+
+
+plt.figure(3)
 
 plt.subplot(3, 1, 1)
 plt.plot(t, BE_S)
@@ -231,8 +240,25 @@ plt.title("Fast Fatigable fibers")
 plt.xlabel('time')
 plt.ylabel('Brain effort')
 
+plt.figure(4)
+plt.subplots_adjust(left=0.06, bottom=0.06, right=0.81, top=0.96, wspace=0.20, hspace=0.78)
+plt.subplot(4, 1, 1)
+plt.plot(t, X_S[0]*alpha_s, label='Force developed by active')
+plt.plot(t, X_S[1]*alpha_s, label='Potential force from resting')
+plt.plot(t, X_S[2]*alpha_s, label='Force lost from fatigue')
+plt.title("Fibres lentes")
+plt.xlabel('Temps (en s)')
+plt.ylabel('% Force Maximale')
 
-#plt.figure(3)
+plt.subplot(4, 1, 2)
+plt.plot(t, X_FR[0]*alpha_ffr, label='Force developed by active')
+plt.plot(t, X_FR[1]*alpha_ffr, label='Potential force from resting')
+plt.plot(t, X_FR[2]*alpha_ffr, label='Force lost from fatigue')
+plt.title("Fibres rapides")
+plt.xlabel('Temps (en s)')
+plt.ylabel('% Force Maximale')
+
+#plt.figure(4)
 
 #plt.plot(list_target_load, endur_time)
 #plt.title("Endurance Time")
