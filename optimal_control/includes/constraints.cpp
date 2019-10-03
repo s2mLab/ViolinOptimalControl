@@ -79,11 +79,11 @@ void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data)
 
 
     for(unsigned int i = 0; i<nMus; ++i){
-        state[i] = biorbd::muscles::StateDynamics(0, x[i+nQ+nQdot]);
+        musclesStates[i]->setActivation(x[i+nQ+nQdot]);
     }
 
     // Compute the torques from muscles
-    Tau = m.muscularJointTorque(state, false, &Q, &Qdot);
+    Tau = m.muscularJointTorque(musclesStates, false, &Q, &Qdot);
     for(unsigned int i=0; i<nTau; ++i){
         Tau[i] += x[i+nQ+nQdot+nMus];
         //std::cout<<"Torques additionnels:"<<x[i+nQ+nQdot+nMus]<<std::endl;

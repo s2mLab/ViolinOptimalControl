@@ -19,7 +19,7 @@ unsigned int nMus(m.nbMuscleTotal());   // muscles number
 unsigned int nPhases(2); // phases number
 GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
 GeneralizedTorque Tau(nTau);
-std::vector<biorbd::muscles::StateDynamics> state(nMus);
+std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates(nMus);
 
 const double t_Start = 0.0;
 const double t_End = 4.0;
@@ -28,6 +28,8 @@ const int nPoints(31);
 
 int  main ()
 {
+    for (unsigned int i=0; i<nMus; ++i)
+        musclesStates[i] = std::make_shared<biorbd::muscles::StateDynamics>(biorbd::muscles::StateDynamics());
 //    printf( "nQdot vaut : %d \n", nQdot);
 //    printf( "nQ vaut : %d \n", nQ);
 //    printf( "nTau vaut : %d \n", nTau);
