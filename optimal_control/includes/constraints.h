@@ -5,6 +5,8 @@
 #include "RigidBody/GeneralizedTorque.h"
 #include "Muscles/StateDynamics.h"
 #include "dynamics.h"
+#include "Utils/RotoTrans.h"
+#include "RigidBody/NodeBone.h"
 
 void statesZero( double *x, double *g, void * );
 void velocityZero( double *x, double *g, void * );
@@ -16,6 +18,7 @@ void violonDown( double *x, double *g, void * );
 void markerPosition(double *x, double *g, void *user_data );
 void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data);
 void forceConstraintFromTorque(double *x, double *g, void *user_data);
+void orthogonalProjected(double *x, double *g, void *user_data);
 
 extern biorbd::Model m;
 extern unsigned int nQ;
