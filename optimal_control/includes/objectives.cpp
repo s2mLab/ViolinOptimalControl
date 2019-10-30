@@ -2,10 +2,10 @@
 
 static unsigned int i;
 
-void lagrangeResidualTorques( double *x, double *g, void *){
+void lagrangeResidualTorques( double *u, double *g, void *){
     g[0]=0;
     for (i=0; i<nTau; ++i)
-        g[0]+=(x[i+nMus]*x[i+nMus]);
+        g[0]+=(u[i+nMus]*u[i+nMus]);
 }
 
 void lagrangeActivations( double *x, double *g, void *){

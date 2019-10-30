@@ -3,7 +3,7 @@
 #include "BiorbdModel.h"
 #include "dynamics.h"
 
-void lagrangeResidualTorques( double *x, double *g, void *);
+void lagrangeResidualTorques( double *u, double *g, void *);
 void lagrangeResidualTorquesMultistage(double *u, double *g, void *);
 void lagrangeActivations( double *x, double *g, void *);
 void lagrangeAccelerations( double *x, double *g, void *user_data);
