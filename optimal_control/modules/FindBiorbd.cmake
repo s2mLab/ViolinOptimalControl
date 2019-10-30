@@ -31,4 +31,3 @@ find_package_handle_standard_args (Biorbd DEFAULT_MSG
   Biorbd_LIBRARIES
   Biorbd_INCLUDE_DIR)
 
-mark_as_advanced (Biorbd_LIBRARIES Biorbd_LIBRARY Biorbd_INCLUDE_DIR)

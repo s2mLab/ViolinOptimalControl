@@ -98,7 +98,7 @@ int  main ()
         /* ------------ CONSTRAINTS ----------- */
         (f << dot(x[p])) == F(is[p]);
 
-        for (unsigned int i = 0; i < nPoints; ++i)
+        for (int i = 1; i < nPoints-1; ++i)
           ocp.subjectTo(i, projeteArchet(x[p]) == 0.0);
 
         if(p==0){
