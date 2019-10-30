@@ -4,7 +4,9 @@
 #include "includes/dynamics.h"
 #include "includes/objectives.h"
 #include "includes/constraints.h"
+#include "includes/utils.h"
 #include <vector>
+#include <memory>
 
 using namespace std;
 USING_NAMESPACE_ACADO
@@ -30,7 +32,12 @@ int  main ()
 {
     for (unsigned int i=0; i<nMus; ++i)
         musclesStates[i] = std::make_shared<biorbd::muscles::StateDynamics>(biorbd::muscles::StateDynamics());
-//    printf( "nQdot vaut : %d \n", nQdot);
+
+     std::string resultsPath("../Results/");
+     std::string resultsPath2 (resultsPath + "InitStatesEocar.txt");
+
+
+    //    printf( "nQdot vaut : %d \n", nQdot);
 //    printf( "nQ vaut : %d \n", nQ);
 //    printf( "nTau vaut : %d \n", nTau);
 //    printf( "nMarkers vaut : %d \n", nMarkers);
@@ -83,6 +90,8 @@ int  main ()
     DifferentialEquation f ;
 
 
+
+
     /* ------------ CONSTRAINTS ----------- */
 
     for (unsigned int p=0; p<nPhases; ++p){
@@ -116,7 +125,7 @@ int  main ()
 
         for (unsigned int i=nMus; i<nMus+nTau; ++i)
             ocp.subjectTo(-100 <= u1[p](i) <= 100);
-    }
+   }
     ocp.subjectTo( f ) ;
     /* ------------ OBJECTIVE ----------- */
     Expression sumLagrange = lagrangeRT(u1[0])+ lagrangeA(u1[0]);
@@ -124,6 +133,10 @@ int  main ()
         sumLagrange += lagrangeRT(u1[p]) + lagrangeA(u1[p]);
 
     ocp.minimizeLagrangeTerm( sumLagrange ); // WARNING
+
+
+
+
 
 
 
@@ -138,16 +151,24 @@ int  main ()
         window.addSubplot( u1[p](0),  "CONTROL  1" ) ;
     }
 
+
     /* ---------- OPTIMIZATION  ------------ */
 
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
     algorithm.set(MAX_NUM_ITERATIONS, 500);
+    algorithm.initializeDifferentialStates((resultsPath + "InitStatesEocar.txt").c_str(),BT_TRUE);
+    algorithm.initializeControls((resultsPath + "InitControlsEocar.txt").c_str());
+
 
     algorithm << window;
     algorithm.solve();
 
-    algorithm.getDifferentialStates("../Results/StatesEocar.txt");
-    algorithm.getControls("../Results/ControlsEocar.txt");
+
+
+    createTreePath(resultsPath);
+    algorithm.getDifferentialStates((resultsPath + "StatesEocar.txt").c_str());
+    algorithm.getControls((resultsPath + "ControlsEocar.txt").c_str());
+
 
     return  0;
 }
