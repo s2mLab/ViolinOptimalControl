@@ -1,14 +1,15 @@
 import matplotlib.pyplot as plt
 import biorbd
+import numpy as np
 from BiorbdViz import BiorbdViz
 
 import analyses.utils as utils
 
 
 # Options
-model_name = "ModelTest"
-output_files = "Eocar"
-fun_dyn = utils.dynamics_from_joint_torque
+model_name = "BrasViolon"
+output_files = "AvNPhases"
+fun_dyn = utils.dynamics_from_muscles_and_torques_and_contact
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
 nb_phases = 2
@@ -21,7 +22,7 @@ if fun_dyn == utils.dynamics_from_muscles:
 elif fun_dyn == utils.dynamics_from_joint_torque:
     nb_controls = m.nbGeneralizedTorque()
 elif fun_dyn == utils.dynamics_from_muscles_and_torques \
-        or fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
+    or fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
     nb_controls = m.nbMuscleTotal()+m.nbGeneralizedTorque()
 elif fun_dyn == utils.dynamics_from_accelerations:
     nb_controls = m.nbQ()
@@ -83,7 +84,7 @@ for i in range(m.nbMuscleGroups()):
         #plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
         plt.subplot(3, 6, cmp+1)
         utils.plot_piecewise_constant(t_final, all_u[cmp, :])
-        plt.title(biorbd.HillType.getRef(m.muscleGroup(i).muscle(j)).name().getString())
+        #plt.title(biorbd.HillType.getRef(m.muscleGroup(i).muscle(j)).name().getString())
         plt.ylim((0, 1))
         cmp += 1
 

@@ -151,17 +151,17 @@ def dynamics_from_muscles_and_torques_and_contact(t_int, states, biorbd_model, u
     for i in range(len(states_dynamics)):
         states_dynamics[i] = biorbd.StateDynamics(0, u[i])
 
-    biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
+    biorbd_model.updateMuscles(states[:nb_q], states[nb_q:], True)
     tau = biorbd.Model.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
 
-    tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
+    tau_final = tau.get_array() + u[nb_muscle:nb_muscle + nb_tau]
 
-    cs = biorbd_model.getConstraints_nonConst(biorbd_model)
+    cs = biorbd_model.getConstraints()
     qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(biorbd_model, states[:nb_q], states[nb_q:],
-                                                                            tau_final, cs).get_array()
+                                                          tau_final, cs).get_array()
     rsh = np.ndarray(nb_q + nb_qdot)
     for i in range(nb_q):
-        rsh[i] = states[nb_q+i]
+        rsh[i] = states[nb_q + i]
         rsh[i + nb_q] = qddot[i]
     return rsh
 
