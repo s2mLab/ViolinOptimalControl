@@ -4,6 +4,8 @@
 #include "RigidBody/GeneralizedCoordinates.h"
 #include "RigidBody/GeneralizedTorque.h"
 #include "Muscles/StateDynamics.h"
+#include "utils.h"
+
 
 //#define CHECK_MAX_FORCE
 //#define CHECK_FORCE_IF_LOW_ACTIVATION
@@ -18,12 +20,12 @@ void forwardDynamics(const GeneralizedCoordinates& Q, const GeneralizedCoordinat
     }
 }
 
+
 void forwardDynamicsFromJointTorque( double *x, double *rhs, void *){
     // Dispatch the inputs
-    for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-    }
+    DispatchQ_Qdot(x);
+
+
     for(unsigned int i = 0; i<nTau; ++i)
         Tau[i] = x[i+nQ+nQdot+nMus];
 
@@ -34,10 +36,7 @@ void forwardDynamicsFromJointTorque( double *x, double *rhs, void *){
 
 void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
     // Dispatch the inputs
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-    }
+    DispatchQ_Qdot(x);
     m.updateMuscles(Q, Qdot, true);
 
     for(unsigned int i = 0; i<nMus; ++i)
@@ -98,11 +97,8 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
 
 
 void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void *user_data){
-    // Dispatch the inputs
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-    }
+
+    DispatchQ_Qdot(x);
     m.updateMuscles(Q, Qdot, true);
 
     for(unsigned int i = 0; i<nMus; ++i){
@@ -120,10 +116,7 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
 
 void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs, void *user_data){
     // Dispatch the inputs
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-    }
+    DispatchQ_Qdot(x);
     m.updateMuscles(Q, Qdot, true);
 
     for(unsigned int i = 0; i<nMus; ++i){
@@ -148,11 +141,7 @@ void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs
 
 void forwardDynamicsFromTorqueContact( double *x, double *rhs, void *user_data){
     // Dispatch the inputs
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-        Tau[i]= x[i+nQ+nQdot];
-    }
+    DispatchQ_Qdot_Tau(x);
 
     // Compute the forward dynamics
     RigidBodyDynamics::ConstraintSet& CS = m.getConstraints();
