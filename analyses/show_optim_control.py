@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 import biorbd
 from BiorbdViz import BiorbdViz
@@ -6,13 +7,34 @@ import analyses.utils as utils
 
 
 # Options
-model_name = "ModelTest"
-output_files = "Eocar"
-fun_dyn = utils.dynamics_from_joint_torque
+model_name = "BrasViolon"
+output_files = "AvNPhases"
+fun_dyn = utils.dynamics_from_muscles_and_torques
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
 nb_phases = 2
 nb_frame_inter = 500
+muscle_plot_mapping = \
+    [[14, 7, 0, 0, 0, 0],  # Trapeze1
+     [15, 7, 1, 0, 0, 0],  # Trapeze2
+     [16, 8, 0, 0, 0, 0],  # Trapeze3
+     [17, 8, 1, 0, 0, 0],  # Trapeze4
+     [10, 5, 2, 1, 0, 1],  # SupraSpin
+     [8,  5, 0, 1, 0, 1],  # InfraSpin
+     [11, 5, 3, 1, 0, 1],  # SubScap
+     [6,  4, 0, 0, 1, 2],  # Pectoral1
+     [0,  0, 0, 0, 1, 2],  # Pectoral2
+     [1,  0, 1, 0, 1, 2],  # Pectoral3
+     [7,  4, 1, 1, 1, 3],  # Deltoid1
+     [9,  5, 1, 1, 1, 3],  # Deltoid2
+     [2,  1, 0, 1, 1, 3],  # Deltoid3
+     [12, 6, 0, 2, 0, 4],  # BicepsLong
+     [13, 6, 1, 2, 0, 4],  # BicepsShort
+     [3,  2, 0, 2, 1, 5],  # TricepsLong
+     [5,  3, 1, 2, 1, 5],  # TricepsMed
+     [4,  3, 0, 2, 1, 5],  # TricepsLat
+     ]
+muscle_plot_names = ["Trapèzes", "Coiffe des rotateurs", "Pectoraux", "Deltoïdes", "Biceps", "Triceps"]
 
 # Load the model
 m = biorbd.Model(f"../models/{model_name}.bioMod")
@@ -62,30 +84,32 @@ for i in range(m.nbQ()):
     # plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
     plt.title("Qdot %i" % i)
 
-# for i in range(nb_controls):
-#     plt.subplot(nb_controls, 3, 3 + (3 * i))
-#     utils.plot_piecewise_constant(t_final, all_u[i, :])
-#     plt.title("Acceleration %i" % i)
-
 for i in range(m.nbGeneralizedTorque()):
     plt.subplot(m.nbGeneralizedTorque(), 3, 3 + (3 * i))
     utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
     plt.title("Torques %i" % i)
+plt.tight_layout(w_pad=-1.0, h_pad=-1.0)
 
-# L = []
-# for i in range(m.nbMuscleGroups()):
-#     L.append(m.muscleGroup(i).nbMuscles())
-# nb_muscles_max = max(L)
 plt.figure("Activations")
 cmp = 0
-for i in range(m.nbMuscleGroups()):
-    for j in range(m.muscleGroup(i).nbMuscles()):
-        #plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
-        plt.subplot(3, 6, cmp+1)
-        utils.plot_piecewise_constant(t_final, all_u[cmp, :])
-        plt.title(biorbd.HillType.getRef(m.muscleGroup(i).muscle(j)).name().getString())
+if muscle_plot_mapping is None:
+    for i in range(m.nbMuscleGroups()):
+        for j in range(m.muscleGroup(i).nbMuscles()):
+            plt.subplot(3, 6, cmp + 1)
+            utils.plot_piecewise_constant(t_final, all_u[cmp, :])
+            plt.title(m.muscleGroup(i).muscle(j).name().getString())
+            plt.ylim((0, 1))
+            cmp += 1
+else:
+    nb_row = np.max(muscle_plot_mapping, axis=0)[3] + 1
+    nb_col = np.max(muscle_plot_mapping, axis=0)[4] + 1
+    for muscle_map in muscle_plot_mapping:
+        plt.subplot(nb_row, nb_col, muscle_map[3] * nb_col + muscle_map[4] + 1)
+        utils.plot_piecewise_constant(t_final, all_u[muscle_map[0], :])
+        # plt.title(m.muscleGroup(map[1]).muscle(map[2]).name().getString())
+        plt.title(muscle_plot_names[muscle_map[5]])
         plt.ylim((0, 1))
-        cmp += 1
+    plt.tight_layout(w_pad=-1.0, h_pad=-1.0)
 
 # plt.ion()  # Non blocking plt.show
 plt.show()

@@ -292,6 +292,7 @@ def plot_piecewise_constant(t, data):
 def plot_piecewise_linear(t, data):
     plt.plot(t, data)
 
+
 def derive(q, t):
     der = np.ndarray(q.shape)
     for i in range(q.shape[1]):
@@ -299,6 +300,3 @@ def derive(q, t):
             der[j][i] = (q[j+1][i]-q[j][i])/(t[j+1]-t[j])
 
     return der
-
-
-
