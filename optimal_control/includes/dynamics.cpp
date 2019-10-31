@@ -4,14 +4,14 @@
 #include "RigidBody/GeneralizedCoordinates.h"
 #include "RigidBody/GeneralizedTorque.h"
 #include "Muscles/StateDynamics.h"
+#include "utils.h"
+
 
 //#define CHECK_MAX_FORCE
 //#define CHECK_FORCE_IF_LOW_ACTIVATION
 //#define CHECK_MUSCLE_LENGTH_IS_POSITIVE
 
 void forwardDynamics(const GeneralizedCoordinates& Q, const GeneralizedCoordinates& Qdot, const GeneralizedTorque& Tau, double *rhs){
-    GeneralizedCoordinates Qddot(nQ);
-
     RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
 
     for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
@@ -20,17 +20,15 @@ void forwardDynamics(const GeneralizedCoordinates& Q, const GeneralizedCoordinat
     }
 }
 
-void forwardDynamicsFromJointTorque( double *x, double *rhs, void *){
-    GeneralizedCoordinates Q(nQ), Qdot(nQ);
-    GeneralizedTorque Tau(nQ);
 
+
+void forwardDynamicsFromJointTorque( double *x, double *rhs, void *){
     // Dispatch the inputs
-    for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-    }
+    Dispatch_Q_Qdot(x);
+
+
     for(unsigned int i = 0; i<nTau; ++i)
-        Tau[i] = x[i+nQ+nQdot];
+        Tau[i] = x[i+nQ+nQdot+nMus];
 
     // Compute the forward dynamics
     forwardDynamics(Q, Qdot, Tau, rhs);
@@ -38,22 +36,15 @@ void forwardDynamicsFromJointTorque( double *x, double *rhs, void *){
 
 
 void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
-    GeneralizedCoordinates Q(nQ), Qdot(nQ);
-    GeneralizedTorque Tau(nQ);
-    std::vector<biorbd::muscles::StateDynamics> state(nMus);
-
     // Dispatch the inputs
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-    }
+    Dispatch_Q_Qdot(x);
     m.updateMuscles(Q, Qdot, true);
 
     for(unsigned int i = 0; i<nMus; ++i)
-        state[i] = biorbd::muscles::StateDynamics(0, x[i+nQ+nQdot]);
+        musclesStates[i]->setActivation(x[i+nQ+nQdot]);
 
     // Compute the torques from muscles
-    Tau = m.muscularJointTorque(state, false, &Q, &Qdot);
+    Tau = m.muscularJointTorque(musclesStates, false, &Q, &Qdot);
 
     // Compute the forward dynamics
     forwardDynamics(Q, Qdot, Tau, rhs);
@@ -86,7 +77,7 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
                 for(unsigned int int j=0; j<nMus; ++j){
                     if (m.musclesLengthJacobian(m, true, &Q).coeff(j,i)!=0){
                         L.push_back(j);
-                        if(state[j].activation()>0.015)
+                        if(musclesStates[j].activation()>0.015)
                             c++;
                     }
                 }
@@ -107,22 +98,15 @@ void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *){
 
 
 void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void *user_data){
-    GeneralizedCoordinates Q(nQ), Qdot(nQ);
-    GeneralizedTorque Tau(nQ);
-    std::vector<biorbd::muscles::StateDynamics> state(nMus);
 
-    // Dispatch the inputs
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-    }
+    Dispatch_Q_Qdot(x);
     m.updateMuscles(Q, Qdot, true);
 
     for(unsigned int i = 0; i<nMus; ++i){
-        state[i] = biorbd::muscles::StateDynamics(0, x[nQ+nQdot + i]);
+        musclesStates[i]->setActivation(x[nQ+nQdot + i]);
     }
     // Compute the torques from muscles
-    Tau = m.muscularJointTorque(state, false, &Q, &Qdot);
+    Tau = m.muscularJointTorque(musclesStates, false, &Q, &Qdot);
     for(unsigned int i=0; i<nTau; ++i){
         Tau[i] += x[nQ+nQdot+nMus + i];
     }
@@ -132,23 +116,16 @@ void forwardDynamicsFromMuscleActivationAndTorque( double *x, double *rhs, void 
 }
 
 void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs, void *user_data){
-    GeneralizedCoordinates Q(nQ), Qdot(nQ), Qddot(nQ);
-    GeneralizedTorque Tau(nQ);
-    std::vector<biorbd::muscles::StateDynamics> state(nMus);
-
     // Dispatch the inputs
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-    }
+    Dispatch_Q_Qdot(x);
     m.updateMuscles(Q, Qdot, true);
 
     for(unsigned int i = 0; i<nMus; ++i){
-        state[i] = biorbd::muscles::StateDynamics(0, x[i+nQ+nQdot]);
+        musclesStates[i]->setActivation(x[i+nQ+nQdot]);
     }
 
     // Compute the torques from muscles
-    Tau = m.muscularJointTorque(state, false, &Q, &Qdot);
+    Tau = m.muscularJointTorque(musclesStates, false, &Q, &Qdot);
     for(unsigned int i=0; i<nTau; ++i){
         Tau[i]=Tau[i]+x[i+nQ+nQdot+nMus];
     }
@@ -164,15 +141,8 @@ void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs
 }
 
 void forwardDynamicsFromTorqueContact( double *x, double *rhs, void *user_data){
-    GeneralizedCoordinates Q(nQ), Qdot(nQ), Qddot(nQ);
-    GeneralizedTorque Tau(nQ);
-
     // Dispatch the inputs
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-        Tau[i]= x[i+nQ+nQdot];
-    }
+    Dispatch_Q_Qdot_Tau(x);
 
     // Compute the forward dynamics
     RigidBodyDynamics::ConstraintSet& CS = m.getConstraints();

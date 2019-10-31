@@ -127,7 +127,7 @@ def dynamics_from_muscles_and_torques(t_int, states, biorbd_model, u):
     for i in range(len(states_dynamics)):
         states_dynamics[i] = biorbd.StateDynamics(0, u[i])
 
-    biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
+    biorbd_model.updateMuscles(states[:nb_q], states[nb_q:], True)
     tau = biorbd.Model.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
 
     tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
@@ -151,17 +151,17 @@ def dynamics_from_muscles_and_torques_and_contact(t_int, states, biorbd_model, u
     for i in range(len(states_dynamics)):
         states_dynamics[i] = biorbd.StateDynamics(0, u[i])
 
-    biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
+    biorbd_model.updateMuscles(states[:nb_q], states[nb_q:], True)
     tau = biorbd.Model.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
 
-    tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
+    tau_final = tau.get_array() + u[nb_muscle:nb_muscle + nb_tau]
 
-    cs = biorbd_model.getConstraints_nonConst(biorbd_model)
+    cs = biorbd_model.getConstraints()
     qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(biorbd_model, states[:nb_q], states[nb_q:],
-                                                                            tau_final, cs).get_array()
+                                                          tau_final, cs).get_array()
     rsh = np.ndarray(nb_q + nb_qdot)
     for i in range(nb_q):
-        rsh[i] = states[nb_q+i]
+        rsh[i] = states[nb_q + i]
         rsh[i + nb_q] = qddot[i]
     return rsh
 
@@ -170,6 +170,19 @@ def dynamics_from_joint_torque(t_int, states, biorbd_model, u):
     nb_q = biorbd_model.nbQ()
     nb_qdot = biorbd_model.nbQdot()
     qddot = biorbd.Model.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], u).get_array()
+    rsh = np.ndarray(nb_q + nb_qdot)
+    for i in range(nb_q):
+        rsh[i] = states[nb_q+i]
+        rsh[i + nb_q] = qddot[i]
+
+    return rsh
+
+
+def dynamics_from_joint_torque_and_contact(t_int, states, biorbd_model, u):
+    nb_q = biorbd_model.nbQ()
+    nb_qdot = biorbd_model.nbQdot()
+    cs = biorbd_model.getConstraints()
+    qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(biorbd_model, states[:nb_q], states[nb_q:], u, cs).get_array()
     rsh = np.ndarray(nb_q + nb_qdot)
     for i in range(nb_q):
         rsh[i] = states[nb_q+i]
@@ -231,8 +244,13 @@ def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_
             q_init = integrated_tp.y[:, -1]
         else:
             q_init = np.concatenate((all_q[:, interval+1], all_qdot[:, interval+1]))
-        all_t = np.concatenate((all_t, integrated_tp.t[:-1]))
-        integrated_state = np.concatenate((integrated_state, integrated_tp.y[:, :-1]), axis=1)
+
+        if interval < t.shape[0] - 2:
+            all_t = np.concatenate((all_t, integrated_tp.t[:-1]))
+            integrated_state = np.concatenate((integrated_state, integrated_tp.y[:, :-1]), axis=1)
+        else:
+            all_t = np.concatenate((all_t, integrated_tp.t[:]))
+            integrated_state = np.concatenate((integrated_state, integrated_tp.y[:, :]), axis=1)
 
         if verbose:
             print(f"Time: {t[interval]}")
@@ -274,6 +292,7 @@ def plot_piecewise_constant(t, data):
 def plot_piecewise_linear(t, data):
     plt.plot(t, data)
 
+
 def derive(q, t):
     der = np.ndarray(q.shape)
     for i in range(q.shape[1]):
@@ -281,6 +300,3 @@ def derive(q, t):
             der[j][i] = (q[j+1][i]-q[j][i])/(t[j+1]-t[j])
 
     return der
-
-
-

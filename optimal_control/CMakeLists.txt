@@ -40,6 +40,7 @@ target_include_directories(utils PUBLIC
 # Write down all files to include here
 set(source_files
     RepeatedUpAndDownBow.cpp
+    EocarNphases.cpp
 )
 
 # Setup each project
