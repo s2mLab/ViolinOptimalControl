@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
 import biorbd
 from BiorbdViz import BiorbdViz
 
@@ -43,7 +44,7 @@ if fun_dyn == utils.dynamics_from_muscles:
 elif fun_dyn == utils.dynamics_from_joint_torque:
     nb_controls = m.nbGeneralizedTorque()
 elif fun_dyn == utils.dynamics_from_muscles_and_torques \
-        or fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
+    or fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
     nb_controls = m.nbMuscleTotal()+m.nbGeneralizedTorque()
 elif fun_dyn == utils.dynamics_from_accelerations:
     nb_controls = m.nbQ()
@@ -55,6 +56,7 @@ t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results
                                                     nb_phases)
 all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{output_files}.txt", nb_intervals, nb_phases,
                                          nb_controls)
+all_u = np.append(all_u, all_u[:, -1:], axis=1)  # For facilitate the visualization, add back the last values
 t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_intervals, parameter=False)
 
 
@@ -67,6 +69,7 @@ t_integrate, q_integrate = utils.integrate_states_from_controls(
 t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_int=t_integrate, y_int=q_integrate)
 qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
+
 
 # Show data
 plt.figure("States and torques res")
@@ -86,7 +89,11 @@ for i in range(m.nbQ()):
 
 for i in range(m.nbGeneralizedTorque()):
     plt.subplot(m.nbGeneralizedTorque(), 3, 3 + (3 * i))
-    utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
+    if fun_dyn == utils.dynamics_from_muscles_and_torques or \
+            fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
+        utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
+    else:
+        utils.plot_piecewise_constant(t_final, all_u[i, :])
     plt.title("Torques %i" % i)
 plt.tight_layout(w_pad=-1.0, h_pad=-1.0)
 
@@ -103,18 +110,23 @@ if muscle_plot_mapping is None:
 else:
     nb_row = np.max(muscle_plot_mapping, axis=0)[3] + 1
     nb_col = np.max(muscle_plot_mapping, axis=0)[4] + 1
+    created_axes = [None] * nb_col * nb_row
     for muscle_map in muscle_plot_mapping:
-        plt.subplot(nb_row, nb_col, muscle_map[3] * nb_col + muscle_map[4] + 1)
+        idx_axis = muscle_map[3] * nb_col + muscle_map[4]
+        if created_axes[idx_axis]:
+            plt.axes(created_axes[idx_axis])
+        else:
+            created_axes[idx_axis] = plt.subplot(nb_row, nb_col, idx_axis + 1)
         utils.plot_piecewise_constant(t_final, all_u[muscle_map[0], :])
         # plt.title(m.muscleGroup(map[1]).muscle(map[2]).name().getString())
         plt.title(muscle_plot_names[muscle_map[5]])
         plt.ylim((0, 1))
     plt.tight_layout(w_pad=-1.0, h_pad=-1.0)
 
-# plt.ion()  # Non blocking plt.show
 plt.show()
 
 # Animate the model
 b = BiorbdViz(loaded_model=m)
 b.load_movement(q_interp)
 b.exec()
+

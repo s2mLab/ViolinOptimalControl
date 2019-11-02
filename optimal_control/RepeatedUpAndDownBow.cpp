@@ -41,9 +41,9 @@ const int nPoints(31);
 
 int  main ()
 {
-    for (unsigned int i=0; i<nMus; ++i)
+    for(unsigned int i = 0; i<nMus; ++i){
         musclesStates[i] = std::make_shared<biorbd::muscles::StateDynamics>(biorbd::muscles::StateDynamics());
-
+    }
     std::string resultsPath("../Results/");
 
     clock_t start,end;
@@ -133,7 +133,7 @@ int  main ()
     ocp.subjectTo(f);
 
     /* ------------ OBJECTIVE ----------- */
-    Expression sumLagrange = lagrangeRT(u[0])+ lagrangeA(u[0]);
+    Expression sumLagrange = lagrangeRT(u[0]) + lagrangeA(u[0]);
     for(unsigned int p=1; p<nPhases; ++p)
         sumLagrange += lagrangeRT(u[p]) + lagrangeA(u[p]);
     ocp.minimizeLagrangeTerm( sumLagrange ); // WARNING

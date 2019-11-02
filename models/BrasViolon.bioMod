@@ -25,7 +25,7 @@ external_forces	0
 			0.000000	0.989495	0.000000
 			0.000000	0.000000	5.642031
 		com	0.000000	-0.44045	0.000000
-
+    meshfile Geometry/thorax.vtp
 	endsegment
 
 // Spine
@@ -43,8 +43,7 @@ external_forces	0
 			0.000000	0.000111	0.000000
 			0.000000	0.000000	0.000111
 		com	0.000000	0.000000	0.000000
-		mesh 0 0 0
-		mesh 0.006440 0.007056 0.025930
+    meshfile Geometry/hat_spine.vtp
 	endsegment
 	
 // Clavicle
@@ -59,8 +58,7 @@ external_forces	0
 			0.000000	0.002521	0.000000
 			0.000000	0.000000	0.002521
 		com	0.000000	0.000000	0.000000
-		mesh 0 0 0
-		mesh -0.015177 0.021256 0.143546
+    meshfile Geometry/clavicle.vtp
 	endsegment
 	
 	// Markers
@@ -85,8 +83,7 @@ external_forces	0
 			0.000000	0.000272	0.000000
 			0.000000	0.000000	0.000272
 		com	0.000000	0.000000	0.000000
-		mesh 0 0 0
-		mesh -0.016223 -0.046533 -0.001997
+    meshfile Geometry/scapula.vtp
 	endsegment
 	
 	// Markers
@@ -122,8 +119,7 @@ external_forces	0
 			0.000000	0.006150	0.000000
 			0.000000	0.000000	0.040215
 		com	0.000000	-0.144423	0.000000
-		mesh 0 0 0
-		mesh 0.0066386 -0.3160549 -0.0133869
+    meshfile Geometry/humerus.vtp
 	endsegment
 	
 	// Markers
@@ -158,8 +154,7 @@ external_forces	0
 			0.000000	0.000943	0.000000
 			0.000000	0.000000	0.008495
 		com	0.000000	-0.114073	0.000000
-		mesh 0 0 0
-		mesh 0.000403 -0.011572 0.020117
+    meshfile Geometry/radius.vtp
 	endsegment
 	
 	// Markers
@@ -200,8 +195,7 @@ external_forces	0
 			0.000000	0.000203	0.000000
 			0.000000	0.000000	0.000203
 		com	0.000000	0.000000	0.000000
-		mesh 0 0 0
-		mesh 0.020538 -0.271953 0.035220
+    meshfile Geometry/ulna.vtp
 	endsegment
 
 // HAND 
@@ -293,8 +287,7 @@ external_forces	0
 			0.000000	0.002521	0.000000
 			0.000000	0.000000	0.002521
 		com	0.000000	0.000000	0.000000
-		mesh 0 0 0
-		mesh -0.015177 0.021256 -0.143546
+		meshfile Geometry/clavicle_left.vtp
 	endsegment
 	
 	// Markers
@@ -319,8 +312,7 @@ external_forces	0
 			0.000000	0.000272	0.000000
 			0.000000	0.000000	0.000272
 		com	0.000000	0.000000	0.000000
-		mesh 0 0 0
-		mesh -0.016223 -0.046533 0.001997
+		meshfile Geometry/scapula_left.vtp
 	endsegment
 	
 	// Markers
@@ -356,8 +348,7 @@ external_forces	0
 			0.000000	0.006150	0.000000
 			0.000000	0.000000	0.040215
 		com	0.000000	-0.144423	0.000000
-		mesh 0 0 0
-		mesh 0.0066386 -0.3160549 0.0133869
+		meshfile Geometry/humerus_left.vtp
 	endsegment
 	
 	// Markers
@@ -392,8 +383,7 @@ external_forces	0
 			0.000000	0.000943	0.000000
 			0.000000	0.000000	0.008495
 		com	0.000000	-0.114073	0.000000
-		mesh 0 0 0
-		mesh 0.000403 -0.011572 -0.020117
+		meshfile Geometry/radius_left.vtp
 	endsegment
 	
 	// Markers
@@ -434,8 +424,7 @@ external_forces	0
 			0.000000	0.000203	0.000000
 			0.000000	0.000000	0.000203
 		com	0.000000	0.000000	0.000000
-		mesh 0 0 0
-		mesh 0.020538 -0.271953 -0.035220
+		meshfile Geometry/ulna_left.vtp
 	endsegment
 
 // HAND2 
