@@ -25,7 +25,7 @@ unsigned int nPhases(2);
 
 GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
 GeneralizedTorque Tau(nTau);
-std::vector<biorbd::muscles::StateDynamics> state(nMus);
+std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> state(nMus);
 
 static int tagArchetPoucette = 16;
 static int tagArchetCOM = 17;
@@ -38,6 +38,11 @@ const int nPoints(31);
 
 int  main ()
 {
+    // Initializing the states
+    for(unsigned int i = 0; i<nMus; ++i){
+        state[i] = std::make_shared<biorbd::muscles::StateDynamics>(0, 0);
+    }
+
     std::string resultsPath("../Results/");
 
     clock_t start,end;

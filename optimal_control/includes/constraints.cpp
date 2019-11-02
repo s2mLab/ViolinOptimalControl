@@ -79,7 +79,7 @@ void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data)
 
 
     for(unsigned int i = 0; i<nMus; ++i){
-        state[i] = biorbd::muscles::StateDynamics(0, x[i+nQ+nQdot]);
+        state[i] = std::make_shared<biorbd::muscles::StateDynamics>(0, x[i+nQ+nQdot]);
     }
 
     // Compute the torques from muscles

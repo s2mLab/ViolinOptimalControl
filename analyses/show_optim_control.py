@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import biorbd
 from BiorbdViz import BiorbdViz
 
@@ -7,12 +8,33 @@ import analyses.utils as utils
 
 # Options
 model_name = "BrasViolon"
-output_files = "AvNPhases"
+output_files = "AvNPhases_noActivRule"
 fun_dyn = utils.dynamics_from_muscles_and_torques
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
 nb_phases = 2
 nb_frame_inter = 500
+# Mapping is np.array([[muscle_group, muscle_in_group, muscle_in_control, row_to_plot, col_to_plot], [...]]) or None
+muscle_plot_mapping = np.array(
+    [[4, 0, 6, 0, 0],  # Pectoral1
+     [0, 0, 0, 1, 0],  # Pectoral2
+     [0, 1, 1, 2, 0],  # Pectoral3
+     [7, 0, 14, 0, 1],  # Trapeze1
+     [7, 1, 15, 1, 1],  # Trapeze2
+     [8, 0, 16, 2, 1],  # Trapeze3
+     [8, 1, 17, 3, 1],  # Trapeze4
+     [4, 1, 7, 0, 2],  # Deltoid1
+     [5, 1, 9, 1, 2],  # Deltoid2
+     [1, 0, 2, 2, 2],  # Deltoid3
+     [5, 0, 8, 0, 3],  # InfraSpin
+     [5, 2, 10, 1, 3],  # SupraSpin
+     [5, 3, 11, 2, 3],  # SubScap
+     [6, 0, 12, 0, 4],  # BicepsLong
+     [6, 1, 13, 1, 4],  # BicepsShort
+     [2, 0, 3, 0, 5],  # TricepsLong
+     [3, 1, 5, 1, 5],  # TricepsMed
+     [3, 0, 4, 2, 5],  # TricepsLat
+    ])
 
 # Load the model
 m = biorbd.Model(f"../models/{model_name}.bioMod")
@@ -65,11 +87,6 @@ for i in range(m.nbQ()):
     # plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
     plt.title("Qdot %i" % i)
 
-# for i in range(nb_controls):
-#     plt.subplot(nb_controls, 3, 3 + (3 * i))
-#     utils.plot_piecewise_constant(t_final, all_u[i, :])
-#     plt.title("Acceleration %i" % i)
-
 for i in range(m.nbGeneralizedTorque()):
     plt.subplot(m.nbGeneralizedTorque(), 3, 3 + (3 * i))
     if fun_dyn == utils.dynamics_from_muscles_and_torques or \
@@ -77,29 +94,39 @@ for i in range(m.nbGeneralizedTorque()):
         utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
     else:
         utils.plot_piecewise_constant(t_final, all_u[i, :])
-    utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
     plt.title("Torques %i" % i)
 plt.tight_layout(w_pad=-1.5, h_pad=-0.5)
 
-# L = []
-# for i in range(m.nbMuscleGroups()):
-#     L.append(m.muscleGroup(i).nbMuscles())
-# nb_muscles_max = max(L)
-plt.figure("Activations")
-cmp = 0
-for i in range(m.nbMuscleGroups()):
-    for j in range(m.muscleGroup(i).nbMuscles()):
-        #plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
-        plt.subplot(3, 6, cmp+1)
-        utils.plot_piecewise_constant(t_final, all_u[cmp, :])
-        plt.title(biorbd.HillType.getRef(m.muscleGroup(i).muscle(j)).name().getString())
-        plt.ylim((0, 1))
-        cmp += 1
+if fun_dyn == utils.dynamics_from_muscles_and_torques or \
+            fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
+    plt.figure("Activations")
+    if muscle_plot_mapping is None:
+        L = []
+        for i in range(m.nbMuscleGroups()):
+            L.append(m.muscleGroup(i).nbMuscles())
+        nb_muscles_max = max(L)
+        cmp = 0
+        for i in range(m.nbMuscleGroups()):
+            for j in range(m.muscleGroup(i).nbMuscles()):
+                plt.subplot(nb_muscles_max, m.nbMuscleGroups(), i+1+(m.nbMuscleGroups()*j))
+                utils.plot_piecewise_constant(t_final, all_u[cmp, :])
+                plt.title(m.muscleGroup(i).muscle(j).name().getString())
+                plt.ylim((0, 1))
+                cmp += 1
+    else:
+        nb_rows = max(muscle_plot_mapping[:, 3]) + 1
+        nb_cols = max(muscle_plot_mapping[:, 4]) + 1
+        for i in range(muscle_plot_mapping.shape[0]):
+            plt.subplot(nb_rows, nb_cols, int(nb_cols*muscle_plot_mapping[i, 3] + muscle_plot_mapping[i, 4]) + 1)
+            utils.plot_piecewise_constant(t_final, all_u[muscle_plot_mapping[i, 2], :], 'r')
+            plt.title(m.muscleGroup(int(muscle_plot_mapping[i, 0])).muscle(int(muscle_plot_mapping[i, 1])).name().getString())
+            plt.ylim((0, 1))
+    plt.tight_layout(w_pad=-1.5, h_pad=-0.5)
 
-# plt.ion()  # Non blocking plt.show
 plt.show()
 
 # Animate the model
 b = BiorbdViz(loaded_model=m)
 b.load_movement(q_interp)
 b.exec()
+
