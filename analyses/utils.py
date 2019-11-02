@@ -6,22 +6,22 @@ from scipy import integrate, interpolate
 from matplotlib import pyplot as plt
 
 
-def read_acado_output_states(file_path, biorbd_model, nb_nodes, nb_phases):
+def read_acado_output_states(file_path, biorbd_model, nb_intervals, nb_phases):
     # Get some values from the model
     nb_dof_total = biorbd_model.nbQ() + biorbd_model.nbQdot()
 
     # Create some aliases
+    nb_nodes = nb_intervals + 1
     nb_points = (nb_phases * nb_nodes) + 1
 
-    i = 0
-    t = np.ndarray(nb_points)  # initialization of the time
+    t = np.ndarray(nb_nodes + 1)  # initialization of the time
 
     # initialization of the derived states
     all_q = np.ndarray((biorbd_model.nbQ(), nb_points))  # initialization of the states nbQ lines and nbP columns
     all_qdot = np.ndarray((biorbd_model.nbQdot(), nb_points))
     with open(file_path, "r") as data:
         # Nodes first lines
-        for l in range(nb_nodes):
+        for i in range(nb_nodes+1):
             line = data.readline()
             lin = line.split('\t')  # separation of the line in element
             lin[:1] = []  # remove the first element ( [ )
@@ -33,47 +33,32 @@ def read_acado_output_states(file_path, biorbd_model, nb_nodes, nb_phases):
                                                                1 + p * nb_dof_total:biorbd_model.nbQ() + p * nb_dof_total + 1]]  # complete the states with the nQ next columns
                 all_qdot[:, i + p * nb_nodes] = [float(k) for k in lin[biorbd_model.nbQ() + 1 + p * nb_dof_total:nb_dof_total * (
                             p + 1) + 1]]  # complete the states with the nQdot next columns
-            i += 1
 
-        # Last line
-        line = data.readline()
-        lin = line.split('\t')  # separation of the line in element
-        lin[:1] = []  # remove the first element ( [ )
-        lin[(nb_phases * biorbd_model.nbQ()) + (nb_phases * biorbd_model.nbQdot()) + 1:] = []  # remove the last ( ] )
-        t[i] = float(lin[0])
-        all_q[:, -1] = [float(j) for j in lin[1 + (nb_phases - 1) * nb_dof_total:biorbd_model.nbQ() + (
-                    nb_phases - 1) * nb_dof_total + 1]]  # complete the states with the nQ next columns
-        all_qdot[:, -1] = [float(k) for k in lin[biorbd_model.nbQ() + 1 + (nb_phases - 1) * nb_dof_total:nb_dof_total * nb_phases + 1]]
+        # Adjust time according to phases
+        t_tp = t
+        for p in range(1, nb_phases):
+            t = np.append(t_tp[0:-1], t + t_tp[-1])
 
     return t, all_q, all_qdot
 
 
-def read_acado_output_controls(file_path, nb_nodes, nb_phases, nb_controls):
-    i = 0
-
+def read_acado_output_controls(file_path, nb_intervals, nb_phases, nb_controls):
     # Create some aliases
-    nb_points = (nb_phases * nb_nodes) + 1
+    nb_nodes = nb_intervals + 1
+    nb_points = (nb_phases * nb_nodes)
 
     all_u = np.ndarray((nb_controls, nb_points))
     with open(file_path, "r") as fichier_u:
 
-        for l in range(nb_nodes):
+        for i in range(nb_nodes):
             line = fichier_u.readline()
             lin = line.split('\t')
             lin[:1] = []
             lin[(nb_phases*nb_controls) + 1:] = []
 
             for p in range(nb_phases):
-                all_u[:, i+p*nb_nodes] = [float(i) for i in lin[1+p*nb_controls:nb_controls*(p+1)+1]]
+                all_u[:, i+p*nb_nodes] = [float(j) for j in lin[1+p*nb_controls:nb_controls*(p+1)+1]]
 
-            i += 1
-
-        line = fichier_u.readline()
-        lin = line.split('\t')
-        lin[:1] = []
-        lin[(nb_phases*nb_controls) + 1:] = []
-
-        all_u[:, -1] = [float(i) for i in lin[1+(nb_phases-1)*nb_controls:nb_controls*nb_phases+1]]
     return all_u
 
 
@@ -84,15 +69,9 @@ def organize_time(file_path, t, nb_phases, nb_nodes, parameter=True):
             lin = line.split('\t')
             time_parameter = [float(i) for i in lin[2:nb_phases+2]]
         t_final = t*time_parameter[0]
-
-        for p in range(1, nb_phases):
-            for j in range(nb_nodes+1):
-                t_final[(nb_nodes*p)+j] = t_final[(nb_nodes*p)-1] + (t[j + 1]*time_parameter[p])
+        raise NotImplementedError("Please verify the previous line if ever needed")
     else:
         t_final = t
-        for p in range(1, nb_phases):
-            for j in range(nb_nodes+1):
-                t_final[(nb_nodes*p)+j] = t_final[(nb_nodes*p)-1] + t[j + 1]
     return t_final
 
 
@@ -127,8 +106,8 @@ def dynamics_from_muscles_and_torques(t_int, states, biorbd_model, u):
     for i in range(len(states_dynamics)):
         states_dynamics[i] = biorbd.StateDynamics(0, u[i])
 
-    biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
-    tau = biorbd.Model.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
+    biorbd_model.updateMuscles(states[:nb_q], states[nb_q:], True)
+    tau = biorbd_model.muscularJointTorque(states_dynamics, states[:nb_q], states[nb_q:])
 
     tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
 
@@ -231,8 +210,13 @@ def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_
             q_init = integrated_tp.y[:, -1]
         else:
             q_init = np.concatenate((all_q[:, interval+1], all_qdot[:, interval+1]))
-        all_t = np.concatenate((all_t, integrated_tp.t[:-1]))
-        integrated_state = np.concatenate((integrated_state, integrated_tp.y[:, :-1]), axis=1)
+
+        if interval < t.shape[0] - 2:
+            all_t = np.concatenate((all_t, integrated_tp.t[:-1]))
+            integrated_state = np.concatenate((integrated_state, integrated_tp.y[:, :-1]), axis=1)
+        else:
+            all_t = np.concatenate((all_t, integrated_tp.t))
+            integrated_state = np.concatenate((integrated_state, integrated_tp.y), axis=1)
 
         if verbose:
             print(f"Time: {t[interval]}")
@@ -256,7 +240,7 @@ def interpolate_integration(nb_frames, t_int, y_int):
     return time_interp, q_interp
 
 
-def plot_piecewise_constant(t, data):
+def plot_piecewise_constant(t, data, *args, **kwargs):
     # Double the data
     new_t = np.repeat(t, 2, axis=0)
     if len(data.shape) == 1:
@@ -268,7 +252,7 @@ def plot_piecewise_constant(t, data):
     new_t = new_t[1:]
     new_data = new_data[:-1]
 
-    plt.plot(new_t, new_data)
+    plt.plot(new_t, new_data, *args, **kwargs)
 
 
 def plot_piecewise_linear(t, data):

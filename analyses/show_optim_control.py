@@ -10,7 +10,7 @@ model_name = "BrasViolon"
 output_files = "AvNPhases"
 fun_dyn = utils.dynamics_from_muscles_and_torques
 runge_kutta_algo = 'rk45'
-nb_nodes = 30
+nb_intervals = 30
 nb_phases = 2
 nb_frame_inter = 500
 
@@ -29,11 +29,13 @@ else:
     raise NotImplementedError("Dynamic not implemented yet")
 
 # Read values
-t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results/States{output_files}.txt", m, nb_nodes,
-                                                    nb_phases)
-all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{output_files}.txt", nb_nodes, nb_phases,
-                                         nb_controls)
-t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_nodes, parameter=False)
+t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results/States{output_files}.txt", m,
+                                                    nb_intervals, nb_phases)
+all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{output_files}.txt", nb_intervals,
+                                         nb_phases, nb_controls)
+all_u = np.append(all_u, all_u[:, -1:], axis=1)  # For facilitate the visualization, add back the last value
+t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases,
+                              nb_intervals, parameter=False)
 
 
 # Integrate
@@ -45,6 +47,7 @@ t_integrate, q_integrate = utils.integrate_states_from_controls(
 t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_int=t_integrate, y_int=q_integrate)
 qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
+
 
 # Show data
 plt.figure("States and torques res")
@@ -69,8 +72,14 @@ for i in range(m.nbQ()):
 
 for i in range(m.nbGeneralizedTorque()):
     plt.subplot(m.nbGeneralizedTorque(), 3, 3 + (3 * i))
+    if fun_dyn == utils.dynamics_from_muscles_and_torques or \
+            fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
+        utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
+    else:
+        utils.plot_piecewise_constant(t_final, all_u[i, :])
     utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
     plt.title("Torques %i" % i)
+plt.tight_layout(w_pad=-1.5, h_pad=-0.5)
 
 # L = []
 # for i in range(m.nbMuscleGroups()):
