@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import numpy as np
+
 import biorbd
-import numpy as np
 from BiorbdViz import BiorbdViz
 
 import analyses.utils as utils
@@ -10,7 +9,7 @@ import analyses.utils as utils
 
 # Options
 model_name = "BrasViolon"
-output_files = "AvNPhases_noActivRule"
+output_files = "AvNPhases"
 fun_dyn = utils.dynamics_from_muscles_and_torques
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
@@ -111,8 +110,13 @@ if muscle_plot_mapping is None:
 else:
     nb_row = np.max(muscle_plot_mapping, axis=0)[3] + 1
     nb_col = np.max(muscle_plot_mapping, axis=0)[4] + 1
+    created_axes = [None] * nb_col * nb_row
     for muscle_map in muscle_plot_mapping:
-        plt.subplot(nb_row, nb_col, muscle_map[3] * nb_col + muscle_map[4] + 1)
+        idx_axis = muscle_map[3] * nb_col + muscle_map[4]
+        if created_axes[idx_axis]:
+            plt.axes(created_axes[idx_axis])
+        else:
+            created_axes[idx_axis] = plt.subplot(nb_row, nb_col, idx_axis + 1)
         utils.plot_piecewise_constant(t_final, all_u[muscle_map[0], :])
         # plt.title(m.muscleGroup(map[1]).muscle(map[2]).name().getString())
         plt.title(muscle_plot_names[muscle_map[5]])
