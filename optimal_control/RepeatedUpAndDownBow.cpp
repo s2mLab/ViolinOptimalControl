@@ -25,12 +25,15 @@ unsigned int nPhases(2);
 
 GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
 GeneralizedTorque Tau(nTau);
-std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> state(nMus);
+std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates(nMus);
 
 static int tagArchetPoucette = 16;
 static int tagArchetCOM = 17;
 static int tagArchetTete = 18;
 static int tagViolon = 34;
+
+static int idxSegmentArchet = 8;
+
 
 const double t_Start = 0.0;
 const double t_End = 0.5;
@@ -38,11 +41,9 @@ const int nPoints(31);
 
 int  main ()
 {
-    // Initializing the states
     for(unsigned int i = 0; i<nMus; ++i){
-        state[i] = std::make_shared<biorbd::muscles::StateDynamics>(0, 0);
+        musclesStates[i] = std::make_shared<biorbd::muscles::StateDynamics>(biorbd::muscles::StateDynamics());
     }
-
     std::string resultsPath("../Results/");
 
     clock_t start,end;
@@ -75,6 +76,11 @@ int  main ()
     CFunction markerViolon(3, markerPosition);
     markerViolon.setUserData(static_cast<void*>(&tagViolon));
 
+    CFunction projeteArchet(2, orthogonalProjected);
+    int idxMarkers[2] = {tagViolon, idxSegmentArchet};
+    projeteArchet.setUserData(static_cast<void*>(idxMarkers));
+
+
     for (unsigned int p=0; p<nPhases; ++p){
         x.push_back(DifferentialState("",nQ+nQdot,1));
         u.push_back(Control("", nMus+nTau, 1));
@@ -92,7 +98,11 @@ int  main ()
         /* ------------ CONSTRAINTS ----------- */
         (f << dot(x[p])) == F(is[p]);
 
+        for (int i = 1; i < nPoints-1; ++i)
+          ocp.subjectTo(i, projeteArchet(x[p]) == 0.0);
+
         if(p==0){
+
             ocp.subjectTo( AT_START, markerArchetPoucette(x[p]) - markerViolon(x[p]) == 0.0 );
             ocp.subjectTo( AT_END, markerArchetTete(x[p]) - markerViolon(x[p]) == 0.0 );
         }
@@ -123,9 +133,9 @@ int  main ()
     ocp.subjectTo(f);
 
     /* ------------ OBJECTIVE ----------- */
-    Expression sumLagrange = lagrangeRT(u[0]);//+ lagrangeA(u[0]);
-    for(unsigned int p=0; p<nPhases; ++p)
-        sumLagrange += lagrangeRT(u[p]); // + lagrangeA(u[p]);
+    Expression sumLagrange = lagrangeRT(u[0]) + lagrangeA(u[0]);
+    for(unsigned int p=1; p<nPhases; ++p)
+        sumLagrange += lagrangeRT(u[p]) + lagrangeA(u[p]);
     ocp.minimizeLagrangeTerm( sumLagrange ); // WARNING
 
     /* ---------- OPTIMIZATION  ------------ */

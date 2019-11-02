@@ -25,7 +25,7 @@ extern unsigned int nMus;
 extern unsigned int nPhases;
 extern GeneralizedCoordinates Q, Qdot, Qddot;
 extern GeneralizedTorque Tau;
-extern std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> state;
+extern std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates;
 
 // Show STL vector
 template<typename T>

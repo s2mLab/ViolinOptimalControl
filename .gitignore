@@ -111,5 +111,7 @@ venv.bak/
 */[Rr]esults/
 */[Rr]esultats/
 *.user*
+*.DS_Store
 *.png
 BiorbdViz
+
