@@ -123,9 +123,9 @@ int  main ()
     ocp.subjectTo(f);
 
     /* ------------ OBJECTIVE ----------- */
-    Expression sumLagrange = lagrangeRT(u[0])+ lagrangeA(u[0]);
-    for(unsigned int p=1; p<nPhases; ++p)
-        sumLagrange += lagrangeRT(u[p]) + lagrangeA(u[p]);
+    Expression sumLagrange = lagrangeRT(u[0]);//+ lagrangeA(u[0]);
+    for(unsigned int p=0; p<nPhases; ++p)
+        sumLagrange += lagrangeRT(u[p]); // + lagrangeA(u[p]);
     ocp.minimizeLagrangeTerm( sumLagrange ); // WARNING
 
     /* ---------- OPTIMIZATION  ------------ */
