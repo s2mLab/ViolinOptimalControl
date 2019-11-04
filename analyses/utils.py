@@ -183,11 +183,11 @@ def dynamics_from_accelerations(t_int, states, biorbd_model, u):
 
 def runge_kutta_4(fun, t_span, y0, n_step):
     h = (t_span[1] - t_span[0]) / n_step  # Length of steps
-    y = np.ndarray((y0.shape[0], n_step))
+    y = np.ndarray((y0.shape[0], n_step + 1))
     y[:, 0] = y0
-    t = np.linspace(t_span[0], t_span[1], n_step)
+    t = np.linspace(t_span[0], t_span[1], n_step + 1)
 
-    for i in range(1, n_step):
+    for i in range(1, n_step + 1):
         k1 = fun(i*h, y[:, i-1])
         k2 = fun(i*h, y[:, i-1] + h/2 * k1)
         k3 = fun(i*h, y[:, i-1] + h/2 * k2)
@@ -279,3 +279,34 @@ def derive(q, t):
             der[j][i] = (q[j+1][i]-q[j][i])/(t[j+1]-t[j])
 
     return der
+
+# Get values from biorbd
+def fatigue_dyn_biorbd(_model, _muscle, _q, _q_dot, fun_load, is_state, is_muscle_updated=True):
+    _fatigue_model = biorbd.HillThelenTypeFatigable(_muscle)
+    _fatigue_state = biorbd.FatigueDynamicStateXia(_fatigue_model.fatigueState())
+    if is_state and type(fun_load) != biorbd.StateDynamics:
+        print("Warning: command function is not of type StateDynamics")
+        return 1
+    if type(fun_load) == biorbd.StateDynamics:
+        is_state = True
+
+    def dyn(t, x):
+        if not is_state:
+            _load = fun_load(t)
+            _emg = biorbd.StateDynamics(0, _load)
+        else:
+            _emg = fun_load
+
+        (ma, mf, mr) = x
+        _fatigue_state.setState(ma, mf, mr)
+        _model.updateMuscles(_model, _q, _q_dot, is_muscle_updated)
+        _fatigue_model.computeFlCE(_emg)
+        _fatigue_model.computeTimeDerivativeState(_emg)
+        ma_dot = _fatigue_state.activeFibersDot()
+        mf_dot = _fatigue_state.fatiguedFibersDot()
+        mr_dot = _fatigue_state.restingFibersDot()
+        result = (ma_dot, mf_dot, mr_dot)
+
+        return result
+
+    return dyn

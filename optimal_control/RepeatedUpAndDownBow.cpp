@@ -99,7 +99,7 @@ int  main ()
         (f << dot(x[p])) == F(is[p]);
 
         for (int i = 1; i < nPoints-1; ++i)
-          ocp.subjectTo(i, projeteArchet(x[p]) == 0.0);
+         ocp.subjectTo(i, projeteArchet(x[p]) == 0.0);
 
         if(p==0){
 
@@ -145,67 +145,74 @@ int  main ()
     algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
     algorithm.set(KKT_TOLERANCE, 1e-4);
 
+    ACADO::returnValue n = algorithm.initializeDifferentialStates((resultsPath + "InitStates.txt").c_str(), BT_TRUE);
+    n.~returnValue();
+    ACADO::returnValue n2 = algorithm.initializeControls((resultsPath + "InitControls.txt").c_str());
+
     /* ---------- INITIAL SOLUTION ---------- */
-    VariablesGrid u_init(nPhases*(nTau + nMus), Grid(t_Start, t_End, 2));
-    for(unsigned int i=0; i<nPhases; ++i){
-        for(unsigned int j=0; j<nMus; ++j){
-            u_init(0, i*(nMus+nTau) + j ) = 0.2;
-            u_init(1, i*(nMus+nTau) + j ) = 0.2;
-        }
-        for(unsigned int j=0; j<nTau; ++j){
-            u_init(0, i*(nMus+nTau) + nMus + j ) = 0.01;
-            u_init(1, i*(nMus+nTau) + nMus + j ) = 0.01;
-        }
-    }
-    algorithm.initializeControls(u_init);
+//    VariablesGrid u_init(nPhases*(nTau + nMus), Grid(t_Start, t_End, 2));
+//    for(unsigned int i=0; i<nPhases; ++i){
+//        for(unsigned int j=0; j<nMus; ++j){
+//            u_init(0, i*(nMus+nTau) + j ) = 0.2;
+//            u_init(1, i*(nMus+nTau) + j ) = 0.2;
+//        }
+//        for(unsigned int j=0; j<nTau; ++j){
+//            u_init(0, i*(nMus+nTau) + nMus + j ) = 0.01;
+//            u_init(1, i*(nMus+nTau) + nMus + j ) = 0.01;
+//        }
+//    }
+//    algorithm.initializeControls(u_init);
 
-    VariablesGrid x_init(nPhases*(nQ+nQdot), Grid(t_Start, t_End, 2));
-    for(unsigned int i=0; i<nPhases/2; ++i){
-        // poucette sur COM
-        x_init(0, 2*i*(nQ+nQdot)+0) = 0.09973;
-        x_init(0, 2*i*(nQ+nQdot)+1) = 0.09733;
-        x_init(0, 2*i*(nQ+nQdot)+2) = 1.05710;
-        x_init(0, 2*i*(nQ+nQdot)+3) = 1.56950;
-        x_init(0, 2*i*(nQ+nQdot)+4) = 1.07125;
-        x_init(0, 2*i*(nQ+nQdot)+5) = 0.95871;
-        x_init(0, 2*i*(nQ+nQdot)+6) = -1.7687;
+//    VariablesGrid x_init(nPhases*(nQ+nQdot), Grid(t_Start, t_End, 2));
+//    for(unsigned int i=0; i<nPhases/2; ++i){
+//        /* Solution INITIALE Camille */
 
-        // bouton sur COM
-        x_init(1, 2*i*(nQ+nQdot)+0) = -0.39107;
-        x_init(1, 2*i*(nQ+nQdot)+1) = -0.495383;
-        x_init(1, 2*i*(nQ+nQdot)+2) = -0.089030;
-        x_init(1, 2*i*(nQ+nQdot)+3) = 0.1485315;
-        x_init(1, 2*i*(nQ+nQdot)+4) = 0.8569764;
-        x_init(1, 2*i*(nQ+nQdot)+5) = 1.9126840;
-        x_init(1, 2*i*(nQ+nQdot)+6) = -0.490220;
+//                // poucette sur COM
+//                x_init(0, 2*i*(nQ+nQdot)+0) = 0.09973;
+//                x_init(0, 2*i*(nQ+nQdot)+1) = 0.09733;
+//                x_init(0, 2*i*(nQ+nQdot)+2) = 1.05710;
+//                x_init(0, 2*i*(nQ+nQdot)+3) = 1.56950;
+//                x_init(0, 2*i*(nQ+nQdot)+4) = 1.07125;
+//                x_init(0, 2*i*(nQ+nQdot)+5) = 0.95871;
+//                x_init(0, 2*i*(nQ+nQdot)+6) = -1.7687;
 
-        // bouton sur COM
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+0) = -0.39107;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+1) = -0.495383;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+2) = -0.089030;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+3) = 0.1485315;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+4) = 0.8569764;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+5) = 1.9126840;
-        x_init(0, ((2*i)+1)*(nQ+nQdot)+6) = -0.490220;
+//                // bouton sur COM
+//                x_init(1, 2*i*(nQ+nQdot)+0) = -0.39107;
+//                x_init(1, 2*i*(nQ+nQdot)+1) = -0.495383;
+//                x_init(1, 2*i*(nQ+nQdot)+2) = -0.089030;
+//                x_init(1, 2*i*(nQ+nQdot)+3) = 0.1485315;
+//                x_init(1, 2*i*(nQ+nQdot)+4) = 0.8569764;
+//                x_init(1, 2*i*(nQ+nQdot)+5) = 1.9126840;
+//                x_init(1, 2*i*(nQ+nQdot)+6) = -0.490220;
 
-        // poucette sur COM
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+0) = 0.09973;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+1) = 0.09733;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+2) = 1.05710;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+3) = 1.56950;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+4) = 1.07125;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+5) = 0.95871;
-        x_init(1, ((2*i)+1)*(nQ+nQdot)+6) = -1.7687;
-    }
+//                // bouton sur COM
+//                x_init(0, ((2*i)+1)*(nQ+nQdot)+0) = -0.39107;
+//                x_init(0, ((2*i)+1)*(nQ+nQdot)+1) = -0.495383;
+//                x_init(0, ((2*i)+1)*(nQ+nQdot)+2) = -0.089030;
+//                x_init(0, ((2*i)+1)*(nQ+nQdot)+3) = 0.1485315;
+//                x_init(0, ((2*i)+1)*(nQ+nQdot)+4) = 0.8569764;
+//                x_init(0, ((2*i)+1)*(nQ+nQdot)+5) = 1.9126840;
+//                x_init(0, ((2*i)+1)*(nQ+nQdot)+6) = -0.490220;
+
+//                // poucette sur COM
+//                x_init(1, ((2*i)+1)*(nQ+nQdot)+0) = 0.09973;
+//                x_init(1, ((2*i)+1)*(nQ+nQdot)+1) = 0.09733;
+//                x_init(1, ((2*i)+1)*(nQ+nQdot)+2) = 1.05710;
+//                x_init(1, ((2*i)+1)*(nQ+nQdot)+3) = 1.56950;
+//                x_init(1, ((2*i)+1)*(nQ+nQdot)+4) = 1.07125;
+//                x_init(1, ((2*i)+1)*(nQ+nQdot)+5) = 0.95871;
+//                x_init(1, ((2*i)+1)*(nQ+nQdot)+6) = -1.7687;
+
+//    }
 
 
-    for(unsigned int i=0; i<nPhases; ++i){
-        for(unsigned int j=0; j<nQdot; ++j){
-             x_init(0, i*(nQ+nQdot) + nQ + j) = 0.01;
-             x_init(1, i*(nQ+nQdot) + nQ + j) = 0.01;
-        }
-    }
-    algorithm.initializeDifferentialStates(x_init);
+//    for(unsigned int i=0; i<nPhases; ++i){
+//        for(unsigned int j=0; j<nQdot; ++j){
+//             x_init(0, i*(nQ+nQdot) + nQ + j) = 0.01;
+//             x_init(1, i*(nQ+nQdot) + nQ + j) = 0.01;
+//        }
+//    }
+//    algorithm.initializeDifferentialStates(x_init);
 
     /* ---------- SOLVING THE PROBLEM ---------- */
     algorithm.solve();
