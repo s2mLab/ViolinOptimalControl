@@ -204,11 +204,11 @@ def dynamics_from_accelerations(t_int, states, biorbd_model, u):
 
 def runge_kutta_4(fun, t_span, y0, n_step):
     h = (t_span[1] - t_span[0]) / n_step  # Length of steps
-    y = np.ndarray((y0.shape[0], n_step))
+    y = np.ndarray((y0.shape[0], n_step + 1))
     y[:, 0] = y0
-    t = np.linspace(t_span[0], t_span[1], n_step)
+    t = np.linspace(t_span[0], t_span[1], n_step + 1)
 
-    for i in range(1, n_step):
+    for i in range(1, n_step + 1):
         k1 = fun(i*h, y[:, i-1])
         k2 = fun(i*h, y[:, i-1] + h/2 * k1)
         k3 = fun(i*h, y[:, i-1] + h/2 * k2)
