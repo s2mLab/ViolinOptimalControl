@@ -34,14 +34,8 @@ int  main ()
         musclesStates[i] = std::make_shared<biorbd::muscles::StateDynamics>(biorbd::muscles::StateDynamics());
 
      std::string resultsPath("../Results/");
-     std::string resultsPath2 (resultsPath + "InitStatesEocar.txt");
 
 
-    //    printf( "nQdot vaut : %d \n", nQdot);
-//    printf( "nQ vaut : %d \n", nQ);
-//    printf( "nTau vaut : %d \n", nTau);
-//    printf( "nMarkers vaut : %d \n", nMarkers);
-//    printf( "nMus vaut : %d \n", nMus);
 
     /* ---------- INITIALIZATION ---------- */
 
@@ -56,37 +50,14 @@ int  main ()
     std::vector<IntermediateState> is1;
 
 
-    for (unsigned int p=0; p<nPhases; ++p){
-        x1.push_back(DifferentialState("",nQ+nQdot,1));
-        u1.push_back(Control("", nMus+nTau, 1));
-        is1.push_back(IntermediateState(nQ + nQdot + nMus + nTau));
 
 
-
-
-        for (unsigned int i = 0; i < nQ + nQdot; ++i) // On remplit le IntermediateState avec les X
-        is1[p](i) = x1[p](i);
-
-
-
-        for (unsigned int i = 0; i < nMus + nTau; ++i) // Puis avec les controles
-        is1[p](i+nQ+nQdot) = u1[p](i);
-
-    }
-
-
-    //    /* ----------- DEFINE OCP ------------- */
-    //    OCP ocp( t_Start , t_End , nPoints-1);
-    //    CFunction mayer(1, mayerVelocity); // Dans une sortie, on fais la somme des vitesses au carré
-    //    CFunction lagrange(1, lagrangeResidualTorques);
-    //    ocp.minimizeLagrangeTerm(lagrange(u1)); // On minimise le terme de Lagrange
-    //    ocp.minimizeMayerTerm(mayer(is1)); // On minimise le terme de Mayer
 
     /* ----------- DEFINE OCP ------------- */
     OCP ocp(t_Start, t_End, nPoints);
     CFunction lagrangeRT(1, lagrangeResidualTorques);
     CFunction lagrangeA(1, lagrangeActivations);
-    CFunction F(nQ+nQdot, forwardDynamicsFromJointTorque);
+    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
     DifferentialEquation f ;
 
 
@@ -96,8 +67,20 @@ int  main ()
 
     for (unsigned int p=0; p<nPhases; ++p){
 
-        (f << dot( x1[p] )) == F(is1[p]);
+        x1.push_back(DifferentialState("",nQ+nQdot,1));
+        u1.push_back(Control("", nMus+nTau, 1));
+        is1.push_back(IntermediateState(nQ + nQdot + nMus + nTau));
 
+        for (unsigned int i = 0; i < nQ; ++i)
+            is1[p](i) = x1[p](i);
+        for (unsigned int i = 0; i < nQdot; ++i)
+            is1[p](i+nQ) = x1[p](i+nQ);
+        for (unsigned int i = 0; i < nMus; ++i)
+            is1[p](i+nQ+nQdot) = u1[p](i);
+        for (unsigned int i = 0; i < nTau; ++i)
+            is1[p](i+nQ+nQdot+nMus) = u1[p](i+nMus);
+
+        (f << dot( x1[p] )) == F(is1[p]);
 
         if (p == 0) {
 
@@ -130,7 +113,7 @@ int  main ()
     /* ------------ OBJECTIVE ----------- */
     Expression sumLagrange = lagrangeRT(u1[0])+ lagrangeA(u1[0]);
     for(unsigned int p=1; p<nPhases; ++p)
-        sumLagrange += lagrangeRT(u1[p]) + lagrangeA(u1[p]);
+    sumLagrange += lagrangeRT(u1[p]) + lagrangeA(u1[p]);
 
     ocp.minimizeLagrangeTerm( sumLagrange ); // WARNING
 
@@ -156,9 +139,9 @@ int  main ()
 
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
     algorithm.set(MAX_NUM_ITERATIONS, 500);
-    algorithm.initializeDifferentialStates((resultsPath + "InitStatesEocar.txt").c_str(),BT_TRUE);
-    algorithm.initializeControls((resultsPath + "InitControlsEocar.txt").c_str());
-
+    ACADO::returnValue n = algorithm.initializeDifferentialStates((resultsPath + "InitStatesEocar.txt").c_str(),BT_TRUE);
+    n.getLevel();
+    ACADO::returnValue n2 = algorithm.initializeControls((resultsPath + "InitControlsEocar.txt").c_str());
 
     algorithm << window;
     algorithm.solve();
