@@ -35,6 +35,7 @@ target_include_directories(utils PUBLIC
     ${EIGEN3_INCLUDE_DIR}
     ${RBDL_INCLUDE_DIR}
     ${Boost_INCLUDE_DIRS}
+    ${IPOPT_INCLUDE_DIR}
 )
 
 # Write down all files to include here
