@@ -45,6 +45,7 @@ int  main ()
         musclesStates[i] = std::make_shared<biorbd::muscles::StateDynamics>(biorbd::muscles::StateDynamics());
     }
     std::string resultsPath("../Results/");
+    std::string initializePath("../Initialisation/");
 
     clock_t start,end;
     double time_exec;
@@ -98,18 +99,21 @@ int  main ()
         /* ------------ CONSTRAINTS ----------- */
         (f << dot(x[p])) == F(is[p]);
 
-        for (int i = 1; i < nPoints-1; ++i)
-         ocp.subjectTo(i, projeteArchet(x[p]) == 0.0);
+
 
         if(p==0){
 
             ocp.subjectTo( AT_START, markerArchetPoucette(x[p]) - markerViolon(x[p]) == 0.0 );
             ocp.subjectTo( AT_END, markerArchetTete(x[p]) - markerViolon(x[p]) == 0.0 );
+
         }
         else{
             ocp.subjectTo( 0.0, x[p], -x[p-1], 0.0 );
             ocp.subjectTo( 0.0, x[p-1], -x[p], 0.0 );
         }
+
+        for (unsigned int i = 1; i < nPoints - 1; ++i)
+          ocp.subjectTo(i, projeteArchet(x[p]) == 0.0);
 
         //Controls constraints
         for (unsigned int i=0; i<nMus; ++i)
@@ -142,12 +146,11 @@ int  main ()
     OptimizationAlgorithm  algorithm( ocp ) ;
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
-    algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
+    algorithm.set(HESSIAN_APPROXIMATION, CONSTANT_HESSIAN);
     algorithm.set(KKT_TOLERANCE, 1e-4);
 
-    ACADO::returnValue n = algorithm.initializeDifferentialStates((resultsPath + "InitStates.txt").c_str(), BT_TRUE);
-    n.~returnValue();
-    ACADO::returnValue n2 = algorithm.initializeControls((resultsPath + "InitControls.txt").c_str());
+    algorithm.initializeDifferentialStates((initializePath + "InitStates.txt").c_str(), BT_TRUE);
+    algorithm.initializeControls((initializePath + "InitControls.txt").c_str());
 
     /* ---------- INITIAL SOLUTION ---------- */
 //    VariablesGrid u_init(nPhases*(nTau + nMus), Grid(t_Start, t_End, 2));
@@ -217,10 +220,29 @@ int  main ()
     /* ---------- SOLVING THE PROBLEM ---------- */
     algorithm.solve();
 
-    /* ---------- STORING THE RESULTS ---------- */
+    /* ---------- STORING THE RESULTS FOR DUPLICATION ---------- */
+    VariablesGrid states, controls, doubleState, doubleState2, doubleControls, doubleControls2;
+
+    algorithm.getDifferentialStates(states); // On stocke les états différentiels de la simulation en cours
+    algorithm.getControls(controls); // On stocke les contrôles de la simulation en cours
+
+    doubleState = states.getValuesSubGrid(0, ((nQ + nQdot)* nPhases) - 1 ); // On récupere les valeurs des états différentiels sans la derniere colonne
+    doubleState2 = states.getValuesSubGrid(0, (nQ + nQdot) * nPhases); // On récupere les valeurs des états différentiels avec la derniere colonne
+    doubleState.appendValues(doubleState2); // On rejoins les deux VariablesGrid dans l'ordre "doubleStates + doubleStates2"
+    doubleState.print((initializePath + "InitStates.txt").c_str()); // On remplit le fichier texte avec le VariablesGrid final
+
+    doubleControls = controls.getValuesSubGrid(0, (nTau + nMus) * nPhases - 1); // Pareil avec les contrôles
+    doubleControls2 = controls.getValuesSubGrid(0, (nTau + nMus) * nPhases - 1);
+    doubleControls.appendValues(doubleControls2);
+    doubleControls.print((initializePath + "InitControls.txt").c_str());
+
+     /* ---------- STORING THE RESULTS ---------- */
+
     createTreePath(resultsPath);
+
     algorithm.getDifferentialStates((resultsPath + "StatesAvNPhases.txt").c_str());
     algorithm.getControls((resultsPath + "ControlsAvNPhases.txt").c_str());
+
 
     end=clock();
     time_exec = double(end - start)/CLOCKS_PER_SEC;

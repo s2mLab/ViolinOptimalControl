@@ -9,8 +9,8 @@ using namespace biorbd::rigidbody;
 
 void createTreePath(const std::string& path);
 bool dirExists(const char* const path);
-void Dispatch_Q_Qdot(double *x);
-void Dispatch_Q_Qdot_Tau(double *x);
+//void Dispatch_Q_Qdot(double *x);
+//void Dispatch_Q_Qdot_Tau(double *x);
 
 extern biorbd::Model m;
 extern unsigned int nQ;

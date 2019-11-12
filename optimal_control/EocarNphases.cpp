@@ -18,7 +18,7 @@ unsigned int nQdot(m.nbQdot());         // derived states number
 unsigned int nTau(m.nbGeneralizedTorque());           // controls number
 unsigned int nMarkers(m.nMarkers());          // markers number
 unsigned int nMus(m.nbMuscleTotal());   // muscles number
-unsigned int nPhases(2); // phases number
+unsigned int nPhases(4); // phases number
 GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
 GeneralizedTorque Tau(nTau);
 std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates(nMus);
@@ -33,7 +33,8 @@ int  main ()
     for (unsigned int i=0; i<nMus; ++i)
         musclesStates[i] = std::make_shared<biorbd::muscles::StateDynamics>(biorbd::muscles::StateDynamics());
 
-     std::string resultsPath("../Results/");
+     std::string resultsPath("../Results/eocar/");
+     std::string initializePath("../Initialisation/");
 
 
 
@@ -139,14 +140,28 @@ int  main ()
 
     OptimizationAlgorithm  algorithm( ocp ) ;       //  construct optimization  algorithm ,
     algorithm.set(MAX_NUM_ITERATIONS, 500);
-    ACADO::returnValue n = algorithm.initializeDifferentialStates((resultsPath + "InitStatesEocar.txt").c_str(),BT_TRUE);
-    n.getLevel();
-    ACADO::returnValue n2 = algorithm.initializeControls((resultsPath + "InitControlsEocar.txt").c_str());
+    algorithm.initializeDifferentialStates((resultsPath + "InitStatesEocar.txt").c_str(), BT_TRUE);
+    algorithm.initializeControls((resultsPath + "InitControlsEocar.txt").c_str());
 
     algorithm << window;
     algorithm.solve();
 
+    VariablesGrid controls, test;
 
+    algorithm.getDifferentialStates(test);
+    algorithm.getControls(controls);
+
+    VariablesGrid n1 = test.getValuesSubGrid(0 , (nQ + nQdot) * (nPhases - 1) + 1);
+    VariablesGrid n2 = test.getValuesSubGrid(0, (nQ + nQdot) * (nPhases - 1) + 2);
+
+    VariablesGrid n3 = controls.getValuesSubGrid(0, nTau * (nPhases - 1));
+    VariablesGrid n4 = controls.getValuesSubGrid(0, nTau * (nPhases - 1));
+
+    n1.appendValues(n2);
+    n1.print((resultsPath + "InitStatesEocar.txt").c_str());
+
+    n3.appendValues(n4);
+    n3.print((resultsPath + "InitControlsEocar.txt").c_str());
 
     createTreePath(resultsPath);
     algorithm.getDifferentialStates((resultsPath + "StatesEocar.txt").c_str());
