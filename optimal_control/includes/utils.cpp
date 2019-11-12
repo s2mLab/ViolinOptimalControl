@@ -31,19 +31,19 @@ void createTreePath(const std::string &path)
         mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
-void Dispatch_Q_Qdot(double *x)
-{
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-    }
-}
+//void Dispatch_Q_Qdot(double *x)
+//{
+//    for(unsigned int i = 0; i<nQ; ++i){
+//        Q[i] = x[i];
+//        Qdot[i] = x[i+nQ];
+//    }
+//}
 
-void Dispatch_Q_Qdot_Tau(double *x)
-{
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-        Qdot[i] = x[i+nQ];
-        Tau[i]= x[i+nQ+nQdot];
-    }
-}
+//void Dispatch_Q_Qdot_Tau(double *x)
+//{
+//    for(unsigned int i = 0; i<nQ; ++i){
+//        Q[i] = x[i];
+//        Qdot[i] = x[i+nQ];
+//        Tau[i]= x[i+nQ+nQdot];
+//    }
+//}
