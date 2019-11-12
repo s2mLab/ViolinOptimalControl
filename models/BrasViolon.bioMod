@@ -154,7 +154,7 @@ external_forces	0
 			0.000000	0.000943	0.000000
 			0.000000	0.000000	0.008495
 		com	0.000000	-0.114073	0.000000
-    meshfile Geometry/radius.vtp
+    meshfile Geometry/ulna.vtp
 	endsegment
 	
 	// Markers
@@ -195,7 +195,7 @@ external_forces	0
 			0.000000	0.000203	0.000000
 			0.000000	0.000000	0.000203
 		com	0.000000	0.000000	0.000000
-    meshfile Geometry/ulna.vtp
+    meshfile Geometry/radius.vtp
 	endsegment
 
 // HAND 
@@ -383,7 +383,7 @@ external_forces	0
 			0.000000	0.000943	0.000000
 			0.000000	0.000000	0.008495
 		com	0.000000	-0.114073	0.000000
-		meshfile Geometry/radius_left.vtp
+		meshfile Geometry/ulna_left.vtp
 	endsegment
 	
 	// Markers
@@ -424,7 +424,7 @@ external_forces	0
 			0.000000	0.000203	0.000000
 			0.000000	0.000000	0.000203
 		com	0.000000	0.000000	0.000000
-		meshfile Geometry/ulna_left.vtp
+		meshfile Geometry/radius_left.vtp
 	endsegment
 
 // HAND2 
