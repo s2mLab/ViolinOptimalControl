@@ -57,6 +57,7 @@ foreach(src_file ${source_files})
         ${EIGEN3_INCLUDE_DIR}
         ${RBDL_INCLUDE_DIR}
         ${Boost_INCLUDE_DIRS}
+        ${IPOPT_INCLUDE_DIR}
     )
 
     target_link_libraries(${filename}
@@ -64,6 +65,7 @@ foreach(src_file ${source_files})
       ${Biorbd_LIBRARIES}
       ${RBDL_LIBRARY}
       ${ACADO_SHARED_LIBRARIES}
+      ${IPOPT_LIBRARY}
       )
 endforeach()
 
