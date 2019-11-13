@@ -17,7 +17,7 @@ void lagrangeActivations( double *x, double *g, void *){
 void lagrangeAccelerations( double *x, double *g, void *user_data){
     g[0]=0;
     double * rhs = new double[nQ + nQdot]; // memory management to check
-    forwardDynamicsFromJointTorque(x, rhs, user_data);
+    forwardDynamics_noContact(x, rhs, user_data);
     for (i=0; i<nQdot; ++i)
         g[0] += (rhs[i]*rhs[i]);
     delete[] rhs;
@@ -36,7 +36,7 @@ void mayerVelocity( double *x, double *g, void *){
 
 void mayerRHS( double *x, double *g, void *user_data){
     double * rhs = new double[nQ + nQdot];
-    forwardDynamicsFromJointTorque(x, rhs, user_data);
+    forwardDynamics_noContact(x, rhs, user_data);
     g[0] = 0;
     for (i = 0; i<nQ+nQdot; ++i)
         g[0] += (rhs[i]*rhs[i]);

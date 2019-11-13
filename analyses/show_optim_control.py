@@ -9,7 +9,7 @@ import analyses.utils as utils
 
 # Options
 model_name = "BrasViolon"
-output_files = "AvNPhases"
+output_files = "RepeatedUpAndDownBow"
 fun_dyn = utils.dynamics_no_contact
 runge_kutta_algo = 'rk45'
 nb_intervals = 30

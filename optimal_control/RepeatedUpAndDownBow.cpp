@@ -1,127 +1,107 @@
-#include <acado_optimal_control.hpp>
 #include <memory>
-#include <bindings/acado_gnuplot/gnuplot_window.hpp>
-#include "includes/dynamics.h"
-#include "includes/objectives.h"
-#include "includes/constraints.h"
-#include "includes/utils.h"
 #include <time.h>
+#include <acado_optimal_control.hpp>
+#include <bindings/acado_gnuplot/gnuplot_window.hpp>
 
-#ifndef PI
-#define PI 3.141592
-#endif
+#include "biorbd.h"
+#include "includes/utils.h"
+#include "includes/dynamics.h"
+#include "includes/constraints.h"
 
-using namespace std;
-USING_NAMESPACE_ACADO
-
+//#define USE_INIT_FILE
 biorbd::Model m("../../models/BrasViolon.bioMod");
+#include "includes/biorbd_initializer.h"
 
-unsigned int nQ(m.nbQ());               // states number
-unsigned int nQdot(m.nbQdot());         // derived states number
-unsigned int nTau(m.nbGeneralizedTorque());           // torques number
-unsigned int nMarkers(m.nMarkers());          // markers number
-unsigned int nMus(m.nbMuscleTotal());   // muscles number
-unsigned int nPhases(2);
-
-GeneralizedCoordinates Q(nQ), Qdot(nQdot), Qddot(nQdot);
-GeneralizedTorque Tau(nTau);
-std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates(nMus);
-
-static int tagArchetPoucette = 16;
-static int tagArchetCOM = 17;
-static int tagArchetTete = 18;
-static int tagViolon = 34;
-
-static int idxSegmentArchet = 8;
-
+static int idxSegmentBow = 8;
+static int tagBowFrog(16);
+static int tagBowTip(18);
+static int tagViolinBridge(34);
 
 const double t_Start = 0.0;
 const double t_End = 0.5;
 const int nPoints(31);
+const int nPhases(2);
+const std::string resultsPath("../Results/");
+const std::string initializePath("../Initialisation/");
+const std::string optimizationName("RepeatedUpAndDownBow");
 
+USING_NAMESPACE_ACADO
 int  main ()
 {
-    for(unsigned int i = 0; i<nMus; ++i){
-        musclesStates[i] = std::make_shared<biorbd::muscles::StateDynamics>(biorbd::muscles::StateDynamics());
-    }
-    std::string resultsPath("../Results/");
-    std::string initializePath("../Initialisation/");
-
-    clock_t start,end;
-    double time_exec;
-    start=clock();
-
+    clock_t start = clock();
     std::cout << "nb de muscles: " << nMus << std::endl;
     std::cout << "nb de torques: " << nTau << std::endl;
     std::cout << "nb de marqueurs: " << nMarkers << std::endl;
+    initializeMuscleStates();
 
-    /* ---------- INITIALIZATION ---------- */
-    std::vector<DifferentialState> x;
-    std::vector<Control> u;
-    std::vector<IntermediateState> is;
-
-    /* ----------- DEFINE OCP ------------- */
+    // ----------- DEFINE OCP ------------- //
     OCP ocp(t_Start, t_End, nPoints);
-    CFunction lagrangeRT(1, lagrangeResidualTorques);
-    CFunction lagrangeA(1, lagrangeActivations);
-    CFunction F( nQ+nQdot, forwardDynamicsFromMuscleActivationAndTorque);
+    CFunction F( nQ+nQdot, forwardDynamics_noContact);
     DifferentialEquation f ;
 
-    //Position constraints
-    CFunction markerArchetPoucette(3, markerPosition);
-    markerArchetPoucette.setUserData(static_cast<void*>(&tagArchetPoucette));
-    CFunction markerArchetCOM(3, markerPosition);
-    markerArchetCOM.setUserData(static_cast<void*>(&tagArchetCOM));
-    CFunction markerArchetTete(3, markerPosition);
-    markerArchetTete.setUserData(static_cast<void*>(&tagArchetTete));
-    CFunction markerViolon(3, markerPosition);
-    markerViolon.setUserData(static_cast<void*>(&tagViolon));
-
-    CFunction projeteArchet(2, orthogonalProjected);
-    int idxMarkers[2] = {tagViolon, idxSegmentArchet};
-    projeteArchet.setUserData(static_cast<void*>(idxMarkers));
+    // --------- DEFINE SOME PATH CONSTRAINTS --------- //
+    CFunction markerBowFrog(3, markerPosition);
+    markerBowFrog.setUserData(static_cast<void*>(&tagBowFrog));
+    CFunction markerBowTip(3, markerPosition);
+    markerBowTip.setUserData(static_cast<void*>(&tagBowTip));
+    CFunction markerViolinBridge(3, markerPosition);
+    markerViolinBridge.setUserData(static_cast<void*>(&tagViolinBridge));
+    CFunction violinBridgeInBowRT(2, projectOnXyPlane);
+    int idxProjectViolinBridgeInBow[2] = {tagViolinBridge, idxSegmentBow};
+    violinBridgeInBowRT.setUserData(static_cast<void*>(idxProjectViolinBridgeInBow));
 
 
+    // ---------- INITIALIZATION ---------- //
+    std::vector<DifferentialState> x;
+    std::vector<Control> muscle_control;
+    std::vector<Control> torque_control;
+    std::vector<IntermediateState> is;
+
+    // ---------- PHASES ---------- //
     for (unsigned int p=0; p<nPhases; ++p){
         x.push_back(DifferentialState("",nQ+nQdot,1));
-        u.push_back(Control("", nMus+nTau, 1));
-        is.push_back(IntermediateState(nQ + nQdot + nMus + nTau));
+        muscle_control.push_back(Control("",  nMus, 1));
+        torque_control.push_back(Control("", nTau, 1));
+        is.push_back(IntermediateState("", nQ+nQdot+nMus+nTau, 1));
 
         for (unsigned int i = 0; i < nQ; ++i)
             is[p](i) = x[p](i);
         for (unsigned int i = 0; i < nQdot; ++i)
             is[p](i+nQ) = x[p](i+nQ);
         for (unsigned int i = 0; i < nMus; ++i)
-            is[p](i+nQ+nQdot) = u[p](i);
+            is[p](i+nQ+nQdot) = muscle_control[p](i);
         for (unsigned int i = 0; i < nTau; ++i)
-            is[p](i+nQ+nQdot+nMus) = u[p](i+nMus);
+            is[p](i+nQ+nQdot+nMus) = torque_control[p](i);
 
-        /* ------------ CONSTRAINTS ----------- */
+        // ------------ CONSTRAINTS ----------- //
+        // Dynamics
         (f << dot(x[p])) == F(is[p]);
 
-
-
-        if(p==0){
-
-            ocp.subjectTo( AT_START, markerArchetPoucette(x[p]) - markerViolon(x[p]) == 0.0 );
-            ocp.subjectTo( AT_END, markerArchetTete(x[p]) - markerViolon(x[p]) == 0.0 );
-
+        // Controls constraints
+        for (unsigned int i=0; i<nMus; ++i){
+            ocp.subjectTo(0.01 <= muscle_control[p](i) <= 1);
         }
-        else{
+        for (unsigned int i=0; i<nTau; ++i){
+            ocp.subjectTo(-100 <= torque_control[p](i) <= 100);
+        }
+
+        // Path constraints
+        if(p==0) {
+            ocp.subjectTo(
+                        AT_START, markerBowFrog(x[p]) - markerViolinBridge(x[p])
+                        == 0.0 );
+            ocp.subjectTo(
+                        AT_END, markerBowTip(x[p]) - markerViolinBridge(x[p])
+                        == 0.0 );
+        }
+        else {
             ocp.subjectTo( 0.0, x[p], -x[p-1], 0.0 );
             ocp.subjectTo( 0.0, x[p-1], -x[p], 0.0 );
         }
+        for (int i = 1; i < nPoints-1; ++i) {
+            ocp.subjectTo(i, violinBridgeInBowRT(x[p]) == 0.0);
+        }
 
-        for (unsigned int i = 1; i < nPoints - 1; ++i)
-          ocp.subjectTo(i, projeteArchet(x[p]) == 0.0);
-
-        //Controls constraints
-        for (unsigned int i=0; i<nMus; ++i)
-             ocp.subjectTo(0.01 <= u[p](i) <= 1);
-        for (unsigned int i=0; i<nTau; ++i)
-             ocp.subjectTo(-100 <= u[p](nMus+i) <= 100);
-
-        // path constraints
         ocp.subjectTo(-PI/8 <= x[p](0) <= 0.1);
         ocp.subjectTo(-PI/2 <= x[p](1) <= 0.1);
         ocp.subjectTo(-PI/4 <= x[p](2) <= PI);
@@ -130,98 +110,112 @@ int  main ()
         ocp.subjectTo(-PI   <= x[p](5) <= PI);
         ocp.subjectTo(-PI   <= x[p](6) <= PI);
 
-        for (unsigned int j=0; j<nQdot; ++j)
+        for (unsigned int j=0; j<nQdot; ++j) {
             ocp.subjectTo(-50 <= x[p](nQ + j) <= 50);
+        }
 
-}
+    }
     ocp.subjectTo(f);
 
-    /* ------------ OBJECTIVE ----------- */
-    Expression sumLagrange = lagrangeRT(u[0]) + lagrangeA(u[0]);
-    for(unsigned int p=1; p<nPhases; ++p)
-        sumLagrange += lagrangeRT(u[p]) + lagrangeA(u[p]);
-    ocp.minimizeLagrangeTerm( sumLagrange ); // WARNING
+    // ------------ OBJECTIVE ----------- //
+    Expression sumLagrange(
+                torque_control[0] * torque_control[0] +
+                muscle_control[0] * muscle_control[0]);
+    for(unsigned int p=1; p<nPhases; ++p) {
+        sumLagrange +=
+                torque_control[p] * torque_control[p] +
+                muscle_control[p] * muscle_control[p];
+    }
+    ocp.minimizeLagrangeTerm(sumLagrange);
 
-    /* ---------- OPTIMIZATION  ------------ */
-    OptimizationAlgorithm  algorithm( ocp ) ;
-    algorithm.set(MAX_NUM_ITERATIONS, 1000);
+    // ---------- OPTIMIZATION  ------------ //
+    OptimizationAlgorithm  algorithm(ocp) ;
+    algorithm.set(MAX_NUM_ITERATIONS, 500);
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
-    algorithm.set(HESSIAN_APPROXIMATION, CONSTANT_HESSIAN);
+    algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
     algorithm.set(KKT_TOLERANCE, 1e-4);
 
-    algorithm.initializeDifferentialStates((initializePath + "InitStates.txt").c_str(), BT_TRUE);
-    algorithm.initializeControls((initializePath + "InitControls.txt").c_str());
 
-    /* ---------- INITIAL SOLUTION ---------- */
-//    VariablesGrid u_init(nPhases*(nTau + nMus), Grid(t_Start, t_End, 2));
-//    for(unsigned int i=0; i<nPhases; ++i){
-//        for(unsigned int j=0; j<nMus; ++j){
-//            u_init(0, i*(nMus+nTau) + j ) = 0.2;
-//            u_init(1, i*(nMus+nTau) + j ) = 0.2;
-//        }
-//        for(unsigned int j=0; j<nTau; ++j){
-//            u_init(0, i*(nMus+nTau) + nMus + j ) = 0.01;
-//            u_init(1, i*(nMus+nTau) + nMus + j ) = 0.01;
-//        }
-//    }
-//    algorithm.initializeControls(u_init);
+    // ---------- INITIAL SOLUTION ---------- //
+#ifdef USE_INIT_FILE
+    algorithm.initializeDifferentialStates(
+                (initializePath + "InitStates" + resultsName + ".txt").c_str(),
+                BT_TRUE);
+    algorithm.initializeControls(
+                (initializePath + "InitControls" + resultsName + ".txt").c_str()
+                );
+#else
+    VariablesGrid u_init(nPhases*(nTau + nMus), Grid(t_Start, t_End, 2));
+    for(unsigned int i=0; i<nPhases; ++i){
+        for(unsigned int j=0; j<nMus; ++j){
+            u_init(0, i*(nMus+nTau) + j ) = 0.2;
+            u_init(1, i*(nMus+nTau) + j ) = 0.2;
+        }
+        for(unsigned int j=0; j<nTau; ++j){
+            u_init(0, i*(nMus+nTau) + nMus + j ) = 0.01;
+            u_init(1, i*(nMus+nTau) + nMus + j ) = 0.01;
+        }
+    }
+    algorithm.initializeControls(u_init);
 
-//    VariablesGrid x_init(nPhases*(nQ+nQdot), Grid(t_Start, t_End, 2));
-//    for(unsigned int i=0; i<nPhases/2; ++i){
-//        /* Solution INITIALE Camille */
+    VariablesGrid x_init(nPhases*(nQ+nQdot), Grid(t_Start, t_End, 2));
+    for(unsigned int i=0; i < nPhases/2; ++i){
+        // BowFrog on ViolinBridge
+        x_init(0, 2*i*(nQ+nQdot)+0) = 0.09973;
+        x_init(0, 2*i*(nQ+nQdot)+1) = 0.09733;
+        x_init(0, 2*i*(nQ+nQdot)+2) = 1.05710;
+        x_init(0, 2*i*(nQ+nQdot)+3) = 1.56950;
+        x_init(0, 2*i*(nQ+nQdot)+4) = 1.07125;
+        x_init(0, 2*i*(nQ+nQdot)+5) = 0.95871;
+        x_init(0, 2*i*(nQ+nQdot)+6) = -1.7687;
 
-//                // poucette sur COM
-//                x_init(0, 2*i*(nQ+nQdot)+0) = 0.09973;
-//                x_init(0, 2*i*(nQ+nQdot)+1) = 0.09733;
-//                x_init(0, 2*i*(nQ+nQdot)+2) = 1.05710;
-//                x_init(0, 2*i*(nQ+nQdot)+3) = 1.56950;
-//                x_init(0, 2*i*(nQ+nQdot)+4) = 1.07125;
-//                x_init(0, 2*i*(nQ+nQdot)+5) = 0.95871;
-//                x_init(0, 2*i*(nQ+nQdot)+6) = -1.7687;
+        // BowTip on ViolinBridge
+        x_init(1, 2*i*(nQ+nQdot)+0) = -0.39107;
+        x_init(1, 2*i*(nQ+nQdot)+1) = -0.495383;
+        x_init(1, 2*i*(nQ+nQdot)+2) = -0.089030;
+        x_init(1, 2*i*(nQ+nQdot)+3) = 0.1485315;
+        x_init(1, 2*i*(nQ+nQdot)+4) = 0.8569764;
+        x_init(1, 2*i*(nQ+nQdot)+5) = 1.9126840;
+        x_init(1, 2*i*(nQ+nQdot)+6) = -0.490220;
 
-//                // bouton sur COM
-//                x_init(1, 2*i*(nQ+nQdot)+0) = -0.39107;
-//                x_init(1, 2*i*(nQ+nQdot)+1) = -0.495383;
-//                x_init(1, 2*i*(nQ+nQdot)+2) = -0.089030;
-//                x_init(1, 2*i*(nQ+nQdot)+3) = 0.1485315;
-//                x_init(1, 2*i*(nQ+nQdot)+4) = 0.8569764;
-//                x_init(1, 2*i*(nQ+nQdot)+5) = 1.9126840;
-//                x_init(1, 2*i*(nQ+nQdot)+6) = -0.490220;
+        // BowTip on ViolinBridge
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+0) = -0.39107;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+1) = -0.495383;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+2) = -0.089030;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+3) = 0.1485315;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+4) = 0.8569764;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+5) = 1.9126840;
+        x_init(0, ((2*i)+1)*(nQ+nQdot)+6) = -0.490220;
 
-//                // bouton sur COM
-//                x_init(0, ((2*i)+1)*(nQ+nQdot)+0) = -0.39107;
-//                x_init(0, ((2*i)+1)*(nQ+nQdot)+1) = -0.495383;
-//                x_init(0, ((2*i)+1)*(nQ+nQdot)+2) = -0.089030;
-//                x_init(0, ((2*i)+1)*(nQ+nQdot)+3) = 0.1485315;
-//                x_init(0, ((2*i)+1)*(nQ+nQdot)+4) = 0.8569764;
-//                x_init(0, ((2*i)+1)*(nQ+nQdot)+5) = 1.9126840;
-//                x_init(0, ((2*i)+1)*(nQ+nQdot)+6) = -0.490220;
+        // BowFrog on ViolinBridge
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+0) = 0.09973;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+1) = 0.09733;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+2) = 1.05710;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+3) = 1.56950;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+4) = 1.07125;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+5) = 0.95871;
+        x_init(1, ((2*i)+1)*(nQ+nQdot)+6) = -1.7687;
+    }
+    for(unsigned int i=0; i<nPhases; ++i){
+        for(unsigned int j=0; j<nQdot; ++j){
+             x_init(0, i*(nQ+nQdot) + nQ + j) = 0.01;
+             x_init(1, i*(nQ+nQdot) + nQ + j) = 0.01;
+        }
+    }
+    algorithm.initializeDifferentialStates(x_init);
+#endif  // USE_INIT_FILE
 
-//                // poucette sur COM
-//                x_init(1, ((2*i)+1)*(nQ+nQdot)+0) = 0.09973;
-//                x_init(1, ((2*i)+1)*(nQ+nQdot)+1) = 0.09733;
-//                x_init(1, ((2*i)+1)*(nQ+nQdot)+2) = 1.05710;
-//                x_init(1, ((2*i)+1)*(nQ+nQdot)+3) = 1.56950;
-//                x_init(1, ((2*i)+1)*(nQ+nQdot)+4) = 1.07125;
-//                x_init(1, ((2*i)+1)*(nQ+nQdot)+5) = 0.95871;
-//                x_init(1, ((2*i)+1)*(nQ+nQdot)+6) = -1.7687;
-
-//    }
-
-
-//    for(unsigned int i=0; i<nPhases; ++i){
-//        for(unsigned int j=0; j<nQdot; ++j){
-//             x_init(0, i*(nQ+nQdot) + nQ + j) = 0.01;
-//             x_init(1, i*(nQ+nQdot) + nQ + j) = 0.01;
-//        }
-//    }
-//    algorithm.initializeDifferentialStates(x_init);
-
-    /* ---------- SOLVING THE PROBLEM ---------- */
+    // ---------- SOLVING THE PROBLEM ---------- //
     algorithm.solve();
 
-    /* ---------- STORING THE RESULTS FOR DUPLICATION ---------- */
-    VariablesGrid states, controls, doubleState, doubleState2, doubleControls, doubleControls2;
+    // ---------- STORING THE RESULTS ---------- //
+   createTreePath(resultsPath);
+   algorithm.getDifferentialStates((resultsPath + "States" + optimizationName + ".txt").c_str());
+   algorithm.getControls((resultsPath + "Controls" + optimizationName + ".txt").c_str());
+
+    // ---------- STORING THE RESULTS FOR DUPLICATION ---------- //
+    VariablesGrid states, controls, doubleState,
+            doubleState2, doubleControls, doubleControls2;
 
     algorithm.getDifferentialStates(states); // On stocke les états différentiels de la simulation en cours
     algorithm.getControls(controls); // On stocke les contrôles de la simulation en cours
@@ -229,25 +223,18 @@ int  main ()
     doubleState = states.getValuesSubGrid(0, ((nQ + nQdot)* nPhases) - 1 ); // On récupere les valeurs des états différentiels sans la derniere colonne
     doubleState2 = states.getValuesSubGrid(0, (nQ + nQdot) * nPhases); // On récupere les valeurs des états différentiels avec la derniere colonne
     doubleState.appendValues(doubleState2); // On rejoins les deux VariablesGrid dans l'ordre "doubleStates + doubleStates2"
-    doubleState.print((initializePath + "InitStates.txt").c_str()); // On remplit le fichier texte avec le VariablesGrid final
+    doubleState.print((resultsPath + "InitStates" + optimizationName + ".txt").c_str()); // On remplit le fichier texte avec le VariablesGrid final
 
     doubleControls = controls.getValuesSubGrid(0, (nTau + nMus) * nPhases - 1); // Pareil avec les contrôles
     doubleControls2 = controls.getValuesSubGrid(0, (nTau + nMus) * nPhases - 1);
     doubleControls.appendValues(doubleControls2);
-    doubleControls.print((initializePath + "InitControls.txt").c_str());
+    doubleControls.print((resultsPath + "InitControls" + optimizationName + ".txt").c_str());
 
-     /* ---------- STORING THE RESULTS ---------- */
-
-    createTreePath(resultsPath);
-
-    algorithm.getDifferentialStates((resultsPath + "StatesAvNPhases.txt").c_str());
-    algorithm.getControls((resultsPath + "ControlsAvNPhases.txt").c_str());
-
-
-    end=clock();
-    time_exec = double(end - start)/CLOCKS_PER_SEC;
+    // ---------- PLOTING ---------- //
+    clock_t end=clock();
+    double time_exec(double(end - start)/CLOCKS_PER_SEC);
     std::cout<<"Execution time: "<<time_exec<<std::endl;
 
-
+    // ---------- EXIT ---------- //
     return 0;
 }

@@ -58,9 +58,7 @@ void violonDown( double *x, double *g, void * ){
 void markerPosition(double *x, double *g, void *user_data ){
     unsigned int numTag = static_cast<unsigned int*>(user_data)[0];
 
-    for(unsigned int i = 0; i<nQ; ++i){
-        Q[i] = x[i];
-    }
+    dispatchQ(x);
     tag = m.marker(Q, numTag, true, true);
 
     g[0]=tag[0];
@@ -68,7 +66,7 @@ void markerPosition(double *x, double *g, void *user_data ){
     g[2]=tag[2];
 }
 
-void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data){
+void forceConstraintFromMuscleActivation( double *x, double *g, void *){
 //    forwardDynamicsFromMuscleActivationAndTorqueContact(x, g, user_data);
 
     // Dispatch the inputs
@@ -97,7 +95,7 @@ void forceConstraintFromMuscleActivation( double *x, double *g, void *user_data)
 
 }
 
-void forceConstraintFromTorque(double *x, double *g, void *user_data)
+void forceConstraintFromTorque(double *x, double *g, void *)
 {
         // Dispatch the inputs
         for(unsigned int i = 0; i<nQ; ++i){

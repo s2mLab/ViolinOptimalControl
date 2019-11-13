@@ -233,7 +233,7 @@ def derive(q, t):
 
     return der
 
-# Get values from biorbd
+
 def fatigue_dyn_biorbd(_model, _muscle, _q, _q_dot, fun_load, is_state, is_muscle_updated=True):
     _fatigue_model = biorbd.HillThelenTypeFatigable(_muscle)
     _fatigue_state = biorbd.FatigueDynamicStateXia(_fatigue_model.fatigueState())
