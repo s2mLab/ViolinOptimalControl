@@ -1,20 +1,35 @@
 #include "integrator.h"
 #include "biorbd.h"
 
+#include <boost/numeric/odeint.hpp>
+#include "dynamics.h"
+
 AcadoIntegrator::AcadoIntegrator(biorbd::Model& m) :
     biorbd::rigidbody::Integrator(m),
     m_isKinematicsComputed(false)
 {
-
+    m_lhs = new double[m_model->nbQ() + m_model->nbQdot()];
+    m_rhs = new double[m_model->nbQ() + m_model->nbQdot()];
 }
+
 
 void AcadoIntegrator::operator()(
         const state_type &x,
         state_type &dxdt,
-        double t)
+        double)
 {
-    std::cout << "coucou" << std::endl;
-    biorbd::rigidbody::Integrator::operator ()(x, dxdt, t);
+    for (unsigned int i=0; i<*m_nQ + *m_nQdot; i++){
+        m_lhs[i] = x[i];
+    }
+
+    // Équation différentielle : x/xdot => xdot/xddot
+    forwardDynamics_contact(m_lhs, m_rhs);
+
+    // Faire sortir xdot/xddot
+    for (unsigned int i=0; i<*m_nQ + *m_nQdot; i++){
+        dxdt[i] = m_rhs[i];
+    }
+
 }
 
 void AcadoIntegrator::integrateKinematics(
@@ -49,4 +64,18 @@ void AcadoIntegrator::getIntegratedKinematics(
 unsigned int AcadoIntegrator::nbInterationStep() const
 {
     return steps();
+}
+
+void AcadoIntegrator::launchIntegrate(
+        state_type &x,
+        double t0,
+        double tend,
+        double timeStep)
+{
+    // Choix de l'algorithme et intégration
+    boost::numeric::odeint::runge_kutta4< state_type > stepper;
+    *m_steps = static_cast<unsigned int>(
+                boost::numeric::odeint::integrate_const(
+                    stepper, *this, x, t0, tend, timeStep,
+                    push_back_state_and_time( *m_x_vec , *m_times )));
 }

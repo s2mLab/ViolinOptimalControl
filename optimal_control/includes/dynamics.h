@@ -6,7 +6,7 @@
 void forwardDynamics_noContact(
         double *x,
         double *rhs,
-        void *user_data);
+        void *user_data = nullptr);
 void forwardDynamics_noContact(
         const biorbd::rigidbody::GeneralizedCoordinates& Q,
         const biorbd::rigidbody::GeneralizedCoordinates& Qdot,
@@ -15,7 +15,7 @@ void forwardDynamics_noContact(
 void forwardDynamics_contact(
         double *x,
         double *rhs,
-        void *user_data);
+        void *user_data = nullptr);
 void forwardDynamics_contact(
         const biorbd::rigidbody::GeneralizedCoordinates& Q,
         const biorbd::rigidbody::GeneralizedCoordinates& Qdot,

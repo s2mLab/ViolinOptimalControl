@@ -30,6 +30,15 @@ public:
             biorbd::rigidbody::GeneralizedCoordinates &QDot);
     unsigned int nbInterationStep() const;
     bool m_isKinematicsComputed;
+
+protected:
+    virtual void launchIntegrate(
+            state_type& x,
+            double t0,
+            double tend,
+            double timeStep);
+    double* m_lhs;
+    double* m_rhs;
 };
 
 #endif  // VIOLIN_OPTIMIZATION_INTEGRATOR_H

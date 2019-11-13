@@ -2,6 +2,7 @@
 #include "includes/integrator.h"
 
 
+#include "includes/biorbd_declarer.h"
 biorbd::Model m("../../models/simple.bioMod");
 #include "includes/biorbd_initializer.h"
 
