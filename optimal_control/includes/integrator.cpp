@@ -35,14 +35,14 @@ void AcadoIntegrator::operator()(
 void AcadoIntegrator::integrateKinematics(
         const biorbd::rigidbody::GeneralizedCoordinates &Q,
         const biorbd::rigidbody::GeneralizedCoordinates &QDot,
-        const biorbd::rigidbody::GeneralizedTorque &GeneralizedTorque,
+        const biorbd::utils::Vector &control,
         double t0,
         double tend,
         double timeStep)
 {
     biorbd::utils::Vector v(static_cast<unsigned int>(Q.rows()+QDot.rows()));
     v << Q,QDot;
-    integrate(v, GeneralizedTorque, t0, tend, timeStep); // vecteur, t0, tend, pas, effecteurs
+    integrate(v, control, t0, tend, timeStep); // vecteur, t0, tend, pas, effecteurs
     m_isKinematicsComputed = true;
 }
 

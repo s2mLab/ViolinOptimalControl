@@ -20,7 +20,7 @@ public:
     void integrateKinematics(
             const biorbd::rigidbody::GeneralizedCoordinates& Q,
             const biorbd::rigidbody::GeneralizedCoordinates& QDot,
-            const biorbd::rigidbody::GeneralizedTorque& GeneralizedTorque,
+            const biorbd::utils::Vector& GeneralizedTorque,
             double t0,
             double tend,
             double timeStep);
