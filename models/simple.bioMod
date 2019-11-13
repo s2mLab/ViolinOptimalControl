@@ -1,0 +1,18 @@
+version 3
+
+// Informations générales
+root_actuated	1
+external_forces	0
+
+	 segment seg1
+		translations	xyz
+		rotations	    xyz
+		mass	46.24
+		inertia
+			5.156339	0.000000	0.000000
+			0.000000	0.989495	0.000000
+			0.000000	0.000000	5.642031
+		com	0.000000	-0.44045	0.000000
+
+	endsegment
+

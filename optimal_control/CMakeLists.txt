@@ -27,6 +27,7 @@ add_library(utils SHARED
     includes/constraints.cpp
     includes/objectives.cpp
     includes/utils.cpp
+    includes/integrator.cpp
 )
 
 target_include_directories(utils PUBLIC
@@ -42,6 +43,7 @@ target_include_directories(utils PUBLIC
 set(source_files
     RepeatedUpAndDownBow.cpp
     EocarNphases.cpp
+    Test.cpp
 )
 
 # Setup each project
