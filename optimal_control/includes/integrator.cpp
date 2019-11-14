@@ -6,9 +6,12 @@
 
 AcadoIntegrator::AcadoIntegrator(biorbd::Model& m) :
     biorbd::rigidbody::Integrator(m),
-    m_isKinematicsComputed(false)
+    m_isKinematicsComputed(false),
+    m_nMus(m.nbMuscleTotal()),
+    m_nTorque(m.nbGeneralizedTorque())
 {
-    m_lhs = new double[m_model->nbQ() + m_model->nbQdot()];
+    m_lhs = new double[m_model->nbQ() + m_model->nbQdot()
+            + m_nMus + m_nTorque];
     m_rhs = new double[m_model->nbQ() + m_model->nbQdot()];
 }
 
@@ -20,6 +23,9 @@ void AcadoIntegrator::operator()(
 {
     for (unsigned int i=0; i<*m_nQ + *m_nQdot; i++){
         m_lhs[i] = x[i];
+    }
+    for (unsigned int i=0; i<m_nMus + m_nTorque; ++i){
+        m_lhs[i + *m_nQ + *m_nQdot] = (*m_u)(i);
     }
 
     // Équation différentielle : x/xdot => xdot/xddot

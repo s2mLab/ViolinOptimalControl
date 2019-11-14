@@ -32,6 +32,8 @@ public:
     bool m_isKinematicsComputed;
 
 protected:
+    unsigned int m_nMus;
+    unsigned int m_nTorque;
     virtual void launchIntegrate(
             state_type& x,
             double t0,
