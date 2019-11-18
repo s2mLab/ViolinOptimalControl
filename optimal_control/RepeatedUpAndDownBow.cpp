@@ -7,8 +7,9 @@
 #include "includes/utils.h"
 #include "includes/dynamics.h"
 #include "includes/constraints.h"
+#include "includes/objectives.h"
 
-//#define USE_INIT_FILE
+// #define USE_INIT_FILE
 biorbd::Model m("../../models/BrasViolon.bioMod");
 #include "includes/biorbd_initializer.h"
 
@@ -36,6 +37,8 @@ int  main ()
 
     // ----------- DEFINE OCP ------------- //
     OCP ocp(t_Start, t_End, nPoints);
+    CFunction lagrangeRT(1, lagrangeResidualTorques);
+    CFunction lagrangeA(1, lagrangeActivations);
     CFunction F( nQ+nQdot, forwardDynamics_noContact);
     DifferentialEquation f ;
 
@@ -53,15 +56,13 @@ int  main ()
 
     // ---------- INITIALIZATION ---------- //
     std::vector<DifferentialState> x;
-    std::vector<Control> muscle_control;
-    std::vector<Control> torque_control;
+    std::vector<Control> control;
     std::vector<IntermediateState> is;
 
     // ---------- PHASES ---------- //
     for (unsigned int p=0; p<nPhases; ++p){
         x.push_back(DifferentialState("",nQ+nQdot,1));
-        muscle_control.push_back(Control("",  nMus, 1));
-        torque_control.push_back(Control("", nTau, 1));
+        control.push_back(Control("", nMus + nTau, 1));
         is.push_back(IntermediateState("", nQ+nQdot+nMus+nTau, 1));
 
         for (unsigned int i = 0; i < nQ; ++i)
@@ -69,9 +70,9 @@ int  main ()
         for (unsigned int i = 0; i < nQdot; ++i)
             is[p](i+nQ) = x[p](i+nQ);
         for (unsigned int i = 0; i < nMus; ++i)
-            is[p](i+nQ+nQdot) = muscle_control[p](i);
+            is[p](i+nQ+nQdot) = control[p](i);
         for (unsigned int i = 0; i < nTau; ++i)
-            is[p](i+nQ+nQdot+nMus) = torque_control[p](i);
+            is[p](i+nQ+nQdot+nMus) = control[p](i+nMus);
 
         // ------------ CONSTRAINTS ----------- //
         // Dynamics
@@ -79,10 +80,10 @@ int  main ()
 
         // Controls constraints
         for (unsigned int i=0; i<nMus; ++i){
-            ocp.subjectTo(0.01 <= muscle_control[p](i) <= 1);
+            ocp.subjectTo(0.01 <= control[p](i) <= 1);
         }
         for (unsigned int i=0; i<nTau; ++i){
-            ocp.subjectTo(-100 <= torque_control[p](i) <= 100);
+            ocp.subjectTo(-100 <= control[p](i+nMus) <= 100);
         }
 
         // Path constraints
@@ -118,15 +119,10 @@ int  main ()
     ocp.subjectTo(f);
 
     // ------------ OBJECTIVE ----------- //
-    Expression sumLagrange(
-                torque_control[0] * torque_control[0] +
-                muscle_control[0] * muscle_control[0]);
-    for(unsigned int p=1; p<nPhases; ++p) {
-        sumLagrange +=
-                torque_control[p] * torque_control[p] +
-                muscle_control[p] * muscle_control[p];
-    }
-    ocp.minimizeLagrangeTerm(sumLagrange);
+    Expression sumLagrange = lagrangeRT(control[0])+ lagrangeA(control[0]);
+    for(unsigned int p=1; p<nPhases; ++p)
+        sumLagrange += lagrangeRT(control[p]) + lagrangeA(control[p]);
+    ocp.minimizeLagrangeTerm( sumLagrange ); // WARNING
 
     // ---------- OPTIMIZATION  ------------ //
     OptimizationAlgorithm  algorithm(ocp) ;
