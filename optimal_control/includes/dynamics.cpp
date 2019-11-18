@@ -6,18 +6,6 @@
 #include "Muscles/StateDynamics.h"
 
 void forwardDynamics_noContact(
-        const biorbd::rigidbody::GeneralizedCoordinates& Q,
-        const biorbd::rigidbody::GeneralizedCoordinates& Qdot,
-        const biorbd::rigidbody::GeneralizedTorque& Tau,
-        double *rhs){
-    RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
-    for(unsigned int i = 0; i<nQ; ++i) {
-        rhs[i] = Qdot[i];
-        rhs[i + nQdot] = Qddot[i];
-    }
-}
-
-void forwardDynamics_noContact(
         double *x,
         double *rhs,
         void *){
@@ -39,15 +27,13 @@ void forwardDynamics_noContact(
     validityCheck();
 }
 
-void forwardDynamics_contact(
+void forwardDynamics_noContact(
         const biorbd::rigidbody::GeneralizedCoordinates& Q,
         const biorbd::rigidbody::GeneralizedCoordinates& Qdot,
         const biorbd::rigidbody::GeneralizedTorque& Tau,
         double *rhs){
-    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints();
-    RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
-    //RigidBodyDynamics::ForwardDynamicsContactsKokkevis(m, Q, Qdot, Tau, CS, Qddot);
-    for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
+    RigidBodyDynamics::ForwardDynamics(m, Q, Qdot, Tau, Qddot);
+    for(unsigned int i = 0; i<nQ; ++i) {
         rhs[i] = Qdot[i];
         rhs[i + nQdot] = Qddot[i];
     }
@@ -73,4 +59,18 @@ void forwardDynamics_contact(
 
     forwardDynamics_contact(Q, Qdot, Tau, rhs);
     validityCheck();
+}
+
+void forwardDynamics_contact(
+        const biorbd::rigidbody::GeneralizedCoordinates& Q,
+        const biorbd::rigidbody::GeneralizedCoordinates& Qdot,
+        const biorbd::rigidbody::GeneralizedTorque& Tau,
+        double *rhs){
+    RigidBodyDynamics::ConstraintSet& CS = m.getConstraints();
+    RigidBodyDynamics::ForwardDynamicsConstraintsDirect(m, Q, Qdot, Tau, CS, Qddot);
+    //RigidBodyDynamics::ForwardDynamicsContactsKokkevis(m, Q, Qdot, Tau, CS, Qddot);
+    for(unsigned int i = 0; i<nQ; ++i){ // Assuming nQ == nQdot
+        rhs[i] = Qdot[i];
+        rhs[i + nQdot] = Qddot[i];
+    }
 }

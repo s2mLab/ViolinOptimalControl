@@ -1,3 +1,4 @@
+#include <iostream>
 #include <memory>
 #include <time.h>
 #include <acado_optimal_control.hpp>
@@ -102,13 +103,13 @@ int  main ()
             ocp.subjectTo(i, violinBridgeInBowRT(x[p]) == 0.0);
         }
 
-        ocp.subjectTo(-PI/8 <= x[p](0) <= 0.1);
-        ocp.subjectTo(-PI/2 <= x[p](1) <= 0.1);
-        ocp.subjectTo(-PI/4 <= x[p](2) <= PI);
-        ocp.subjectTo(-PI/2 <= x[p](3) <= PI/2);
-        ocp.subjectTo(-0.1  <= x[p](4) <= PI);
-        ocp.subjectTo(-PI   <= x[p](5) <= PI);
-        ocp.subjectTo(-PI   <= x[p](6) <= PI);
+        ocp.subjectTo(-M_PI/8 <= x[p](0) <= 0.1);
+        ocp.subjectTo(-M_PI/2 <= x[p](1) <= 0.1);
+        ocp.subjectTo(-M_PI/4 <= x[p](2) <= M_PI);
+        ocp.subjectTo(-M_PI/2 <= x[p](3) <= M_PI/2);
+        ocp.subjectTo(-0.1  <= x[p](4) <= M_PI);
+        ocp.subjectTo(-M_PI   <= x[p](5) <= M_PI);
+        ocp.subjectTo(-M_PI   <= x[p](6) <= M_PI);
 
         for (unsigned int j=0; j<nQdot; ++j) {
             ocp.subjectTo(-50 <= x[p](nQ + j) <= 50);
@@ -233,7 +234,7 @@ int  main ()
     // ---------- PLOTING ---------- //
     clock_t end=clock();
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
-    std::cout<<"Execution time: "<<time_exec<<std::endl;
+    std::cout << "Execution time: " << time_exec << std::endl;
 
     // ---------- EXIT ---------- //
     return 0;
