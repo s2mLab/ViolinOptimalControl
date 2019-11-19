@@ -16,12 +16,18 @@ find_library (Biorbd_LIBRARY NAMES biorbd PATHS ${CMAKE_INSTALL_PREFIX}/lib/bior
 get_filename_component(Biorbd_LIB_PATH ${Biorbd_LIBRARY} DIRECTORY)
 get_filename_component(Biorbd_LIB_NAME ${Biorbd_LIBRARY} NAME_WE)
 get_filename_component(Biorbd_LIB_EXTENSION ${Biorbd_LIBRARY} EXT)
+
+string(REGEX MATCH "_debug" debug_flag ${Biorbd_LIB_NAME})
+if (debug_flag)
+    string(REGEX REPLACE ${debug_flag} "" Biorbd_LIB_NAME ${Biorbd_LIB_NAME})
+endif()
+
 set(Biorbd_LIBRARIES
-    ${Biorbd_LIB_PATH}/${Biorbd_LIB_NAME}${Biorbd_LIB_EXTENSION}
-    ${Biorbd_LIB_PATH}/${Biorbd_LIB_NAME}_utils${Biorbd_LIB_EXTENSION}
-    ${Biorbd_LIB_PATH}/${Biorbd_LIB_NAME}_rigidbody${Biorbd_LIB_EXTENSION}
-    ${Biorbd_LIB_PATH}/${Biorbd_LIB_NAME}_muscles${Biorbd_LIB_EXTENSION}
-    ${Biorbd_LIB_PATH}/${Biorbd_LIB_NAME}_actuators${Biorbd_LIB_EXTENSION}
+    ${Biorbd_LIB_PATH}/${Biorbd_LIB_NAME}${debug_flag}${Biorbd_LIB_EXTENSION}
+    ${Biorbd_LIB_PATH}/${Biorbd_LIB_NAME}_utils${debug_flag}${Biorbd_LIB_EXTENSION}
+    ${Biorbd_LIB_PATH}/${Biorbd_LIB_NAME}_rigidbody${debug_flag}${Biorbd_LIB_EXTENSION}
+    ${Biorbd_LIB_PATH}/${Biorbd_LIB_NAME}_muscles${debug_flag}${Biorbd_LIB_EXTENSION}
+    ${Biorbd_LIB_PATH}/${Biorbd_LIB_NAME}_actuators${debug_flag}${Biorbd_LIB_EXTENSION}
 )
 
 # handle the QUIETLY and REQUIRED arguments and set DLIB_FOUND to TRUE if 

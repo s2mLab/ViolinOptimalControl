@@ -75,99 +75,51 @@ def organize_time(file_path, t, nb_phases, nb_nodes, parameter=True):
     return t_final
 
 
-def dynamics_from_muscles(t_int, states, biorbd_model, u):
+def dynamics_no_contact(t_int, states, biorbd_model, u, force_no_muscle=False):
     nb_q = biorbd_model.nbQ()
-    nb_qdot = biorbd_model.nbQdot()
-    nb_muscle = biorbd_model.nbMuscleTotal()
-
-    states_dynamics = biorbd.VecBiorbdMuscleStateDynamics(nb_muscle)
-    for i in range(len(states_dynamics)):
-        states_dynamics[i] = biorbd.StateDynamics(0, u[i])
-
-    biorbd_model.updateMuscles(biorbd_model, states[:nb_q], states[nb_q:], True)
-    tau = biorbd.Model.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
-    qddot = biorbd.Model.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], tau).get_array()
-
-    rsh = np.ndarray(nb_q + nb_qdot)
-    for i in range(nb_q):
-        rsh[i] = states[nb_q+i]
-        rsh[i + nb_q] = qddot[i]
-
-    return rsh
-
-
-def dynamics_from_muscles_and_torques(t_int, states, biorbd_model, u):
-    nb_q = biorbd_model.nbQ()
-    nb_qdot = biorbd_model.nbQdot()
     nb_tau = biorbd_model.nbGeneralizedTorque()
     nb_muscle = biorbd_model.nbMuscleTotal()
 
+    q = states[:nb_q]
+    qdot = states[nb_q:]
     states_dynamics = biorbd.VecBiorbdMuscleStateDynamics(nb_muscle)
     for i in range(len(states_dynamics)):
-        states_dynamics[i] = biorbd.StateDynamics(0, u[i])
+        states_dynamics[i].setActivation(u[i])
 
-    biorbd_model.updateMuscles(states[:nb_q], states[nb_q:], True)
-    tau = biorbd_model.muscularJointTorque(states_dynamics, states[:nb_q], states[nb_q:])
+    if nb_muscle > 0 and not force_no_muscle:
+        tau = biorbd_model.muscularJointTorque(states_dynamics, q, qdot).get_array()
+    else:
+        tau = np.zeros(nb_tau)
 
-    tau_final = tau.get_array() + u[nb_muscle:nb_muscle+nb_tau]
+    tau += u[nb_muscle:nb_muscle+nb_tau]
+    qddot = biorbd.Model.ForwardDynamics(biorbd_model, q, qdot, tau).get_array()
 
-    qddot = biorbd.Model.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], tau_final).get_array()
-
-    rsh = np.ndarray(nb_q + nb_qdot)
-    for i in range(nb_q):
-        rsh[i] = states[nb_q+i]
-        rsh[i + nb_q] = qddot[i]
-    return rsh
+    return np.concatenate((qdot, qddot))
 
 
-def dynamics_from_muscles_and_torques_and_contact(t_int, states, biorbd_model, u):
+def dynamics_with_contact(t_int, states, biorbd_model, u, force_no_muscle=False):
     nb_q = biorbd_model.nbQ()
-    nb_qdot = biorbd_model.nbQdot()
     nb_tau = biorbd_model.nbGeneralizedTorque()
     nb_muscle = biorbd_model.nbMuscleTotal()
 
-    states_dynamics = biorbd.VecBiorbdMuscleStateDynamics(nb_muscle)
-    for i in range(len(states_dynamics)):
-        states_dynamics[i] = biorbd.StateDynamics(0, u[i])
+    q = states[:nb_q]
+    qdot = states[nb_q:]
 
-    biorbd_model.updateMuscles(states[:nb_q], states[nb_q:], True)
-    tau = biorbd.Model.muscularJointTorque(biorbd_model, states_dynamics, states[:nb_q], states[nb_q:])
+    if nb_muscle > 0 and not force_no_muscle:
+        states_dynamics = biorbd.VecBiorbdMuscleStateDynamics(nb_muscle)
+        for i in range(len(states_dynamics)):
+            states_dynamics[i].setActivation(u[i])
+        tau = biorbd_model.muscularJointTorque(states_dynamics, q, qdot).get_array()
+    else:
+        tau = np.zeros(nb_tau)
 
-    tau_final = tau.get_array() + u[nb_muscle:nb_muscle + nb_tau]
+    tau += u[nb_muscle:nb_muscle+nb_tau]
 
     cs = biorbd_model.getConstraints()
-    qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(biorbd_model, states[:nb_q], states[nb_q:],
-                                                          tau_final, cs).get_array()
-    rsh = np.ndarray(nb_q + nb_qdot)
-    for i in range(nb_q):
-        rsh[i] = states[nb_q + i]
-        rsh[i + nb_q] = qddot[i]
-    return rsh
+    qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(
+        biorbd_model, states[:nb_q], states[nb_q:], tau, cs).get_array()
 
-
-def dynamics_from_joint_torque(t_int, states, biorbd_model, u):
-    nb_q = biorbd_model.nbQ()
-    nb_qdot = biorbd_model.nbQdot()
-    qddot = biorbd.Model.ForwardDynamics(biorbd_model, states[:nb_q], states[nb_q:], u).get_array()
-    rsh = np.ndarray(nb_q + nb_qdot)
-    for i in range(nb_q):
-        rsh[i] = states[nb_q+i]
-        rsh[i + nb_q] = qddot[i]
-
-    return rsh
-
-
-def dynamics_from_joint_torque_and_contact(t_int, states, biorbd_model, u):
-    nb_q = biorbd_model.nbQ()
-    nb_qdot = biorbd_model.nbQdot()
-    cs = biorbd_model.getConstraints()
-    qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(biorbd_model, states[:nb_q], states[nb_q:], u, cs).get_array()
-    rsh = np.ndarray(nb_q + nb_qdot)
-    for i in range(nb_q):
-        rsh[i] = states[nb_q+i]
-        rsh[i + nb_q] = qddot[i]
-
-    return rsh
+    return np.concatenate((qdot, qddot))
 
 
 def dynamics_from_accelerations(t_int, states, biorbd_model, u):
@@ -183,11 +135,11 @@ def dynamics_from_accelerations(t_int, states, biorbd_model, u):
 
 def runge_kutta_4(fun, t_span, y0, n_step):
     h = (t_span[1] - t_span[0]) / n_step  # Length of steps
-    y = np.ndarray((y0.shape[0], n_step))
+    y = np.ndarray((y0.shape[0], n_step + 1))
     y[:, 0] = y0
-    t = np.linspace(t_span[0], t_span[1], n_step)
+    t = np.linspace(t_span[0], t_span[1], n_step + 1)
 
-    for i in range(1, n_step):
+    for i in range(1, n_step + 1):
         k1 = fun(i*h, y[:, i-1])
         k2 = fun(i*h, y[:, i-1] + h/2 * k1)
         k3 = fun(i*h, y[:, i-1] + h/2 * k2)
@@ -200,7 +152,7 @@ def runge_kutta_4(fun, t_span, y0, n_step):
 
 
 def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_fun, verbose=False,
-                                   use_previous_as_init=False, algo="rk45"):
+                                   use_previous_as_init=False, algo="rk45", force_no_muscle=False):
     all_t = np.ndarray(0)
     integrated_state = np.ndarray((biorbd_model.nbQ() + biorbd_model.nbQdot(), 0))
 
@@ -210,11 +162,12 @@ def integrate_states_from_controls(biorbd_model, t, all_q, all_qdot, all_u, dyn_
 
         if algo == "rk45":
             integrated_tp = integrate.solve_ivp(
-                fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
+                fun=lambda t, y: dyn_fun(t, y, biorbd_model, u, force_no_muscle=force_no_muscle),
                 t_span=(t[interval], t[interval + 1]), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
         elif algo == "rk4":
-            integrated_tp = runge_kutta_4(fun=lambda t, y: dyn_fun(t, y, biorbd_model, u),
-                                          t_span=(t[interval], t[interval + 1]), y0=q_init, n_step=10)
+            integrated_tp = runge_kutta_4(fun=lambda t, y: dyn_fun(t, y, biorbd_model,
+                                                                   u, force_no_muscle=force_no_muscle),
+                                          t_span=(t[interval], t[interval + 1]), y0=q_init, n_step=10,)
         else:
             raise IndentationError(f"{algo} is not implemented")
 
@@ -279,3 +232,34 @@ def derive(q, t):
             der[j][i] = (q[j+1][i]-q[j][i])/(t[j+1]-t[j])
 
     return der
+
+
+def fatigue_dyn_biorbd(_model, _muscle, _q, _q_dot, fun_load, is_state, is_muscle_updated=True):
+    _fatigue_model = biorbd.HillThelenTypeFatigable(_muscle)
+    _fatigue_state = biorbd.FatigueDynamicStateXia(_fatigue_model.fatigueState())
+    if is_state and type(fun_load) != biorbd.StateDynamics:
+        print("Warning: command function is not of type StateDynamics")
+        return 1
+    if type(fun_load) == biorbd.StateDynamics:
+        is_state = True
+
+    def dyn(t, x):
+        if not is_state:
+            _load = fun_load(t)
+            _emg = biorbd.StateDynamics(0, _load)
+        else:
+            _emg = fun_load
+
+        (ma, mf, mr) = x
+        _fatigue_state.setState(ma, mf, mr)
+        _model.updateMuscles(_model, _q, _q_dot, is_muscle_updated)
+        _fatigue_model.computeFlCE(_emg)
+        _fatigue_model.computeTimeDerivativeState(_emg)
+        ma_dot = _fatigue_state.activeFibersDot()
+        mf_dot = _fatigue_state.fatiguedFibersDot()
+        mr_dot = _fatigue_state.restingFibersDot()
+        result = (ma_dot, mf_dot, mr_dot)
+
+        return result
+
+    return dyn

@@ -1,6 +1,6 @@
-#ifndef __OBJECTIVES_H
-#define __OBJECTIVES_H
-#include "BiorbdModel.h"
+#ifndef VIOLIN_OPTIMIZATION_OBJECTIVES_H
+#define VIOLIN_OPTIMIZATION_OBJECTIVES_H
+#include "biorbd_declarer.h"
 #include "dynamics.h"
 
 void lagrangeResidualTorques( double *u, double *g, void *);
@@ -11,13 +11,4 @@ void lagrangeTime( double *x, double *g, void *);
 void mayerVelocity( double *x, double *g, void *);
 void mayerRHS( double *x, double *g, void *user_data);
 
-extern biorbd::Model m;
-extern unsigned int nQ;
-extern unsigned int nQdot;
-extern unsigned int nTau;
-extern unsigned int nMarkers;
-extern unsigned int nMus;
-extern unsigned int nPhases;
-
-
-#endif
+#endif  // VIOLIN_OPTIMIZATION_OBJECTIVES_H

@@ -1,31 +1,26 @@
-#ifndef __DYNAMICS_H
-#define __DYNAMICS_H
-#include "biorbd/BiorbdModel.h"
-#include "RigidBody/GeneralizedCoordinates.h"
-#include "RigidBody/GeneralizedTorque.h"
-#include "Muscles/StateDynamics.h"
-using namespace biorbd::rigidbody;
+#ifndef VIOLIN_OPTIMIZATION_DYNAMICS_H
+#define VIOLIN_OPTIMIZATION_DYNAMICS_H
+#include "biorbd_declarer.h"
+#include "utils.h"
 
-
-//#define CHECK_MAX_FORCE
-void forwardDynamics(const GeneralizedCoordinates& Q, const GeneralizedCoordinates& Qdot, const GeneralizedTorque& Tau, double *rhs);
-void forwardDynamicsFromMuscleActivation( double *x, double *rhs, void *user_data);
-void forwardDynamicsFromJointTorque( double *x, double *rhs, void *user_data);
-void forwardDynamicsFromMuscleActivationAndTorque(double *x, double *rhs, void *);
-void forwardDynamicsMultiStage( double *x, double *rhs, void *user_data);
-void forwardDynamicsFromMuscleActivationAndTorqueContact( double *x, double *rhs, void *user_data);
-void forwardDynamicsFromTorqueContact( double *x, double *rhs, void *user_data);
-
-extern biorbd::Model m;
-extern unsigned int nQ;
-extern unsigned int nQdot;
-extern unsigned int nTau;
-extern unsigned int nMarkers;
-extern unsigned int nMus;
-extern unsigned int nPhases;
-extern GeneralizedCoordinates Q, Qdot, Qddot;
-extern GeneralizedTorque Tau;
-extern std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates;
+void forwardDynamics_noContact(
+        double *x,
+        double *rhs,
+        void *user_data = nullptr);
+void forwardDynamics_noContact(
+        const biorbd::rigidbody::GeneralizedCoordinates& Q,
+        const biorbd::rigidbody::GeneralizedCoordinates& Qdot,
+        const biorbd::rigidbody::GeneralizedTorque& Tau,
+        double *rhs);
+void forwardDynamics_contact(
+        double *x,
+        double *rhs,
+        void *user_data = nullptr);
+void forwardDynamics_contact(
+        const biorbd::rigidbody::GeneralizedCoordinates& Q,
+        const biorbd::rigidbody::GeneralizedCoordinates& Qdot,
+        const biorbd::rigidbody::GeneralizedTorque& Tau,
+        double *rhs);
 
 // Show STL vector
 template<typename T>
@@ -42,4 +37,4 @@ std::ostream& operator<< (std::ostream& out, const std::vector<T>& v) {
 }
 
 
-#endif
+#endif  // VIOLIN_OPTIMIZATION_DYNAMICS_H

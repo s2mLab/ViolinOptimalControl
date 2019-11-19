@@ -9,12 +9,13 @@ import analyses.utils as utils
 
 # Options
 model_name = "BrasViolon"
-output_files = "AvNPhases"
-fun_dyn = utils.dynamics_from_muscles_and_torques
+output_files = "RepeatedUpAndDownBow"
+fun_dyn = utils.dynamics_no_contact
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
 nb_phases = 2
 nb_frame_inter = 500
+force_no_muscle = False
 muscle_plot_mapping = \
     [[14, 7, 0, 0, 0, 0],  # Trapeze1
      [15, 7, 1, 0, 0, 0],  # Trapeze2
@@ -39,17 +40,12 @@ muscle_plot_names = ["Trapèzes", "Coiffe des rotateurs", "Pectoraux", "Deltoïd
 
 # Load the model
 m = biorbd.Model(f"../models/{model_name}.bioMod")
-if fun_dyn == utils.dynamics_from_muscles:
-    nb_controls = m.nbMuscleTotal()
-elif fun_dyn == utils.dynamics_from_joint_torque:
-    nb_controls = m.nbGeneralizedTorque()
-elif fun_dyn == utils.dynamics_from_muscles_and_torques \
-    or fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
-    nb_controls = m.nbMuscleTotal()+m.nbGeneralizedTorque()
-elif fun_dyn == utils.dynamics_from_accelerations:
+if fun_dyn == utils.dynamics_from_accelerations:
     nb_controls = m.nbQ()
+elif force_no_muscle:
+    nb_controls = m.nbGeneralizedTorque()
 else:
-    raise NotImplementedError("Dynamic not implemented yet")
+    nb_controls = m.nbMuscleTotal()+m.nbGeneralizedTorque()
 
 # Read values
 t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results/States{output_files}.txt", m, nb_intervals,
@@ -62,7 +58,7 @@ t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_fil
 
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(
-    m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=False, algo=runge_kutta_algo
+    m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=True, algo=runge_kutta_algo
 )
 
 # Interpolate
@@ -89,39 +85,39 @@ for i in range(m.nbQ()):
 
 for i in range(m.nbGeneralizedTorque()):
     plt.subplot(m.nbGeneralizedTorque(), 3, 3 + (3 * i))
-    if fun_dyn == utils.dynamics_from_muscles_and_torques or \
-            fun_dyn == utils.dynamics_from_muscles_and_torques_and_contact:
+    if m.nbMuscleTotal() > 0 and not force_no_muscle:
         utils.plot_piecewise_constant(t_final, all_u[m.nbMuscleTotal()+i, :])
     else:
         utils.plot_piecewise_constant(t_final, all_u[i, :])
     plt.title("Torques %i" % i)
 plt.tight_layout(w_pad=-1.0, h_pad=-1.0)
 
-plt.figure("Activations")
-cmp = 0
-if muscle_plot_mapping is None:
-    for i in range(m.nbMuscleGroups()):
-        for j in range(m.muscleGroup(i).nbMuscles()):
-            plt.subplot(3, 6, cmp + 1)
-            utils.plot_piecewise_constant(t_final, all_u[cmp, :])
-            plt.title(m.muscleGroup(i).muscle(j).name().getString())
+if m.nbMuscleTotal() > 0:
+    plt.figure("Activations")
+    cmp = 0
+    if muscle_plot_mapping is None:
+        for i in range(m.nbMuscleGroups()):
+            for j in range(m.muscleGroup(i).nbMuscles()):
+                plt.subplot(3, 6, cmp + 1)
+                utils.plot_piecewise_constant(t_final, all_u[cmp, :])
+                plt.title(m.muscleGroup(i).muscle(j).name().getString())
+                plt.ylim((0, 1))
+                cmp += 1
+    else:
+        nb_row = np.max(muscle_plot_mapping, axis=0)[3] + 1
+        nb_col = np.max(muscle_plot_mapping, axis=0)[4] + 1
+        created_axes = [None] * nb_col * nb_row
+        for muscle_map in muscle_plot_mapping:
+            idx_axis = muscle_map[3] * nb_col + muscle_map[4]
+            if created_axes[idx_axis]:
+                plt.sca(created_axes[idx_axis])
+            else:
+                created_axes[idx_axis] = plt.subplot(nb_row, nb_col, idx_axis + 1)
+            utils.plot_piecewise_constant(t_final, all_u[muscle_map[0], :])
+            # plt.title(m.muscleGroup(map[1]).muscle(map[2]).name().getString())
+            plt.title(muscle_plot_names[muscle_map[5]])
             plt.ylim((0, 1))
-            cmp += 1
-else:
-    nb_row = np.max(muscle_plot_mapping, axis=0)[3] + 1
-    nb_col = np.max(muscle_plot_mapping, axis=0)[4] + 1
-    created_axes = [None] * nb_col * nb_row
-    for muscle_map in muscle_plot_mapping:
-        idx_axis = muscle_map[3] * nb_col + muscle_map[4]
-        if created_axes[idx_axis]:
-            plt.axes(created_axes[idx_axis])
-        else:
-            created_axes[idx_axis] = plt.subplot(nb_row, nb_col, idx_axis + 1)
-        utils.plot_piecewise_constant(t_final, all_u[muscle_map[0], :])
-        # plt.title(m.muscleGroup(map[1]).muscle(map[2]).name().getString())
-        plt.title(muscle_plot_names[muscle_map[5]])
-        plt.ylim((0, 1))
-    plt.tight_layout(w_pad=-1.0, h_pad=-1.0)
+        plt.tight_layout(w_pad=-1.0, h_pad=-1.0)
 
 plt.show()
 
