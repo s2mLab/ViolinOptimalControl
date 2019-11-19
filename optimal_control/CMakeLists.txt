@@ -43,7 +43,6 @@ target_include_directories(utils PUBLIC
 set(source_files
     RepeatedUpAndDownBow.cpp
     EocarNphases.cpp
-    Test.cpp
 )
 
 # Setup each project
