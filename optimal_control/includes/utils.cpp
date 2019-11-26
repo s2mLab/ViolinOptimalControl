@@ -1,6 +1,8 @@
 #include "utils.h"
 #include "RigidBody/GeneralizedCoordinates.h"
 #include "RigidBody/GeneralizedTorque.h"
+#include <iostream>
+#include <fstream>
 
 /******************************************************************************
  * Checks to see if a directory exists. Note: This method only checks the
@@ -71,6 +73,35 @@ void projectOnXyPlane(double *x, double *g, void *user_data)
     g[1] = markerProjected[1];
 }
 
+// Permet de retirer les crochets [] d'un fichier de sortie
+void removeSquareBracketsInFile(
+        const std::string& originFilePath,
+        const std::string& targetFilePath) {
+    std::ifstream originFile(originFilePath.c_str());
+    if (!originFile) {
+        std::cout << originFilePath << " could not be opened" << std::endl;
+    }
+
+    std::ofstream targetFile(targetFilePath.c_str());
+    if (!targetFile) {
+        std::cout << targetFilePath << " could not be opened" << std::endl;
+    }
+
+    std::string line;
+    if (targetFile) {
+        while (getline(originFile, line)){
+            for (unsigned int i = 0; i < line.size(); ++i) {
+                if (line [i] == '[') {
+                    line.erase(i,1);
+                }
+                else if (line [i] == ']') {
+                 line.erase(i,1);
+                }
+            }
+            targetFile << line << std::endl;
+        }
+    }
+}
 
 void validityCheck(){
 #ifdef CHECK_MAX_FORCE
