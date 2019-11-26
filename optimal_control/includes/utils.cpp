@@ -1,8 +1,10 @@
 #include "utils.h"
 #include "RigidBody/GeneralizedCoordinates.h"
 #include "RigidBody/GeneralizedTorque.h"
+#include <acado_optimal_control.hpp>
 #include <iostream>
 #include <fstream>
+
 
 /******************************************************************************
  * Checks to see if a directory exists. Note: This method only checks the
@@ -101,6 +103,84 @@ void removeSquareBracketsInFile(
             targetFile << line << std::endl;
         }
     }
+}
+
+ACADO::VariablesGrid readStates(
+        const std::string& stateFilePath,
+        const int nPoints,
+        const int nPhases,
+        const double t_Start,
+        const double t_End) {
+
+    ACADO::VariablesGrid gridToInitialize(nPhases*(nQ+nQdot)+1, ACADO::Grid(t_Start, t_End, nPoints+1));
+    std::ifstream stateFile;
+    stateFile.open(stateFilePath);
+
+    if (!stateFile) {
+        std::cout << stateFilePath << " could not be opened" << std::endl;
+    }
+
+    else {
+        std::vector<double> states;
+        double num;
+        while(stateFile >> num) {
+            states.push_back(num);
+        }
+
+        for (unsigned int i = 0; i < ((nQ + nQdot) * nPhases + 1); ++i){
+            for(unsigned int j = 0; j < nPoints + 1; ++j) {
+
+                if (j == 0) {
+                    gridToInitialize(j, i) = states[i + 1 + ((nQ + nQdot + 2) * nPhases) * j];
+                }
+                else {
+                    gridToInitialize(j, i) = states[i + 1 + ((nQ + nQdot + 1) * nPhases) * j];
+                }
+
+            }
+    //    std::cout << gridToInitialize << std::endl;
+        }
+
+    }
+    return gridToInitialize;
+}
+
+ ACADO::VariablesGrid readControls(
+        const std::string& controlFilePath,
+        const int nPoints,
+        const int nPhases,
+        const double t_Start,
+        const double t_End) {
+
+    ACADO::VariablesGrid gridToInitialize(nPhases*(nTau + nMus), ACADO::Grid(t_Start, t_End, nPoints+1));
+    std::ifstream controlFile;
+    controlFile.open(controlFilePath);
+
+    if (!controlFile) {
+        std::cout << controlFilePath << " could not be opened" << std::endl;
+    }
+
+    else {
+        std::vector<double> controls;
+        double num;
+        while(controlFile >> num) {
+            controls.push_back(num);
+        }
+        for (unsigned int i = 0; i < (nMus + nTau) * nPhases; ++i){
+
+            for(unsigned int j = 0; j < nPoints + 1; ++j) {
+                if (j == 0) {
+                    gridToInitialize(j, i) = controls[i + 1 + ((nMus + nTau) * nPhases) * j];
+                }
+                else {
+                    gridToInitialize(j, i) = controls[i + 1 + ((nMus + nTau) * nPhases + 1) * j];
+                }
+
+            }
+        }
+
+    }
+    return gridToInitialize;
 }
 
 void validityCheck(){
