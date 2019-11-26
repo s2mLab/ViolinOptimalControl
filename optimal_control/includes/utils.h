@@ -19,6 +19,16 @@ void projectOnXyPlane(double *x, double *g, void *user_data);
 void removeSquareBracketsInFile(
         const std::string& originFilePath,
         const std::string& targetFilePath);
+// Duplicate elements from output files of ACADO
+void duplicateElements(
+        unsigned int nPhases,
+        unsigned int nPreviousPhases,
+        unsigned int nElements,
+        int lastColumnsToSkip,
+        const ACADO::VariablesGrid &gridToDuplicate,
+        ACADO::VariablesGrid &gridToCopy,
+        ACADO::VariablesGrid &gridToStore );
+
 ACADO::VariablesGrid readStates(
         const std::string& stateFilePath,
         const int nPoints,

@@ -105,6 +105,29 @@ void removeSquareBracketsInFile(
     }
 }
 
+void duplicateElements(
+        unsigned int nPhases,
+        unsigned int nPreviousPhases,
+        unsigned int nElements,
+        int lastColumnsToSkip,
+        const ACADO::VariablesGrid& gridToDuplicate, // grid ou les éléments sont prélevés
+        ACADO::VariablesGrid& gridToCopy, // grid intermédiaire
+        ACADO::VariablesGrid& gridToStore) { // grid ou seront stockés les résultats
+
+        for(unsigned int i = 0; i < nPhases/2; ++i){
+
+            if (i == (nPhases/2)-1) {
+                gridToCopy = gridToDuplicate.getValuesSubGrid(nElements * (nPreviousPhases/2 - 1), nElements - lastColumnsToSkip );
+                gridToStore.appendValues(gridToCopy);
+            }
+
+            else {
+                gridToCopy = gridToDuplicate.getValuesSubGrid(nElements * (nPreviousPhases/2 - 1), nElements - 1 );
+                gridToStore.appendValues(gridToCopy);
+            }
+        }
+}
+
 ACADO::VariablesGrid readStates(
         const std::string& stateFilePath,
         const int nPoints,
