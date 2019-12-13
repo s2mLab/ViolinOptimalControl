@@ -61,7 +61,7 @@ void initializeMuscleStates() {
     }
 }
 
-void projectOnXyPlane(double *x, double *g, void *user_data)
+void projectOnXzPlane(double *x, double *g, void *user_data)
 {
     dispatchQ(x);
     unsigned int markerToProject = static_cast<unsigned int*>(user_data)[0];
@@ -71,8 +71,8 @@ void projectOnXyPlane(double *x, double *g, void *user_data)
     biorbd::rigidbody::NodeSegment markerProjected = m.marker(Q, markerToProject, false, false);
     markerProjected.applyRT(rt.transpose());
 
-    g[0] = markerProjected[0];
-    g[1] = markerProjected[1];
+    g[0] = markerProjected[0]; 
+    g[1] = markerProjected[2];
 }
 
 // Permet de retirer les crochets [] d'un fichier de sortie

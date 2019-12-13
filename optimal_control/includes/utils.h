@@ -15,7 +15,7 @@ void dispatchQandQdot(const double *x);
 void dispatchActivation(const double *x);
 void initializeMuscleStates();
 
-void projectOnXyPlane(double *x, double *g, void *user_data);
+void projectOnXzPlane(double *x, double *g, void *user_data);
 void removeSquareBracketsInFile(
         const std::string& originFilePath,
         const std::string& targetFilePath);
