@@ -68,7 +68,7 @@ void projectOnXyPlane(double *x, double *g, void *user_data)
     unsigned int idxSegmentToProjectOn = static_cast<unsigned int*>(user_data)[1];
 
     biorbd::utils::RotoTrans rt = m.globalJCS(Q, idxSegmentToProjectOn);
-    biorbd::rigidbody::NodeBone markerProjected = m.marker(Q, markerToProject, false, false);
+    biorbd::rigidbody::NodeSegment markerProjected = m.marker(Q, markerToProject, false, false);
     markerProjected.applyRT(rt.transpose());
 
     g[0] = markerProjected[0];
