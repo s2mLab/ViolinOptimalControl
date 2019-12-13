@@ -22,6 +22,8 @@ static int tagViolinEString(34);
 static int tagViolinAString(35);
 static int tagViolinDString(36);
 static int tagViolinGString(37);
+static int tagViolinBString(38);
+static int tagViolinCString(39);
 
 const double t_Start = 0.0;
 const double t_End = 0.5;
@@ -56,6 +58,8 @@ int  main ()
     OCP ocp(t_Start, t_End, nPoints);
     CFunction lagrangeRT(1, lagrangeResidualTorques);
     CFunction lagrangeA(1, lagrangeActivations);
+    CFunction lagrangeBow(3, lagrangeBowDirection);
+    int vectorFromMarkers[4];
     CFunction F( nQ+nQdot, forwardDynamics_noContact);
     DifferentialEquation f ;
 
@@ -178,9 +182,9 @@ int  main ()
     ocp.subjectTo(f);
 
     // ------------ OBJECTIVE ----------- //
-    Expression sumLagrange = lagrangeRT(control[0])+ lagrangeA(control[0]);
+    Expression sumLagrange = lagrangeRT(control[0])+ lagrangeA(control[0]) + lagrangeBow(x[0]);
     for(unsigned int p=1; p<nPhases; ++p)
-        sumLagrange += lagrangeRT(control[p]) + lagrangeA(control[p]);
+        sumLagrange += lagrangeRT(control[p]) + lagrangeA(control[p]) + lagrangeBow(x[p]);
     ocp.minimizeLagrangeTerm( sumLagrange ); // WARNING
 
     // ---------- OPTIMIZATION  ------------ //

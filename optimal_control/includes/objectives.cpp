@@ -14,6 +14,22 @@ void lagrangeActivations( double *x, double *g, void *){
         g[0]+=(x[i]*x[i]);
 }
 
+void lagrangeBowDirection(double *x, double *g, void *user_data){
+    dispatchQ(x);
+    m.UpdateKinematicsCustom(&Q);
+    const biorbd::rigidbody::NodeSegment& markerBowDist(m.marker(Q, static_cast<unsigned int*>(user_data)[1], false, false));
+    const biorbd::rigidbody::NodeSegment& markerBowProx(m.marker(Q, static_cast<unsigned int*>(user_data)[0], false, false));
+    const biorbd::rigidbody::NodeSegment& markerViolinDist(m.marker(Q, static_cast<unsigned int*>(user_data)[3], false, false));
+    const biorbd::rigidbody::NodeSegment& markerViolinProx(m.marker(Q, static_cast<unsigned int*>(user_data)[2], false, false));
+
+    biorbd::utils::Vector3d BowAxe( (markerBowDist - markerBowProx) );
+    biorbd::utils::Vector3d violinAxe( (markerViolinDist - markerViolinProx) );
+    BowAxe.normalize();
+    violinAxe.normalize();
+
+    *g = (1 - BowAxe.dot(violinAxe))*100;
+}
+
 void lagrangeAccelerations( double *x, double *g, void *user_data){
     g[0]=0;
     double * rhs = new double[nQ + nQdot]; // memory management to check
