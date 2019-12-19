@@ -11,7 +11,7 @@ if (Biorbd_INCLUDE_DIR)
 endif (Biorbd_INCLUDE_DIR)
 
 find_path (Biorbd_INCLUDE_DIR "BiorbdModel.h" PATHS ${CMAKE_INSTALL_PREFIX}/include/biorbd)
-find_library (Biorbd_LIBRARY NAMES biorbd PATHS ${CMAKE_INSTALL_PREFIX}/lib/biorbd)
+find_library (Biorbd_LIBRARY NAMES biorbd biorbd_debug PATHS ${CMAKE_INSTALL_PREFIX}/lib/biorbd)
 
 get_filename_component(Biorbd_LIB_PATH ${Biorbd_LIBRARY} DIRECTORY)
 get_filename_component(Biorbd_LIB_NAME ${Biorbd_LIBRARY} NAME_WE)

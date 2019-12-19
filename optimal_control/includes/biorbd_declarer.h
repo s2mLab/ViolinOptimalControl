@@ -11,8 +11,8 @@ extern unsigned int nMus;
 extern unsigned int nMarkers;
 
 extern biorbd::rigidbody::GeneralizedCoordinates Q;
-extern biorbd::rigidbody::GeneralizedCoordinates Qdot;
-extern biorbd::rigidbody::GeneralizedCoordinates Qddot;
+extern biorbd::rigidbody::GeneralizedVelocity Qdot;
+extern biorbd::rigidbody::GeneralizedAcceleration Qddot;
 extern biorbd::rigidbody::GeneralizedTorque Tau;
 extern std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates;
 

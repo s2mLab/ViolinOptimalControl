@@ -2,19 +2,19 @@
 
 static unsigned int i;
 
-void lagrangeResidualTorques( double *u, double *g, void *){
+void residualTorquesSquare( double *u, double *g, void *){
     g[0]=0;
     for (i=0; i<nTau; ++i)
         g[0]+=(u[i+nMus]*u[i+nMus]);
 }
 
-void lagrangeActivations( double *x, double *g, void *){
+void muscleActivationsSquare( double *x, double *g, void *){
     g[0]=0;
     for (i=0; i<nMus; ++i)
         g[0]+=(x[i]*x[i]);
 }
 
-void lagrangeBowDirection(double *x, double *g, void *user_data){
+void bowDirectionAgainstViolin(double *x, double *g, void *user_data){
     dispatchQ(x);
     m.UpdateKinematicsCustom(&Q);
     const biorbd::rigidbody::NodeSegment& markerBowDist(m.marker(Q, static_cast<unsigned int*>(user_data)[1], false, false));
@@ -37,7 +37,6 @@ void lagrangeAccelerations( double *x, double *g, void *user_data){
     for (i=0; i<nQdot; ++i)
         g[0] += (rhs[i]*rhs[i]);
     delete[] rhs;
-    std::cout<< g[0]<< std::endl;
 }
 
 void lagrangeTime( double *x, double *g, void *){
