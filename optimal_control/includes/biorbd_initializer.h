@@ -7,7 +7,7 @@ unsigned int nQ(m.nbQ());
 unsigned int nQdot(m.nbQdot());
 unsigned int nTau(m.nbGeneralizedTorque());
 unsigned int nMus(m.nbMuscleTotal());
-unsigned int nMarkers(m.nMarkers());
+unsigned int nMarkers(m.nbMarkers());
 
 biorbd::rigidbody::GeneralizedCoordinates Q(m);
 biorbd::rigidbody::GeneralizedCoordinates Qdot(m);
