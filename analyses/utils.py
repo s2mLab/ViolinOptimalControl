@@ -87,12 +87,12 @@ def dynamics_no_contact(t_int, states, biorbd_model, u, force_no_muscle=False):
         states_dynamics[i].setActivation(u[i])
 
     if nb_muscle > 0 and not force_no_muscle:
-        tau = biorbd_model.muscularJointTorque(states_dynamics, q, qdot).get_array()
+        tau = biorbd_model.muscularJointTorque(states_dynamics, q, qdot).to_array()
     else:
         tau = np.zeros(nb_tau)
 
     tau += u[nb_muscle:nb_muscle+nb_tau]
-    qddot = biorbd.Model.ForwardDynamics(biorbd_model, q, qdot, tau).get_array()
+    qddot = biorbd.Model.ForwardDynamics(biorbd_model, q, qdot, tau).to_array()
 
     return np.concatenate((qdot, qddot))
 
@@ -109,7 +109,7 @@ def dynamics_with_contact(t_int, states, biorbd_model, u, force_no_muscle=False)
         states_dynamics = biorbd.VecBiorbdMuscleStateDynamics(nb_muscle)
         for i in range(len(states_dynamics)):
             states_dynamics[i].setActivation(u[i])
-        tau = biorbd_model.muscularJointTorque(states_dynamics, q, qdot).get_array()
+        tau = biorbd_model.muscularJointTorque(states_dynamics, q, qdot).to_array()
     else:
         tau = np.zeros(nb_tau)
 
@@ -117,7 +117,7 @@ def dynamics_with_contact(t_int, states, biorbd_model, u, force_no_muscle=False)
 
     cs = biorbd_model.getConstraints()
     qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(
-        biorbd_model, states[:nb_q], states[nb_q:], tau, cs).get_array()
+        biorbd_model, states[:nb_q], states[nb_q:], tau, cs).to_array()
 
     return np.concatenate((qdot, qddot))
 
