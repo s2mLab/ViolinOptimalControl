@@ -7,11 +7,11 @@ unsigned int nQ(m.nbQ());
 unsigned int nQdot(m.nbQdot());
 unsigned int nTau(m.nbGeneralizedTorque());
 unsigned int nMus(m.nbMuscleTotal());
-unsigned int nMarkers(m.nMarkers());
+unsigned int nMarkers(m.nbMarkers());
 
 biorbd::rigidbody::GeneralizedCoordinates Q(m);
-biorbd::rigidbody::GeneralizedCoordinates Qdot(m);
-biorbd::rigidbody::GeneralizedCoordinates Qddot(m);
+biorbd::rigidbody::GeneralizedVelocity Qdot(m);
+biorbd::rigidbody::GeneralizedAcceleration Qddot(m);
 biorbd::rigidbody::GeneralizedTorque Tau(m);
 std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates(nMus);
 

@@ -1,6 +1,10 @@
 #include "utils.h"
 #include "RigidBody/GeneralizedCoordinates.h"
 #include "RigidBody/GeneralizedTorque.h"
+#include <acado_optimal_control.hpp>
+#include <iostream>
+#include <fstream>
+
 
 /******************************************************************************
  * Checks to see if a directory exists. Note: This method only checks the
@@ -57,20 +61,150 @@ void initializeMuscleStates() {
     }
 }
 
-void projectOnXyPlane(double *x, double *g, void *user_data)
+void projectOnXzPlane(double *x, double *g, void *user_data)
 {
     dispatchQ(x);
     unsigned int markerToProject = static_cast<unsigned int*>(user_data)[0];
     unsigned int idxSegmentToProjectOn = static_cast<unsigned int*>(user_data)[1];
 
     biorbd::utils::RotoTrans rt = m.globalJCS(Q, idxSegmentToProjectOn);
-    biorbd::rigidbody::NodeBone markerProjected = m.marker(Q, markerToProject, false, false);
+    biorbd::rigidbody::NodeSegment markerProjected = m.marker(Q, markerToProject, false, false);
     markerProjected.applyRT(rt.transpose());
 
-    g[0] = markerProjected[0];
-    g[1] = markerProjected[1];
+    g[0] = markerProjected[0]; 
+    g[1] = markerProjected[2];
 }
 
+// Permet de retirer les crochets [] d'un fichier de sortie
+void removeSquareBracketsInFile(
+        const std::string& originFilePath,
+        const std::string& targetFilePath) {
+    std::ifstream originFile(originFilePath.c_str());
+    if (!originFile) {
+        std::cout << originFilePath << " could not be opened" << std::endl;
+    }
+
+    std::ofstream targetFile(targetFilePath.c_str());
+    if (!targetFile) {
+        std::cout << targetFilePath << " could not be opened" << std::endl;
+    }
+
+    std::string line;
+    if (targetFile) {
+        while (getline(originFile, line)){
+            for (unsigned int i = 0; i < line.size(); ++i) {
+                if (line [i] == '[') {
+                    line.erase(i,1);
+                }
+                else if (line [i] == ']') {
+                 line.erase(i,1);
+                }
+            }
+            targetFile << line << std::endl;
+        }
+    }
+}
+
+void duplicateElements(
+        unsigned int nPhases,
+        unsigned int nPreviousPhases,
+        unsigned int nElements,
+        int lastColumnsToSkip,
+        const ACADO::VariablesGrid& gridToDuplicate, // grid ou les éléments sont prélevés
+        ACADO::VariablesGrid& gridToCopy, // grid intermédiaire
+        ACADO::VariablesGrid& gridToStore) { // grid ou seront stockés les résultats
+
+        for(unsigned int i = 0; i < nPhases/2; ++i){
+
+            if (i == (nPhases/2)-1) {
+                gridToCopy = gridToDuplicate.getValuesSubGrid(nElements * (nPreviousPhases/2 - 1), nElements - lastColumnsToSkip );
+                gridToStore.appendValues(gridToCopy);
+            }
+
+            else {
+                gridToCopy = gridToDuplicate.getValuesSubGrid(nElements * (nPreviousPhases/2 - 1), nElements - 1 );
+                gridToStore.appendValues(gridToCopy);
+            }
+        }
+}
+
+ACADO::VariablesGrid readStates(
+        const std::string& stateFilePath,
+        const int nPoints,
+        const int nPhases,
+        const double t_Start,
+        const double t_End) {
+
+    ACADO::VariablesGrid gridToInitialize(nPhases*(nQ+nQdot)+1, ACADO::Grid(t_Start, t_End, nPoints+1));
+    std::ifstream stateFile;
+    stateFile.open(stateFilePath);
+
+    if (!stateFile) {
+        std::cout << stateFilePath << " could not be opened" << std::endl;
+    }
+
+    else {
+        std::vector<double> states;
+        double num;
+        while(stateFile >> num) {
+            states.push_back(num);
+        }
+
+        for (unsigned int i = 0; i < ((nQ + nQdot) * nPhases + 1); ++i){
+            for(unsigned int j = 0; j < nPoints + 1; ++j) {
+
+                if (j == 0) {
+                    gridToInitialize(j, i) = states[i + 1 + ((nQ + nQdot + 2) * nPhases) * j];
+                }
+                else {
+                    gridToInitialize(j, i) = states[i + 1 + ((nQ + nQdot + 1) * nPhases) * j];
+                }
+
+            }
+    //    std::cout << gridToInitialize << std::endl;
+        }
+
+    }
+    return gridToInitialize;
+}
+
+ ACADO::VariablesGrid readControls(
+        const std::string& controlFilePath,
+        const int nPoints,
+        const int nPhases,
+        const double t_Start,
+        const double t_End) {
+
+    ACADO::VariablesGrid gridToInitialize(nPhases*(nTau + nMus), ACADO::Grid(t_Start, t_End, nPoints+1));
+    std::ifstream controlFile;
+    controlFile.open(controlFilePath);
+
+    if (!controlFile) {
+        std::cout << controlFilePath << " could not be opened" << std::endl;
+    }
+
+    else {
+        std::vector<double> controls;
+        double num;
+        while(controlFile >> num) {
+            controls.push_back(num);
+        }
+        for (unsigned int i = 0; i < (nMus + nTau) * nPhases; ++i){
+
+            for(unsigned int j = 0; j < nPoints + 1; ++j) {
+                if (j == 0) {
+                    gridToInitialize(j, i) = controls[i + 1 + ((nMus + nTau) * nPhases) * j];
+                }
+                else {
+                    gridToInitialize(j, i) = controls[i + 1 + ((nMus + nTau) * nPhases + 1) * j];
+                }
+
+            }
+        }
+
+    }
+    return gridToInitialize;
+}
 
 void validityCheck(){
 #ifdef CHECK_MAX_FORCE

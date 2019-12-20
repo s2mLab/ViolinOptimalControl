@@ -3,9 +3,10 @@
 #include "biorbd_declarer.h"
 #include "dynamics.h"
 
-void lagrangeResidualTorques( double *u, double *g, void *);
+void residualTorquesSquare( double *u, double *g, void *);
 void lagrangeResidualTorquesMultistage(double *u, double *g, void *);
-void lagrangeActivations( double *x, double *g, void *);
+void bowDirectionAgainstViolin( double *x, double *g, void *user_data);
+void muscleActivationsSquare( double *x, double *g, void *);
 void lagrangeAccelerations( double *x, double *g, void *user_data);
 void lagrangeTime( double *x, double *g, void *);
 void mayerVelocity( double *x, double *g, void *);

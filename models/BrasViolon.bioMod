@@ -225,16 +225,15 @@ external_forces	0
 	 segment Archet
 		parent	hand
 		RTinMatrix	0
-		RT 2.16    0.51   1.96   yxz  0   0   0
-		//rotations	    yxz
+		RT 1.16   0   1.5   yxz  0   -0.07   0
+	    rotations	    z //xz
 		mass 0.06
 		inertia
 			0.00000048	0.000000	0.000000
 			0.000000	0.00000048	0.000000
 			0.000000	0.000000	0.00117637
-		com	0.000000	0.000000	0.370
-		mesh 0 0 0
-		mesh 0.0 0.0 0.740
+		com	0 -0.335 0
+		meshfile Geometry/Bow.obj
 	endsegment
     
     marker Bouton               //15
@@ -243,15 +242,15 @@ external_forces	0
 	endmarker
     marker Poucette             //16
 	    parent Archet
-	    position 0 0 0.1
+	    position 0 -0.07 0
 	endmarker
     marker COMarchet            //17
 	    parent Archet
-	    position 0 0 0.370
+	    position 0 -0.310 0
 	endmarker
     marker Tete                 //18
 	    parent Archet
-	    position 0 0 0.740
+	    position 0 -0.550 0
 	endmarker
 	
 // Deuxième bras
@@ -340,7 +339,7 @@ external_forces	0
 	 segment Arm2
 		parent	Scapula2
 		RTinMatrix	0
-		RT 0.3 0.65 0.5 zyx -0.0162235668937676 -0.0465334917069568 0.00199722357227
+		RT 1 0.65 0.5 zyx -0.0162235668937676 -0.0465334917069568 0.00199722357227
 		//rotations xzy
 		mass 2.537
 		inertia
@@ -375,7 +374,7 @@ external_forces	0
 	 segment LowerArm12
 		parent	Arm2
 		RTinMatrix	0
-		RT 1.57 0 0 zyx 0.0066386 -0.3160549 0.0133869 
+		RT 1.85 0 0 zyx 0.0066386 -0.3160549 0.0133869 
 		//rotations	    z
 		mass 0.98205
 		inertia
@@ -454,23 +453,46 @@ external_forces	0
 	 segment Violon
 		parent	hand2
 		RTinMatrix	0
-		RT 0.04    1.29   -0.66   zyx  0   0   0
+		 RT -0.75  0.50  -2.60   zyx  0   0   0 // Violin2
                 //rotations	    zyx
 		mass 0.460
 		inertia
 			0.00000048	0.000000	0.000000
 			0.000000	0.00000048	0.000000
 			0.000000	0.000000	0.00117637
-		com	0.000000	0.000000	0.2425
-		mesh 0 0 0
-		mesh 0.0 0.0 0.485
+		com	-0.003 -0.325 -0.055
+		meshfile Geometry/Violin.obj
 	endsegment
 
-    marker COMviolon        //34
+    marker Mi_violon        //34
 	    parent Violon
-	    position 0 0 0.2425
+	    position -0.0140 -0.28 -0.041
 	endmarker
 
+    marker La_violon        //35
+	    parent Violon
+	    position -0.0065 -0.28 -0.042
+	endmarker
+
+    marker Ré_violon        //36
+	    parent Violon
+	    position 0.0035 -0.28 -0.042
+	endmarker
+
+    marker Sol_violon        //37
+	    parent Violon
+	    position 0.0115 -0.28 -0.041
+	endmarker
+
+    marker int_violon //38
+        parent Violon
+        position -0.0215 -0.28 -0.039
+    endmarker
+
+    marker ext_violon //39
+        parent Violon
+        position 0.0190 -0.28 -0.039
+    endmarker
 
 
 

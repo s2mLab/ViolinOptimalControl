@@ -6,12 +6,12 @@
 
 #include "RigidBody/GeneralizedCoordinates.h"
 #include "RigidBody/GeneralizedTorque.h"
-#include "RigidBody/NodeBone.h"
+#include "RigidBody/NodeSegment.h"
 #include "Muscles/StateDynamics.h"
 #include "Utils/RotoTrans.h"
 
 // Preallocate the variables
-static biorbd::rigidbody::NodeBone tag;
+static biorbd::rigidbody::NodeSegment tag;
 
 void statesZero( double *x, double *g, void * ){
     for(unsigned int i=0; i<nQ + nQdot; ++i) {
@@ -127,7 +127,7 @@ void orthogonalProjected(double *x, double *g, void *user_data)
 
     biorbd::utils::RotoTrans rt = m.globalJCS(Q, idxSegmentToProjectOn); // On récupere la matrice de roto-translation du segment dans le repere global
 
-    biorbd::rigidbody::NodeBone markerProjected = m.marker(Q, markerToProject, false, false); // On récupere le marqueur
+    biorbd::rigidbody::NodeSegment markerProjected = m.marker(Q, markerToProject, false, false); // On récupere le marqueur
     markerProjected.applyRT(rt.transpose()); // On multiplie la RotoTranslation par le marqueur pour obtenir le projeté
 
     // X and Y are to be equal to 0
