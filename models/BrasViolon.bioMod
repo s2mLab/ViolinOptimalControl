@@ -52,6 +52,7 @@ external_forces	0
 		RTinMatrix	0
 		RT 0 0 0 zyx 0.006440 0.007056 0.025930
 		rotations	    x //yx
+		ranges -pi/8 0.1
 		mass	0.0015
 		inertia
 			0.002521	0.000000	0.000000
@@ -113,6 +114,9 @@ external_forces	0
 		RTinMatrix	0
 		RT -0.2 0.3 -0.1 zyx -0.0162235668937676 -0.0465334917069568 -0.00199722357227
 		rotations xzy
+		ranges  -pi/2 0.1
+		        -pi/4 pi
+		        -pi/2 pi/2
 		mass 2.537
 		inertia
 			0.040215	0.000000	0.000000
@@ -148,6 +152,7 @@ external_forces	0
 		RTinMatrix	0
 		RT 0.5 0 0 zyx 0.0066386 -0.3160549 -0.0133869 
 		rotations	    z
+		ranges  -pi/8  pi*3/4
 		mass 0.98205
 		inertia
 			0.008360	0.000000	0.000000
@@ -207,7 +212,9 @@ external_forces	0
 			0.000000	1.000000	0.000000	-0.271953
 			0.000000	0.000000	1.000000	0.035220
 			0.000000	0.000000	0.000000	1.000000
-	    rotations	    xy
+	    rotations	    xz
+		ranges  -pi/2 pi/2
+		        -pi/4 pi/12
 		mass 0.20378
 		inertia
 			0.000580	0.000000	0.000000
@@ -225,8 +232,10 @@ external_forces	0
 	 segment Archet
 		parent	hand
 		RTinMatrix	0
-		RT 1.16   0   1.5   yxz  0   -0.07   0
+		//RT 1.16   0   1.5   yxz  0   -0.07   0
+		RT 0 0 pi/2  xyz  0   -0.07   0
 	    rotations	    z //xz
+		ranges  -pi/4 pi/4
 		mass 0.06
 		inertia
 			0.00000048	0.000000	0.000000

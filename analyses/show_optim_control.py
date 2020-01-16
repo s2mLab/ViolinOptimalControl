@@ -58,7 +58,7 @@ t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_fil
 
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(
-    m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=False, algo=runge_kutta_algo
+    m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=True, algo=runge_kutta_algo
 )
 
 # Interpolate

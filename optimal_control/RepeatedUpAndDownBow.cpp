@@ -17,7 +17,7 @@
 biorbd::Model m("../../models/BrasViolon.bioMod");
 #include "includes/biorbd_initializer.h"
 
-static int idxSegmentBow = 8;
+static int idxSegmentBow(8);
 static int tagBowFrog(16);
 static int tagBowTip(18);
 static int tagViolinBString(38);
@@ -35,6 +35,24 @@ const ViolinStringNames stringName(ViolinStringNames::E);
 const bool useFileToInit(false);
 const int nBowing(1);
 const int nBowingInInitialization(1);
+
+// The init on string were determined using the "find_initial_pose.py" script
+const std::vector<double> initQFrogOnGString =
+{-0.00948486, 0.06259299, 0.99964932, 0.92035463, 1.40957673, 0.32581681, -0.07523013, -0.76109885};
+const std::vector<double> initQTipOnGString =
+{0.01113298, -0.61721062, 0.96989367, 0.59865875, 0.19520906, 0.11549791, 0.10830705, 0.54975026};
+const std::vector<double> initQFrogOnDString =
+{0.0239408, 0.08831102, 0.95293047, 0.94194847, 1.4724044, 0.30109847, -0.44859286, -0.46923365};
+const std::vector<double> initQTipOnDString =
+{0.08263522, -0.62539549, 0.90233634, 0.62698962, 0.22359432, 0.12548774, 0.09448064, 0.54877327};
+const std::vector<double> initQFrogOnAString =
+{0.01018357, 0.09299291, 0.88991844, 0.931988, 1.4649005, 0.25007886, -0.34189658, -0.54073149};
+const std::vector<double> initQTipOnAString =
+{0.09638825, -0.53412493, 0.81893825, 0.69326372, 0.22566753, 0.11652397, 0.18524205, 0.46584988};
+const std::vector<double> initQFrogOnEString =
+{ 0.08400899, 0.09984273, 0.79351699, 0.90026544, 1.45634165, 0.32713986, -0.25263593, -0.64335862};
+const std::vector<double> initQTipOnEString =
+{0.07910913, -0.45011153, 0.778877, 0.73878697, 0.21872682, 0.10636272, 0.16720347, 0.48748324};
 
 const std::string resultsPath("../Results/");
 const std::string initializePath("../Initialisation/");
@@ -107,6 +125,15 @@ int  main ()
     violinBridgeInBowRT.setUserData(static_cast<void*>(idxProjectViolinBridgeInBow));
     bowDirection.setUserData(static_cast<void*>(bowAndViolinMarkersToAlign));
 
+    // Get the ranges (limits of DoF)
+    std::vector<biorbd::utils::Range> ranges;
+    for (unsigned int i=0; i<m.nbSegment(); ++i){
+        std::vector<biorbd::utils::Range> segRanges(m.segment(i).ranges());
+        for(unsigned int j=0; j<segRanges.size(); ++j){
+            ranges.push_back(segRanges[j]);
+        }
+    }
+
     // ---------- INITIALIZATION ---------- //
     std::vector<DifferentialState> x;
     std::vector<Control> control;
@@ -158,14 +185,10 @@ int  main ()
     //        ocp.subjectTo(i, bowDirection(x[p]) == 0.0);
         }
 
-        ocp.subjectTo(-M_PI/8 <= x[p](0) <= 0.1);
-        ocp.subjectTo(-M_PI/2 <= x[p](1) <= 0.1);
-        ocp.subjectTo(-M_PI/4 <= x[p](2) <= M_PI);
-        ocp.subjectTo(-M_PI/2 <= x[p](3) <= M_PI/2);
-        ocp.subjectTo(-0.1  <= x[p](4) <= M_PI);
-        ocp.subjectTo(-M_PI/4 <= x[p](5) <= M_PI/4);
-        ocp.subjectTo(-M_PI   <= x[p](6) <= M_PI);
-        ocp.subjectTo(-M_PI/4 <= x[p](7) <= M_PI/4);
+        // Set the limit of the degrees of freedom
+        for (unsigned int i=0; i<ranges.size(); ++i){
+            ocp.subjectTo(ranges[i].min() <= x[p](0) <= ranges[i].max());
+        }
 
         for (unsigned int j=0; j<nQdot; ++j) {
             ocp.subjectTo(-50 <= x[p](nQ + j) <= 50);
@@ -189,7 +212,6 @@ int  main ()
 
 
     // ---------- INITIAL SOLUTION ---------- //
-
     VariablesGrid *u_init;
     VariablesGrid *x_init;
 
@@ -209,203 +231,56 @@ int  main ()
         u_init = new VariablesGrid(nBowingInInitialization*2*(nTau + nMus), Grid(t_Start, t_End, 2));
         x_init = new VariablesGrid(nBowingInInitialization*2*(nQ+nQdot), Grid(t_Start, t_End, 2));
 
+        // Initialize controls
         for(unsigned int i=0; i<nBowingInInitialization*2; ++i){
-           for(unsigned int j=0; j<nMus; ++j){
-               (*u_init)(0, i*(nMus+nTau) + j ) = 0.2;
-               (*u_init)(1, i*(nMus+nTau) + j ) = 0.2;
-           }
-           for(unsigned int j=0; j<nTau; ++j){
-               (*u_init)(0, i*(nMus+nTau) + nMus + j ) = 0.01;
-               (*u_init)(1, i*(nMus+nTau) + nMus + j ) = 0.01;
-           }
-       }
-        switch (stringName) {
-        case ViolinStringNames::E:
-            for(unsigned int i=0; i < nBowingInInitialization; ++i){
-                // BowFrog on ViolinBridge
-                (*x_init)(0, 2*i*(nQ+nQdot)+0) = -0.2725;
-                (*x_init)(0, 2*i*(nQ+nQdot)+1) = -0.4238;
-                (*x_init)(0, 2*i*(nQ+nQdot)+2) = 1.2047;
-                (*x_init)(0, 2*i*(nQ+nQdot)+3) = 0.7291;
-                (*x_init)(0, 2*i*(nQ+nQdot)+4) = 1.4200;
-                (*x_init)(0, 2*i*(nQ+nQdot)+5) = -0.1819;
-                (*x_init)(0, 2*i*(nQ+nQdot)+6) = -1.7549;
-                (*x_init)(0, 2*i*(nQ+nQdot)+7) = -0.5246;
-
-                // BowTip on ViolinBridge
-                (*x_init)(1, 2*i*(nQ+nQdot)+0) = -0.0075;
-                (*x_init)(1, 2*i*(nQ+nQdot)+1) = -0.3963;
-                (*x_init)(1, 2*i*(nQ+nQdot)+2) = 0.8140;
-                (*x_init)(1, 2*i*(nQ+nQdot)+3) = 1.1841;
-                (*x_init)(1, 2*i*(nQ+nQdot)+4) = 0.2775;
-                (*x_init)(1, 2*i*(nQ+nQdot)+5) = -0.2605;
-                (*x_init)(1, 2*i*(nQ+nQdot)+6) = -1.7161;
-                (*x_init)(1, 2*i*(nQ+nQdot)+7) = 0.6331;
-
-                // BowTip on ViolinBridge
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+0) = -0.0075;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+1) = -0.3963;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+2) = 0.8140;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+3) = 1.1841;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+4) = 0.2775;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+5) = -0.2605;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+6) = -1.7161;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+7) = 0.6331;
-
-                // BowFrog on ViolinBridge
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+0) = -0.2725;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+1) = -0.4238;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+2) = 1.2047;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+3) = 0.7291;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+4) = 1.4200;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+5) = -0.1819;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+6) = -1.7549;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+7) = -0.5246;
+            for(unsigned int j=0; j<nMus; ++j){
+                (*u_init)(0, i*(nMus+nTau) + j ) = 0.2;
+                (*u_init)(1, i*(nMus+nTau) + j ) = 0.2;
             }
-            break;
-
-        case ViolinStringNames::A:
-            for(unsigned int i=0; i < nBowingInInitialization; ++i){
-
-                // BowFrog on ViolinBridge
-                (*x_init)(0, 2*i*(nQ+nQdot)+0) = -0.1374;
-                (*x_init)(0, 2*i*(nQ+nQdot)+1) = -0.0546;
-                (*x_init)(0, 2*i*(nQ+nQdot)+2) = 1.0780;
-                (*x_init)(0, 2*i*(nQ+nQdot)+3) = 1.0717;
-                (*x_init)(0, 2*i*(nQ+nQdot)+4) = 1.3993;
-                (*x_init)(0, 2*i*(nQ+nQdot)+5) = -0.7248;
-                (*x_init)(0, 2*i*(nQ+nQdot)+6) = -0.7638;
-                (*x_init)(0, 2*i*(nQ+nQdot)+7) = -0.5774;
-
-                // BowTip on ViolinBridge
-                (*x_init)(1, 2*i*(nQ+nQdot)+0) = 0.1000;
-                (*x_init)(1, 2*i*(nQ+nQdot)+1) = -0.6409;
-                (*x_init)(1, 2*i*(nQ+nQdot)+2) = 0.9841;
-                (*x_init)(1, 2*i*(nQ+nQdot)+3) = 0.8485;
-                (*x_init)(1, 2*i*(nQ+nQdot)+4) = 0.1246;
-                (*x_init)(1, 2*i*(nQ+nQdot)+5) = 0.7308;
-                (*x_init)(1, 2*i*(nQ+nQdot)+6) = -0.8842;
-                (*x_init)(1, 2*i*(nQ+nQdot)+7) = 0.7854;
-
-                // BowTip on ViolinBridge
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+0) = 0.1000;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+1) = -0.6409;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+2) = 0.9841;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+3) = 0.8485;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+4) = 0.1246;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+5) = 0.7308;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+6) = -0.8842;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+7) = 0.7854;
-
-                // BowFrog on ViolinBridge
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+0) = -0.1374;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+1) = -0.0546;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+2) = 1.0780;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+3) = 1.0717;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+4) = 1.3993;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+5) = -0.7248;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+6) = -0.7638;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+7) = -0.5774;
+            for(unsigned int j=0; j<nTau; ++j){
+                (*u_init)(0, i*(nMus+nTau) + nMus + j ) = 0.01;
+                (*u_init)(1, i*(nMus+nTau) + nMus + j ) = 0.01;
             }
-            break;
+        }
 
-        case ViolinStringNames::D:
-            for(unsigned int i=0; i < nBowingInInitialization; ++i){
+        // Initialize states
+        std::vector<double> initQFrogOnSelectedString;
+        std::vector<double> initQTipOnSelectedString;
+        if (stringName == ViolinStringNames::E) {
+            initQFrogOnSelectedString = initQFrogOnEString;
+            initQTipOnSelectedString = initQTipOnEString;
+        }
+        else if (stringName == ViolinStringNames::A){
+            initQFrogOnSelectedString = initQFrogOnAString;
+            initQTipOnSelectedString = initQTipOnAString;
+        }
+        else if (stringName == ViolinStringNames::D){
+            initQFrogOnSelectedString = initQFrogOnDString;
+            initQTipOnSelectedString = initQTipOnDString;
+        }
+        else if (stringName == ViolinStringNames::G){
+            initQFrogOnSelectedString = initQFrogOnGString;
+            initQTipOnSelectedString = initQTipOnGString;
+        }
 
-                // BowFrog on ViolinBridge
-                (*x_init)(0, 2*i*(nQ+nQdot)+0) = -0.2725;
-                (*x_init)(0, 2*i*(nQ+nQdot)+1) = -0.0221;
-                (*x_init)(0, 2*i*(nQ+nQdot)+2) = 1.2267;
-                (*x_init)(0, 2*i*(nQ+nQdot)+3) = 0.7916;
-                (*x_init)(0, 2*i*(nQ+nQdot)+4) = 1.3559;
-                (*x_init)(0, 2*i*(nQ+nQdot)+5) = 0.7579;
-                (*x_init)(0, 2*i*(nQ+nQdot)+6) = -1.7638;
-                (*x_init)(0, 2*i*(nQ+nQdot)+7) = -0.3637;
-
-                // BowTip on ViolinBridge
-                (*x_init)(1, 2*i*(nQ+nQdot)+0) = -0.1828;
-                (*x_init)(1, 2*i*(nQ+nQdot)+1) = 0.1000;
-                (*x_init)(1, 2*i*(nQ+nQdot)+2) = 0.9532;
-                (*x_init)(1, 2*i*(nQ+nQdot)+3) = 0.4593;
-                (*x_init)(1, 2*i*(nQ+nQdot)+4) = 0.0422;
-                (*x_init)(1, 2*i*(nQ+nQdot)+5) = -0.2124;
-                (*x_init)(1, 2*i*(nQ+nQdot)+6) = -0.5838;
-                (*x_init)(1, 2*i*(nQ+nQdot)+7) = 0.6979;
-
-                // BowTip on ViolinBridge
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+0) = -0.1828;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+1) = 0.1000;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+2) = 0.9532;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+3) = 0.4593;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+4) = 0.0422;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+5) = -0.2124;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+6) = -0.5838;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+7) = 0.6979;
-
-                // BowFrog on ViolinBridge
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+0) = -0.2725;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+1) = -0.0221;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+2) = 1.2267;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+3) = 0.7916;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+4) = 1.3559;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+5) = 0.7579;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+6) = -1.7638;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+7) = -0.3637;
+        // Q
+        for(unsigned int i=0; i < nBowingInInitialization; ++i){
+            // BowFrog and tip on ViolinBridge
+            for (unsigned int j=0; j<nQ; ++j){
+                (*x_init)(0, 2*i*(nQ+nQdot)+j) = initQFrogOnSelectedString[j];
+                (*x_init)(1, 2*i*(nQ+nQdot)+j) = initQTipOnSelectedString[j];
+                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+j) = initQTipOnSelectedString[j];
+                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+j) = initQFrogOnSelectedString[j];
             }
-            break;
+        }
 
-        case ViolinStringNames::G:
-            for(unsigned int i=0; i < nBowingInInitialization; ++i){
-
-                // BowFrog on ViolinBridge               
-                (*x_init)(0, 2*i*(nQ+nQdot)+0) = 0.0611;
-                (*x_init)(0, 2*i*(nQ+nQdot)+1) = -0.5424;
-                (*x_init)(0, 2*i*(nQ+nQdot)+2) = 1.2640;
-                (*x_init)(0, 2*i*(nQ+nQdot)+3) = 0.5149;
-                (*x_init)(0, 2*i*(nQ+nQdot)+4) = 1.3547;
-                (*x_init)(0, 2*i*(nQ+nQdot)+5) = 0.7531;
-                (*x_init)(0, 2*i*(nQ+nQdot)+6) = -1.7864;
-                (*x_init)(0, 2*i*(nQ+nQdot)+7) = -0.4478;
-
-                // BowTip on ViolinBridge
-                (*x_init)(1, 2*i*(nQ+nQdot)+0) = 0.0096;
-                (*x_init)(1, 2*i*(nQ+nQdot)+1) = -0.5954;
-                (*x_init)(1, 2*i*(nQ+nQdot)+2) = 1.0852;
-                (*x_init)(1, 2*i*(nQ+nQdot)+3) = 0.4258;
-                (*x_init)(1, 2*i*(nQ+nQdot)+4) = 0.0566;
-                (*x_init)(1, 2*i*(nQ+nQdot)+5) = 0.5255;
-                (*x_init)(1, 2*i*(nQ+nQdot)+6) = -0.7440;
-                (*x_init)(1, 2*i*(nQ+nQdot)+7) = 0.6530;
-
-                // BowTip on ViolinBridge
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+0) = 0.0096;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+1) = -0.5954;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+2) = 1.0852;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+3) = 0.4258;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+4) = 0.0566;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+5) = 0.5255;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+6) = -0.7440;
-                (*x_init)(0, ((2*i)+1)*(nQ+nQdot)+7) = 0.6530;
-
-                // BowFrog on ViolinBridge
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+0) = 0.0611;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+1) = -0.5424;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+2) = 1.2640;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+3) = 0.5149;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+4) = 1.3547;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+5) = 0.7531;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+6) = -1.7864;
-                (*x_init)(1, ((2*i)+1)*(nQ+nQdot)+7) = -0.4478;
-            }
-            break;
-         }
-
-       for(unsigned int i=0; i<nBowingInInitialization*2; ++i){
-           for(unsigned int j=0; j<nQdot; ++j){
+        // Qdot
+        for(unsigned int i=0; i<nBowingInInitialization*2; ++i){
+            for(unsigned int j=0; j<nQdot; ++j){
                 (*x_init)(0, i*(nQ+nQdot) + nQ + j) = 0.01;
                 (*x_init)(1, i*(nQ+nQdot) + nQ + j) = 0.01;
-           }
-       }
+            }
+        }
     }
 
     if (nBowing > nBowingInInitialization) {
