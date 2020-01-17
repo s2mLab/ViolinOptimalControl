@@ -13,7 +13,6 @@
 
 #include "includes/violinStringConfig.h"
 
- #define USE_INIT_FILE
 biorbd::Model m("../../models/BrasViolon.bioMod");
 #include "includes/biorbd_initializer.h"
 
@@ -31,7 +30,7 @@ const double t_Start = 0.0;
 const double t_End = 0.5;
 const int nPoints(31);
 
-const ViolinStringNames stringName(ViolinStringNames::E);
+const ViolinStringNames stringPlayed(ViolinStringNames::E);
 const bool useFileToInit(false);
 const int nBowing(1);
 const int nBowingInInitialization(1);
@@ -94,31 +93,32 @@ int  main ()
 
     bowAndViolinMarkersToAlign[0] = tagBowFrog;
     bowAndViolinMarkersToAlign[1] = tagBowTip;
-    switch (stringName) {
-    case ViolinStringNames::E:
+    if (stringPlayed == ViolinStringNames::E) {
         markerViolinString.setUserData(static_cast<void*>(&tagViolinEString));
         idxProjectViolinBridgeInBow[0] = tagViolinEString;
         bowAndViolinMarkersToAlign[2] = tagViolinBString;
         bowAndViolinMarkersToAlign[3] = tagViolinAString;
-        break;
-    case ViolinStringNames::A:
+    }
+    else if (stringPlayed == ViolinStringNames::A) {
         markerViolinString.setUserData(static_cast<void*>(&tagViolinAString));
         idxProjectViolinBridgeInBow[0] = tagViolinAString;
         bowAndViolinMarkersToAlign[2] = tagViolinEString;
         bowAndViolinMarkersToAlign[3] = tagViolinDString;
-        break;
-    case ViolinStringNames::D:
+    }
+    else if (stringPlayed == ViolinStringNames::D) {
         markerViolinString.setUserData(static_cast<void*>(&tagViolinDString));
         idxProjectViolinBridgeInBow[0] = tagViolinDString;
         bowAndViolinMarkersToAlign[2] = tagViolinAString;
         bowAndViolinMarkersToAlign[3] = tagViolinGString;
-        break;
-    case ViolinStringNames::G:
+    }
+    else if (stringPlayed == ViolinStringNames::D) {
         markerViolinString.setUserData(static_cast<void*>(&tagViolinGString));
         idxProjectViolinBridgeInBow[0] = tagViolinGString;
         bowAndViolinMarkersToAlign[2] = tagViolinDString;
         bowAndViolinMarkersToAlign[3] = tagViolinCString;
-        break;
+    }
+    else {
+        throw std::runtime_error("Wrong choice of stringPlayed");
     }
     idxProjectViolinBridgeInBow[1] = idxSegmentBow;
 
@@ -246,19 +246,19 @@ int  main ()
         // Initialize states
         std::vector<double> initQFrogOnSelectedString;
         std::vector<double> initQTipOnSelectedString;
-        if (stringName == ViolinStringNames::E) {
+        if (stringPlayed == ViolinStringNames::E) {
             initQFrogOnSelectedString = initQFrogOnEString;
             initQTipOnSelectedString = initQTipOnEString;
         }
-        else if (stringName == ViolinStringNames::A){
+        else if (stringPlayed == ViolinStringNames::A){
             initQFrogOnSelectedString = initQFrogOnAString;
             initQTipOnSelectedString = initQTipOnAString;
         }
-        else if (stringName == ViolinStringNames::D){
+        else if (stringPlayed == ViolinStringNames::D){
             initQFrogOnSelectedString = initQFrogOnDString;
             initQTipOnSelectedString = initQTipOnDString;
         }
-        else if (stringName == ViolinStringNames::G){
+        else if (stringPlayed == ViolinStringNames::G){
             initQFrogOnSelectedString = initQFrogOnGString;
             initQTipOnSelectedString = initQTipOnGString;
         }
