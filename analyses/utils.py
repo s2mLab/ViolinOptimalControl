@@ -29,10 +29,8 @@ def read_acado_output_states(file_path, biorbd_model, nb_intervals, nb_phases):
 
             t[i] = float(lin[0])  # complete the time with the first column
             for p in range(nb_phases):
-                all_q[:, i + p * nb_nodes] = [float(j) for j in lin[
-                                                               1 + p * nb_dof_total:biorbd_model.nbQ() + p * nb_dof_total + 1]]  # complete the states with the nQ next columns
-                all_qdot[:, i + p * nb_nodes] = [float(k) for k in lin[biorbd_model.nbQ() + 1 + p * nb_dof_total:nb_dof_total * (
-                            p + 1) + 1]]  # complete the states with the nQdot next columns
+                all_q[:, i + p * nb_nodes] = [float(j) for j in lin[1 + p * nb_dof_total:biorbd_model.nbQ() + p * nb_dof_total + 1]]  # complete the states with the nQ next columns
+                all_qdot[:, i + p * nb_nodes] = [float(k) for k in lin[biorbd_model.nbQ() + 1 + p * nb_dof_total:nb_dof_total * (p + 1) + 1]]  # complete the states with the nQdot next columns
 
         # Adjust time according to phases
         t_tp = t

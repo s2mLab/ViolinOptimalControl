@@ -4,7 +4,7 @@ from scipy import optimize
 import numpy as np
 
 model_path = "../models/BrasViolon.bioMod"
-bow_place = 'tip'  # 'frog', 'tip'
+bow_place = 'frog'  # 'frog', 'tip'
 string_to_test = 'E'  # 'G', 'D', 'A', 'E'
 show_live_optim = False  # Bool
 
@@ -87,7 +87,7 @@ def objective_function(x, *args, **kwargs):
     return out
 
 
-pos = optimize.least_squares(objective_function, x0=[0, 0, 0, 0, 0, 0, 0, 0], bounds=bounds)
+pos = optimize.least_squares(objective_function, x0=np.zeros(m.nbDof(), ), bounds=bounds)
 print(f"Optimal Q for the bow at {bow_place} on {string_to_test} string is:\n{pos.x}")
 b.set_q(pos.x)
 b.exec()

@@ -35,23 +35,23 @@ const bool useFileToInit(false);
 const int nBowing(1);
 const int nBowingInInitialization(1);
 
-// The init on string were determined using the "find_initial_pose.py" script
+// The following values for initialization were determined using the "find_initial_pose.py" script
 const std::vector<double> initQFrogOnGString =
-{-0.00948486, 0.06259299, 0.99964932, 0.92035463, 1.40957673, 0.32581681, -0.07523013, -0.76109885};
+{-0.07018473, -0.0598567, 1.1212999, 0.90238053, 1.4856272, -0.09812186, 0.1498479, -0.48374356, -0.41007239};
 const std::vector<double> initQTipOnGString =
-{0.01113298, -0.61721062, 0.96989367, 0.59865875, 0.19520906, 0.11549791, 0.10830705, 0.54975026};
+{0.07919993, -0.80789739, 0.96181894, 0.649565, 0.24537634, -0.16297839, 0.0659226, 0.14617512, 0.49722962};
 const std::vector<double> initQFrogOnDString =
-{0.0239408, 0.08831102, 0.95293047, 0.94194847, 1.4724044, 0.30109847, -0.44859286, -0.46923365};
+{0.02328389, 0.03568661, 0.99308077, 0.93208313, 1.48380368, -0.05939737, 0.26778731, -0.50387155, -0.43094647};
 const std::vector<double> initQTipOnDString =
-{0.08263522, -0.62539549, 0.90233634, 0.62698962, 0.22359432, 0.12548774, 0.09448064, 0.54877327};
+{0.08445998, -0.66837886, 0.91480044, 0.66766976, 0.25110097, -0.07526545, 0.09689908, -0.00561614, 0.62755419};
 const std::vector<double> initQFrogOnAString =
-{0.01018357, 0.09299291, 0.88991844, 0.931988, 1.4649005, 0.25007886, -0.34189658, -0.54073149};
+{-0.0853157, -0.03099135, 1.04751851, 0.93222374, 1.50707542, -0.12888636, 0.04174079, -0.57032577, -0.31175627};
 const std::vector<double> initQTipOnAString =
-{0.09638825, -0.53412493, 0.81893825, 0.69326372, 0.22566753, 0.11652397, 0.18524205, 0.46584988};
+{-0.06506266, -0.44904332, 0.97090727, 1.00055219, 0.17983593, -0.3363436, -0.03281452, 0.04678383, 0.64465767};
 const std::vector<double> initQFrogOnEString =
-{ 0.08400899, 0.09984273, 0.79351699, 0.90026544, 1.45634165, 0.32713986, -0.25263593, -0.64335862};
+{-0.19923285, 0.08890963, 0.99469991, 0.97362544, 1.48863482, -0.09960671, 0.01607784, -0.44009434, -0.36712403};
 const std::vector<double> initQTipOnEString =
-{0.07910913, -0.45011153, 0.778877, 0.73878697, 0.21872682, 0.10636272, 0.16720347, 0.48748324};
+{0.03328374, -0.27888401, 0.7623438, 0.59379268, 0.16563931, 0.2443971, 0.1824652, 0.1587049, 0.52812319};
 
 const std::string resultsPath("../Results/");
 const std::string initializePath("../Initialisation/");
@@ -168,25 +168,24 @@ int  main ()
         }
 
         // Path constraints
-        if(p==0) {                            
-                ocp.subjectTo(
-                            AT_START, markerBowFrog(x[p]) - markerViolinString(x[p])
-                            == 0.0 );
-                ocp.subjectTo(
-                            AT_END, markerBowTip(x[p]) - markerViolinString(x[p])
-                            == 0.0 );
-                }
+        if(p==0) {
+            ocp.subjectTo(
+                        AT_START, markerBowFrog(x[p]) - markerViolinString(x[p])
+                        == 0.0 );
+            ocp.subjectTo(AT_END, markerBowTip(x[p]) - markerViolinString(x[p])
+                        == 0.0 );
+        }
         else {
             ocp.subjectTo( 0.0, x[p], -x[p-1], 0.0 );
             ocp.subjectTo( 0.0, x[p-1], -x[p], 0.0 );
         }
         for (int i = 1; i < nPoints-1; ++i) {
             ocp.subjectTo(i, violinBridgeInBowRT(x[p]) == 0.0);
-    //        ocp.subjectTo(i, bowDirection(x[p]) == 0.0);
+//            ocp.subjectTo(i, bowDirection(x[p]) == 0.0);
         }
 
         // Set the limit of the degrees of freedom
-        for (unsigned int i=0; i<ranges.size(); ++i){
+        for (unsigned int i=0; i<nQ; ++i){
             ocp.subjectTo(ranges[i].min() <= x[p](0) <= ranges[i].max());
         }
 
@@ -207,8 +206,8 @@ int  main ()
     OptimizationAlgorithm  algorithm(ocp) ;
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
-    algorithm.set(HESSIAN_APPROXIMATION, CONSTANT_HESSIAN);
-    algorithm.set(KKT_TOLERANCE, 1e-4);
+    algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
+    algorithm.set(KKT_TOLERANCE, 1e-3);
 
 
     // ---------- INITIAL SOLUTION ---------- //
