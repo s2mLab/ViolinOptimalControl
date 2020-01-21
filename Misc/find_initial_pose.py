@@ -42,7 +42,7 @@ else:
     raise ValueError("string_to_test should be: 'G', 'D', 'A' or 'E'")
 
 m = biorbd.Model(model_path)
-b = BiorbdViz.BiorbdViz(loaded_model=m)
+b = BiorbdViz.BiorbdViz(loaded_model=m, markers_size=0.003, show_markers=True)
 bound_min = []
 bound_max = []
 for i in range(m.nbSegment()):
@@ -72,7 +72,9 @@ def objective_function(x, *args, **kwargs):
     string_behind = m.marker(Q, tagStringsAround[1], True, False).to_array()
     string_front = m.marker(Q, tagStringsAround[0], True, False).to_array()
     bow = bow_tip - bow_frog
+    bow = bow / np.linalg.norm(bow)
     bow_expected = string_behind - string_front
+    bow_expected = bow_expected / np.linalg.norm(bow_expected)
     bow_direction = bow_expected.dot(bow)
 
     # horsehair on the string
@@ -82,7 +84,7 @@ def objective_function(x, *args, **kwargs):
 
     out = np.ndarray((5,))
     out[:3] = bow_position_on_violin
-    out[3] = 1 - bow_direction
+    out[3] = (1 - bow_direction)*100
     out[4] = 1 - z_axes_alignment
     return out
 

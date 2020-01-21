@@ -260,7 +260,7 @@ external_forces	0
 	endmarker
     marker Tete                 //18
 	    parent Archet
-	    position 0 -0.550 0
+	    position 0 -0.550 0.001
 	endmarker
 	
 // Deuxième bras
@@ -496,7 +496,7 @@ external_forces	0
 
     marker int_violon //38
         parent Violon
-        position -0.0215 -0.28 -0.039
+        position -0.0215 -0.28 -0.037
     endmarker
 
     marker ext_violon //39
@@ -505,18 +505,8 @@ external_forces	0
     endmarker
 
 
-
-//    loopconstraint
-//        predecessor Archet
-//        successor Violon
-//        RTpredecessor 0 0 0 xyz 0 0 0.370
-//        RTsuccessor -1.57 0 -2 xyz 0 0 0.2425
-//        axis 1 1 1 1 1 0
-//        stabilizationParameter 0.6
-//   endloopconstraint
-
 // DEFINITION DES MUSCLES
-
+/*
 // Arm > Thorax
 musclegroup Arm2Thorax
 	OriginParent		Arm
@@ -1023,5 +1013,5 @@ endmusclegroup
 		PCSA				1.8
 		maxVelocity 		10
 	endmuscle
-
+*/
 

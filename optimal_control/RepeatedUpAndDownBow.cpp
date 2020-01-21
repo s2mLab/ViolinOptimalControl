@@ -77,18 +77,18 @@ int  main ()
     OCP ocp(t_Start, t_End, nPoints);
     CFunction residualTorque(1, residualTorquesSquare);
     CFunction muscleActivation(1, muscleActivationsSquare);
-    CFunction bowDirection(3, bowDirectionAgainstViolin);
+    CFunction bowOnString(3, stringToPlayObjective);
     CFunction F( nQ+nQdot, forwardDynamics_noContact);
     DifferentialEquation f ;
 
-    // --------- DEFINE SOME PATH CONSTRAINTS --------- //
+    // --------- DEFINE SOME CONSTRAINT FUNCTIONS --------- //
     CFunction markerBowFrog(3, markerPosition);
     markerBowFrog.setUserData(static_cast<void*>(&tagBowFrog));
     CFunction markerBowTip(3, markerPosition);
     markerBowTip.setUserData(static_cast<void*>(&tagBowTip));
     CFunction markerViolinString(3, markerPosition);
     int bowAndViolinMarkersToAlign[4];
-    CFunction violinBridgeInBowRT(2, projectOnXzPlane);
+    CFunction bowDirection(2, projectOnXzPlane);
     int idxProjectViolinBridgeInBow[2];
 
     bowAndViolinMarkersToAlign[0] = tagBowFrog;
@@ -122,8 +122,8 @@ int  main ()
     }
     idxProjectViolinBridgeInBow[1] = idxSegmentBow;
 
-    violinBridgeInBowRT.setUserData(static_cast<void*>(idxProjectViolinBridgeInBow));
-    bowDirection.setUserData(static_cast<void*>(bowAndViolinMarkersToAlign));
+    bowDirection.setUserData(static_cast<void*>(idxProjectViolinBridgeInBow));
+    bowOnString.setUserData(static_cast<void*>(bowAndViolinMarkersToAlign));
 
     // Get the ranges (limits of DoF)
     std::vector<biorbd::utils::Range> ranges;
@@ -140,7 +140,9 @@ int  main ()
     std::vector<IntermediateState> is;
 
     // ---------- PHASES ---------- //
-    // Each phase is a up/down bow (hence the *2)
+    // Each phase is a up/down bow (hence the nBowing*2)
+
+    // Dynamic and path constraints
     for (unsigned int p=0; p<nBowing*2; ++p){
         x.push_back(DifferentialState("",nQ+nQdot,1));
         control.push_back(Control("", nMus + nTau, 1));
@@ -155,11 +157,11 @@ int  main ()
         for (unsigned int i = 0; i < nTau; ++i)
             is[p](i+nQ+nQdot+nMus) = control[p](i+nMus);
 
-        // ------------ CONSTRAINTS ----------- //
         // Dynamics
         (f << dot(x[p])) == F(is[p]);
 
-        // Controls constraints
+        // ------------ PATH CONSTRAINTS ----------- //
+        // Bound for the controls
         for (unsigned int i=0; i<nMus; ++i){
             ocp.subjectTo(0.01 <= control[p](i) <= 1);
         }
@@ -167,47 +169,45 @@ int  main ()
             ocp.subjectTo(-100 <= control[p](i+nMus) <= 100);
         }
 
-        // Path constraints
-        if(p==0) {
-            ocp.subjectTo(
-                        AT_START, markerBowFrog(x[p]) - markerViolinString(x[p])
-                        == 0.0 );
-            ocp.subjectTo(AT_END, markerBowTip(x[p]) - markerViolinString(x[p])
-                        == 0.0 );
+        // Bound for the states
+        for (unsigned int i=0; i<nQ; ++i){
+            ocp.subjectTo(ranges[i].min() <= x[p](0) <= ranges[i].max());
+        }
+        for (unsigned int j=0; j<nQdot; ++j) {
+            ocp.subjectTo(-50 <= x[p](nQ + j) <= 50);
+        }
+
+        // Movement starts at frog, goes to tip and comes back to frog
+        if (p == 0){
+            ocp.subjectTo(AT_START, markerBowFrog(x[p]) - markerViolinString(x[p]) == 0.0 );
+            ocp.subjectTo(AT_END, markerBowTip(x[p]) - markerViolinString(x[p]) == 0.0 );
         }
         else {
             ocp.subjectTo( 0.0, x[p], -x[p-1], 0.0 );
             ocp.subjectTo( 0.0, x[p-1], -x[p], 0.0 );
         }
-        for (int i = 1; i < nPoints-1; ++i) {
-            ocp.subjectTo(i, violinBridgeInBowRT(x[p]) == 0.0);
-//            ocp.subjectTo(i, bowDirection(x[p]) == 0.0);
-        }
 
-        // Set the limit of the degrees of freedom
-        for (unsigned int i=0; i<nQ; ++i){
-            ocp.subjectTo(ranges[i].min() <= x[p](0) <= ranges[i].max());
+        // The bow must remain perpendicular to the violin on the chosen string
+        for (int i = 1; i < nPoints - 1; ++i) {
+            ocp.subjectTo(i, bowDirection(x[p]) == 0.0);
+            ocp.subjectTo(i, bowOnString(x[p]) == 0.0);
         }
-
-        for (unsigned int j=0; j<nQdot; ++j) {
-            ocp.subjectTo(-50 <= x[p](nQ + j) <= 50);
-        }
-
     }
     ocp.subjectTo(f);
 
     // ------------ OBJECTIVE ----------- //
-    Expression sumLagrange = residualTorque(control[0])+ muscleActivation(control[0]) + bowDirection(x[0]);
+    Expression sumLagrange = residualTorque(control[0]) + muscleActivation(control[0]);// + bowOnString(x[0]) * 100;
     for(unsigned int p=1; p<nBowing*2; ++p)
-        sumLagrange += residualTorque(control[p]) + muscleActivation(control[p]) + bowDirection(x[p]);
+        sumLagrange += residualTorque(control[p]) + muscleActivation(control[p]); // + bowOnString(x[p]) * 100;
     ocp.minimizeLagrangeTerm( sumLagrange );
 
+
     // ---------- OPTIMIZATION  ------------ //
-    OptimizationAlgorithm  algorithm(ocp) ;
+    OptimizationAlgorithm  algorithm(ocp);
     algorithm.set(MAX_NUM_ITERATIONS, 1000);
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
     algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
-    algorithm.set(KKT_TOLERANCE, 1e-3);
+    algorithm.set(KKT_TOLERANCE, 1e-4);
 
 
     // ---------- INITIAL SOLUTION ---------- //
@@ -224,9 +224,7 @@ int  main ()
         *u_init = readControls(controlWithoutBrackets, nPoints, nBowingInInitialization*2, t_Start, t_End);
         *x_init = readStates(diffStateWithoutBrackets, nPoints, nBowingInInitialization*2, t_Start, t_End);
     }
-
     else {
-
         u_init = new VariablesGrid(nBowingInInitialization*2*(nTau + nMus), Grid(t_Start, t_End, 2));
         x_init = new VariablesGrid(nBowingInInitialization*2*(nQ+nQdot), Grid(t_Start, t_End, 2));
 
@@ -283,6 +281,7 @@ int  main ()
     }
 
     if (nBowing > nBowingInInitialization) {
+        // Duplicate the initial solution if needed
         VariablesGrid x_init_expanded, u_init_expanded, copy_init_1;
 
 
@@ -294,24 +293,27 @@ int  main ()
         algorithm.initializeControls(u_init_expanded);
         algorithm.initializeDifferentialStates(x_init_expanded);
     }
-
     else {
         algorithm.initializeControls(*u_init);
         algorithm.initializeDifferentialStates(*x_init);
     }
 
+
     // ---------- SOLVING THE PROBLEM ---------- //
     algorithm.solve();
+
 
     // ---------- STORING THE RESULTS ---------- //
     createTreePath(resultsPath);
     algorithm.getDifferentialStates(diffStateResultsFileName.c_str());
     algorithm.getControls(controlResultsFileName.c_str());
 
-    // ---------- PLOTING ---------- //
+
+    // ---------- PLOTING TIME ---------- //
     clock_t end=clock();
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
     std::cout << "Execution time: " << time_exec << std::endl;
+
 
     // ---------- EXIT ---------- //
     return 0;
