@@ -5,10 +5,10 @@
 
 USING_NAMESPACE_ACADO
 
-/* ---------- Model ---------- */
+// ---------- Model ---------- //
 
 const double t_Start = 0.0;
-const double t_End = 4.0;
+const double t_End = 2.0;
 const int nPoints(31);
 
 const int nx(2);
@@ -24,8 +24,7 @@ void dynamics(double *is, double *g, void *){
     g[1] = is[0];
 }
 
-int  main ()
-{
+int  main(){
     CFunction cFinalPosition(2, finalPosition);
     CFunction cDynamics(2, dynamics);
 
@@ -45,10 +44,12 @@ int  main ()
         is(i+nu) = x(i);
     DifferentialEquation f;
     f << dot(x);
-    ocp.subjectTo( f == cDynamics(is) ) ;
+    ocp.subjectTo( f == cDynamics(is) );
 
     ocp.subjectTo( AT_START, x ==  0 );
-    ocp.subjectTo( AT_END, cFinalPosition(x) == 0.0);
+//    ocp.subjectTo( AT_END, cFinalPosition(x) == 0.0);
+    ocp.subjectTo( AT_END, x(0) == 10.0);
+    ocp.subjectTo( AT_END, x(1) == 0.0);
 
     for (unsigned int i=0; i<nu; ++i)
         ocp.subjectTo(-100 <= u(i) <= 100);

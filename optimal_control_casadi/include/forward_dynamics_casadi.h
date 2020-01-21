@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-#include "BiorbdModel.h"
+#include "biorbd.h"
 extern biorbd::Model m;
 
 #ifdef __cplusplus

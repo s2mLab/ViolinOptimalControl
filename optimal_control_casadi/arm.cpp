@@ -1,19 +1,18 @@
 // C++ (and CasADi) from here on
-#include <casadi/casadi.hpp>
+#include <casadi.hpp>
 
 #include "utils.h"
 #include "forward_dynamics_casadi.h"
-#include "BiorbdModel.h"
-#include "Utils/Vector.h"
-
+#include "biorbd.h"
 extern biorbd::Model m;
 biorbd::Model m("../../models/simple.bioMod");
 
 int main(){
+    // ---- OPTIONS ---- //
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
     ProblemSize probSize;
-    probSize.tf = 2.5;
+    probSize.tf = 4.0;
     probSize.ns = 30;
     probSize.dt = probSize.tf/probSize.ns; // length of a control interval
 
@@ -48,33 +47,19 @@ int main(){
     BoundaryConditions xBounds;
     InitialConditions xInit;
     for (unsigned int i=0; i<m.nbQ(); ++i) {
-        // Starting boundaries
-        if (i == 0) xBounds.starting_min.push_back(0);
-        else if (i == 1) xBounds.starting_min.push_back(0);
-        else if (i == 2) xBounds.starting_min.push_back(0);
-        else if (i == 3) xBounds.starting_min.push_back(M_PI/4);
-        else if (i == 4) xBounds.starting_min.push_back(M_PI/6);
-        else if (i == 5) xBounds.starting_min.push_back(M_PI/8);
-        if (i == 0) xBounds.starting_max.push_back(0);
-        else if (i == 1) xBounds.starting_max.push_back(0);
-        else if (i == 2) xBounds.starting_max.push_back(0);
-        else if (i == 3) xBounds.starting_max.push_back(M_PI/4);
-        else if (i == 4) xBounds.starting_max.push_back(M_PI/6);
-        else if (i == 5) xBounds.starting_max.push_back(M_PI/8);
-
-        // Intermediate boundaries
-        xBounds.min.push_back(-500);
-        xBounds.max.push_back(500);
-
-        // End boundaries
-        if (i == 0) xBounds.end_min.push_back(100);
-        else if (i == 1) xBounds.end_min.push_back(50);
+        xBounds.min.push_back(-100);
+        xBounds.starting_min.push_back(0);
+        if (i == 0) xBounds.end_min.push_back(10);
+        else if (i == 1) xBounds.end_min.push_back(0);
         else if (i == 2) xBounds.end_min.push_back(0);
         else if (i == 3) xBounds.end_min.push_back(M_PI/4);
         else if (i == 4) xBounds.end_min.push_back(M_PI/6);
         else if (i == 5) xBounds.end_min.push_back(M_PI/8);
-        if (i == 0) xBounds.end_max.push_back(100);
-        else if (i == 1) xBounds.end_max.push_back(50);
+
+        xBounds.max.push_back(100);
+        xBounds.starting_max.push_back(0);
+        if (i == 0) xBounds.end_max.push_back(10);
+        else if (i == 1) xBounds.end_max.push_back(0);
         else if (i == 2) xBounds.end_max.push_back(0);
         else if (i == 3) xBounds.end_max.push_back(M_PI/4);
         else if (i == 4) xBounds.end_max.push_back(M_PI/6);
@@ -83,11 +68,11 @@ int main(){
         xInit.val.push_back(0);
     };
     for (unsigned int i=0; i<m.nbQdot(); ++i) {
-        xBounds.min.push_back(-500);
+        xBounds.min.push_back(-100);
         xBounds.starting_min.push_back(0);
         xBounds.end_min.push_back(0);
 
-        xBounds.max.push_back(500);
+        xBounds.max.push_back(100);
         xBounds.starting_max.push_back(0);
         xBounds.end_max.push_back(0);
 
@@ -147,9 +132,9 @@ int main(){
     std::cout << "Done!" << std::endl;
 
     // Get the optimal state trajectory
-    std::vector<biorbd::utils::Vector> Q;
-    std::vector<biorbd::utils::Vector> Qdot;
-    std::vector<biorbd::utils::Vector> Tau;
+    std::vector<biorbd::rigidbody::GeneralizedCoordinates> Q;
+    std::vector<biorbd::rigidbody::GeneralizedVelocity> Qdot;
+    std::vector<biorbd::rigidbody::GeneralizedTorque> Tau;
     extractSolution(V_opt, probSize, Q, Qdot, Tau);
 
     // Show the solution

@@ -1,9 +1,5 @@
 #include "forward_dynamics_casadi.h"
 
-#include "rbdl/Dynamics.h"
-#include "RigidBody/GeneralizedCoordinates.h"
-#include "RigidBody/GeneralizedTorque.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

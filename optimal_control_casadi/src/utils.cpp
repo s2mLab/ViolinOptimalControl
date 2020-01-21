@@ -1,9 +1,5 @@
 #include "utils.h"
 
-
-#include "RigidBody/GeneralizedCoordinates.h"
-#include "RigidBody/GeneralizedTorque.h"
-
 void defineDifferentialVariables(
         ProblemSize& ps,
         casadi::MX& u,
@@ -154,15 +150,15 @@ void solveProblemWithIpopt(
 void extractSolution(
         const std::vector<double>& V_opt,
         const ProblemSize& ps,
-        std::vector<biorbd::utils::Vector>& Q,
-        std::vector<biorbd::utils::Vector>& Qdot,
-        std::vector<biorbd::utils::Vector>& Tau)
+        std::vector<biorbd::rigidbody::GeneralizedCoordinates>& Q,
+        std::vector<biorbd::rigidbody::GeneralizedVelocity>& Qdot,
+        std::vector<biorbd::rigidbody::GeneralizedTorque>& Tau)
 {
     // Resizing the output variables
     for (unsigned int q=0; q<m.nbQ(); ++q){
         Tau.push_back(biorbd::rigidbody::GeneralizedTorque(ps.ns));
         Q.push_back(biorbd::rigidbody::GeneralizedCoordinates(ps.ns+1));
-        Qdot.push_back(biorbd::rigidbody::GeneralizedCoordinates(ps.ns+1));
+        Qdot.push_back(biorbd::rigidbody::GeneralizedVelocity(ps.ns+1));
     }
 
     // Get the optimal controls

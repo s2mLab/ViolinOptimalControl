@@ -1,9 +1,9 @@
-# - Find Dlib
-# Find the native Dlib includes and library
+# - Find Biorbd
+# Find the native biorbd includes and libraries
 #
-#  Biorbd_INCLUDE_DIR - where to find zlib.h, etc.
-#  Biorbd_LIBRARY   - List of libraries when using zlib.
-#  Biorbd_FOUND       - True if zlib found.
+#  Biorbd_INCLUDE_DIR - where to find biorbd.h, etc.
+#  Biorbd_LIBRARIES   - List of libraries when using biorbd.
+#  Biorbd_FOUND       - True if biorbd is found.
 
 if (Biorbd_INCLUDE_DIR)
   # Already in cache, be silent
@@ -35,5 +35,6 @@ set(Biorbd_LIBRARIES
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (Biorbd DEFAULT_MSG 
   Biorbd_LIBRARIES
-  Biorbd_INCLUDE_DIR)
+  Biorbd_INCLUDE_DIR
+)
 

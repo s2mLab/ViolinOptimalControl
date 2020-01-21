@@ -72,7 +72,7 @@ foreach(src_file ${source_files})
 endforeach()
 
 
-set(filename tata)
+set(filename eocar)
 ADD_EXECUTABLE (  ${filename}
     ${filename}.cpp
 )
