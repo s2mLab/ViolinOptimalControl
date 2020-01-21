@@ -1,0 +1,40 @@
+version 3
+
+// Informations générales
+root_actuated	1
+external_forces	0
+
+// DEFINITION DES SEGMENTS
+
+
+ 	segment	Cube1
+		translations	x //z 
+        // rotations	 xyz
+
+		mass	3.00000
+
+		inertia
+			1.0000000000	0.0000000000	0.0000000000
+			0.0000000000	1.0000000000	0.0000000000
+			0.0000000000	0.0000000000	1.0000000000
+
+		com		0.0000000000		0.50000000000		0
+        mesh -1 -1 -1
+        mesh -1 1 -1
+        mesh -1 1 1
+        mesh -1 -1 1
+        mesh -1 -1 -1
+        mesh 1 -1 -1
+        mesh 1 1 -1
+        mesh -1 1 -1
+        mesh 1 1 -1
+        mesh 1 1 1
+        mesh -1 1 1
+        mesh 1 1 1
+        mesh 1 -1 1
+        mesh -1 -1 1
+        mesh 1 -1 1
+        mesh 1 -1 -1
+    endsegment
+
+
