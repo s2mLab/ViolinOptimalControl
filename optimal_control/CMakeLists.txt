@@ -72,3 +72,13 @@ foreach(src_file ${source_files})
 endforeach()
 
 
+set(filename tata)
+ADD_EXECUTABLE (  ${filename}
+    ${filename}.cpp
+)
+target_include_directories(${filename} PUBLIC
+    ${ACADO_INCLUDE_DIRS} ${ACADO_INCLUDE_DIRS}/..
+)
+target_link_libraries(${filename}
+    ${ACADO_SHARED_LIBRARIES}
+)
