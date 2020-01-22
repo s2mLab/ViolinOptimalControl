@@ -1,15 +1,21 @@
 version 3
 
 // Informations générales
-root_actuated	1
+root_actuated	0
 external_forces	0
 
 // DEFINITION DU SEGMENTS
 
 // Thorax
+    segment Nothing
+        translations	x
+	endsegment
+	
+// Thorax
     segment Thorax
-        translations	x //yz
-        // rotations	x
+        parent Nothing
+        translations	y //z
+        //rotations	x
 		mass 1
 		inertia 
 		  1 0 0 

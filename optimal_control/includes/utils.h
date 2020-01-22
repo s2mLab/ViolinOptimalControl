@@ -45,8 +45,4 @@ ACADO::VariablesGrid readControls(
 
 void validityCheck();
 
-void writeCasadiResults(
-        const biorbd::utils::Path& Path,
-        const biorbd::utils::Vector& data);
-
 #endif  // VIOLIN_OPTIMIZATION_UTILS_H

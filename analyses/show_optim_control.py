@@ -55,7 +55,6 @@ all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{o
 all_u = np.append(all_u, all_u[:, -1:], axis=1)  # For facilitate the visualization, add back the last values
 t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_intervals, parameter=False)
 
-np.sum(all_u[:, :-1] * (t[1:] - t[:-1]))
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(
     m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=True, algo=runge_kutta_algo
@@ -67,6 +66,7 @@ qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
 
 
+print(f"Objective function = {np.sum(all_u**2 * (t[1] - t[0]))}")
 # Show data
 plt.figure("States and torques res")
 for i in range(m.nbQ()):

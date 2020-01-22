@@ -108,4 +108,29 @@ void extractSolution(
         std::vector<biorbd::rigidbody::GeneralizedVelocity>& Qdot,
         std::vector<biorbd::rigidbody::GeneralizedTorque>& Tau);
 
+void createTreePath(const std::string& path);
+bool dirExists(const char* const path);
+
+template<class T>
+void writeCasadiResults(
+        const biorbd::utils::Path& path,
+        const T& data,
+        double dt){
+
+    std::ofstream file;
+    file.open(path.relativePath().c_str());
+    if (!file){
+        biorbd::utils::Error::raise("File " + path.relativePath() + " could not be open");
+    }
+
+    double currentTime(0);
+    for (int j=0; j<data[0].size(); ++j){
+        file << "[\t" << currentTime << "\t";
+        for (int i=0; i<data.size(); ++i){
+            file << data[i](j) << "\t";
+        }
+        file << "]\n";
+        currentTime += dt;
+    }
+}
 #endif

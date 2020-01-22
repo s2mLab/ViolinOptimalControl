@@ -6,13 +6,12 @@ from scipy import integrate, interpolate
 from matplotlib import pyplot as plt
 
 
-def read_acado_output_states(file_path, biorbd_model, nb_intervals, nb_phases):
+def read_acado_output_states(file_path, biorbd_model, nb_nodes, nb_phases):
     # Get some values from the model
     nb_dof_total = biorbd_model.nbQ() + biorbd_model.nbQdot()
 
     # Create some aliases
-    nb_nodes = nb_intervals + 1
-    nb_points = (nb_phases * nb_nodes) + 1
+    nb_points = (nb_phases * (nb_nodes + 1))
 
     t = np.ndarray(nb_nodes + 1)  # initialization of the time
 
@@ -21,13 +20,13 @@ def read_acado_output_states(file_path, biorbd_model, nb_intervals, nb_phases):
     all_qdot = np.ndarray((biorbd_model.nbQdot(), nb_points))
     with open(file_path, "r") as data:
         # Nodes first lines
-        for i in range(nb_nodes+1):
+        for i in range(nb_nodes + 1):
             line = data.readline()
             lin = line.split('\t')  # separation of the line in element
             lin[:1] = []  # remove the first element ( [ )
             lin[(nb_phases * biorbd_model.nbQ()) + (nb_phases * biorbd_model.nbQdot()) + 1:] = []  # remove the last ]
-
             t[i] = float(lin[0])  # complete the time with the first column
+
             for p in range(nb_phases):
                 all_q[:, i + p * nb_nodes] = [float(j) for j in lin[1 + p * nb_dof_total:biorbd_model.nbQ() + p * nb_dof_total + 1]]  # complete the states with the nQ next columns
                 all_qdot[:, i + p * nb_nodes] = [float(k) for k in lin[biorbd_model.nbQ() + 1 + p * nb_dof_total:nb_dof_total * (p + 1) + 1]]  # complete the states with the nQdot next columns
@@ -40,14 +39,12 @@ def read_acado_output_states(file_path, biorbd_model, nb_intervals, nb_phases):
     return t, all_q, all_qdot
 
 
-def read_acado_output_controls(file_path, nb_intervals, nb_phases, nb_controls):
+def read_acado_output_controls(file_path, nb_nodes, nb_phases, nb_controls):
     # Create some aliases
-    nb_nodes = nb_intervals + 1
     nb_points = (nb_phases * nb_nodes)
 
     all_u = np.ndarray((nb_controls, nb_points))
     with open(file_path, "r") as fichier_u:
-
         for i in range(nb_nodes):
             line = fichier_u.readline()
             lin = line.split('\t')

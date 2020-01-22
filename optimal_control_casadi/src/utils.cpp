@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <sys/stat.h>
 
 void defineDifferentialVariables(
         ProblemSize& ps,
@@ -122,7 +123,7 @@ void solveProblemWithIpopt(
     casadi::Dict opts;
     opts["ipopt.tol"] = 1e-6;
 //    opts["ipopt.max_iter"] = 100;
-    opts["ipopt.hessian_approximation"] = "exact";
+    opts["ipopt.hessian_approximation"] = "limited-memory";
 //    opts["ipopt.lbfgs_memory"] = 20;
     casadi::Dict opts_qpoases;
     opts_qpoases["printLevel"] = "none";
@@ -173,5 +174,25 @@ void extractSolution(
             Qdot[q][i] = V_opt.at(q + m.nbQ() + i*(ps.nx+m.nbQ()));
         }
     }
+}
 
+void createTreePath(const std::string &path)
+{
+    if (!dirExists(path.c_str()))
+        mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+}
+
+bool dirExists(const char* const path)
+{
+    struct stat info;
+
+    int statRC = stat( path, &info );
+    if( statRC != 0 )
+    {
+        if (errno == ENOENT)  { return 0; } // something along the path does not exist
+        if (errno == ENOTDIR) { return 0; } // something in path prefix is not a dir
+        return -1;
+    }
+
+    return ( info.st_mode & S_IFDIR ) ? true : false;
 }

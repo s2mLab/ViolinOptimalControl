@@ -250,9 +250,3 @@ void validityCheck(){
     }
 #endif
 }
-
-void writeCasadiResults(
-        const biorbd::utils::Path& Path,
-        const biorbd::utils::Vector& data){
-
-}

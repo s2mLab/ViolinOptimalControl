@@ -7,8 +7,13 @@
 extern biorbd::Model m;
 biorbd::Model m("../../models/simple.bioMod");
 
+const std::string optimizationName("eocarBiorbdCasadi");
+const std::string resultsPath("../Results/");
+const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
+const biorbd::utils::Path stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
+
+
 int main(){
-    clock_t start = clock();
     // ---- OPTIONS ---- //
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
@@ -129,7 +134,9 @@ int main(){
     // Optimize
     std::cout << "Solving the optimal control problem..." << std::endl;
     std::vector<double> V_opt;
+    clock_t start = clock();
     solveProblemWithIpopt(V, vBounds, vInit, J, g, V_opt);
+    clock_t end=clock();
     std::cout << "Done!" << std::endl;
 
     // Get the optimal state trajectory
@@ -146,9 +153,19 @@ int main(){
         std::cout << "Tau[" << q <<"] = " << Tau[q].transpose() << std::endl;
         std::cout << std::endl;
     }
+    createTreePath(resultsPath);
+    writeCasadiResults(controlResultsFileName, Tau, probSize.dt);
+    std::vector<biorbd::utils::Vector> QandQdot;
+    for (auto q : Q){
+        QandQdot.push_back(q);
+    }
+    for (auto qdot : Qdot){
+        QandQdot.push_back(qdot);
+    }
+    writeCasadiResults(controlResultsFileName, Tau, probSize.dt);
+    writeCasadiResults(stateResultsFileName, QandQdot, probSize.dt);
 
     // ---------- FINALIZE  ------------ //
-    clock_t end=clock();
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
     std::cout<<"Execution time: "<<time_exec<<std::endl;
     return  0;
