@@ -3,6 +3,16 @@
 #include <vector>
 #include <memory>
 
+#include "biorbd.h"
+#include "includes/dynamics.h"
+biorbd::Model m("../../models/simple.bioMod");
+#include "includes/biorbd_initializer.h"
+
+const std::string optimizationName("eocarBiorbd");
+const std::string resultsPath("../Results/");
+const std::string controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
+const std::string stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
+
 USING_NAMESPACE_ACADO
 
 // ---------- Model ---------- //
@@ -11,23 +21,11 @@ const double t_Start = 0.0;
 const double t_End = 2.0;
 const int nPoints(31);
 
-const int nx(2);
-const int nu(1);
-
-void finalPosition(double *x, double *g, void *){
-    g[0] = 10 - x[0];
-    g[1] = x[1];
-}
-
-void dynamics(double *is, double *g, void *){
-    g[0] = is[2];
-    g[1] = is[0];
-}
+const int nx(m.nbQ() + m.nbQdot());
+const int nu(m.nbGeneralizedTorque());
 
 int  main(){
-    CFunction cFinalPosition(2, finalPosition);
-    CFunction cDynamics(2, dynamics);
-
+    CFunction cDynamics(m.nbQ() + m.nbQdot(), forwardDynamics_noContact);
     clock_t start = clock();
 
     // ----------- DEFINE OCP ------------- //
@@ -38,16 +36,22 @@ int  main(){
     DifferentialState x("",nx,1);
     IntermediateState is(nu + nx);
 
-    for (unsigned int i = 0; i < nu; ++i)
-        is(i) = u(i);
     for (unsigned int i = 0; i < nx; ++i)
-        is(i+nu) = x(i);
+        is(i) = x(i);
+    for (unsigned int i = 0; i < nu; ++i)
+        is(i+nx) = u(i);
     DifferentialEquation f;
     f << dot(x);
     ocp.subjectTo( f == cDynamics(is) );
 
     ocp.subjectTo( AT_START, x ==  0 );
-    ocp.subjectTo( AT_END, cFinalPosition(x) == 0.0);
+    ocp.subjectTo( AT_END, x(0) == 10.0);
+//     ocp.subjectTo( AT_END, x(1) == 0.0);
+//     ocp.subjectTo( AT_END, x(2) == 0.0);
+//     ocp.subjectTo( AT_END, x(3) == M_PI/4);
+    for (int i=m.nbQ(); i<m.nbQ() + m.nbQdot(); ++i){
+        ocp.subjectTo( AT_END, x(i) == 0);
+    }
 
     for (unsigned int i=0; i<nu; ++i)
         ocp.subjectTo(-100 <= u(i) <= 100);
@@ -60,9 +64,15 @@ int  main(){
 
     // ---------- VISUALIZATION ------------ //
     GnuplotWindow window;
-    window.addSubplot( x(0), "Position" );
-    window.addSubplot( x(1), "Vitesse" );
-    window.addSubplot( u(0),  "Acceleration" );
+    for (int i=0; i<m.nbQ();  ++i){
+        window.addSubplot( x(i), "Position" );
+    }
+    for (int i=m.nbQ(); i<m.nbQ()+m.nbQdot();  ++i){
+        window.addSubplot( x(i), "Vitesse" );
+    }
+    for (int i=0; i<m.nbGeneralizedTorque();  ++i){
+        window.addSubplot( u(i),  "Acceleration" );
+    }
 
 
     // ---------- OPTIMIZATION  ------------ //
@@ -74,6 +84,11 @@ int  main(){
     VariablesGrid finalU, finalX;
     algorithm.getControls(finalU);
     algorithm.getDifferentialStates(finalX);
+    algorithm.set(KKT_TOLERANCE, 1e-6);
+
+    createTreePath(resultsPath);
+    algorithm.getDifferentialStates(stateResultsFileName.c_str());
+    algorithm.getControls(controlResultsFileName.c_str());
 //    finalU.print();
 //    finalX.print();
 

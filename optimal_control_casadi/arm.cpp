@@ -8,11 +8,12 @@ extern biorbd::Model m;
 biorbd::Model m("../../models/simple.bioMod");
 
 int main(){
+    clock_t start = clock();
     // ---- OPTIONS ---- //
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
     ProblemSize probSize;
-    probSize.tf = 4.0;
+    probSize.tf = 2.0;
     probSize.ns = 30;
     probSize.dt = probSize.tf/probSize.ns; // length of a control interval
 
@@ -97,7 +98,7 @@ int main(){
     ode_opt["t0"] = 0;
     ode_opt["tf"] = probSize.dt;
     if (odeSolver == ODE_SOLVER::RK || odeSolver == ODE_SOLVER::COLLOCATION)
-        ode_opt["number_of_finite_elements"] = 20;
+        ode_opt["number_of_finite_elements"] = 5;
     casadi::Function F;
     if (odeSolver == ODE_SOLVER::RK)
         F = casadi::integrator("integrator", "rk", ode, ode_opt);
@@ -145,5 +146,11 @@ int main(){
         std::cout << "Tau[" << q <<"] = " << Tau[q].transpose() << std::endl;
         std::cout << std::endl;
     }
+
+    // ---------- FINALIZE  ------------ //
+    clock_t end=clock();
+    double time_exec(double(end - start)/CLOCKS_PER_SEC);
+    std::cout<<"Execution time: "<<time_exec<<std::endl;
+    return  0;
     return 0;
 }

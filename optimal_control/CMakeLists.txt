@@ -41,6 +41,7 @@ target_include_directories(utils PUBLIC
 
 # Write down all files to include here
 set(source_files
+    eocarBiorbd.cpp
     RepeatedUpAndDownBow.cpp
     EocarNphases.cpp
 )
