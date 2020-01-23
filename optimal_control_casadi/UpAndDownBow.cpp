@@ -3,9 +3,10 @@
 
 #include "utils.h"
 #include "forward_dynamics_casadi.h"
+#include "forward_kinematics_casadi.h"
 #include "biorbd.h"
 extern biorbd::Model m;
-biorbd::Model m("../../models/brasViolon.bioMod");
+biorbd::Model m("../../models/BrasViolon.bioMod");
 
 const std::string optimizationName("UpAndDowsBowCasadi");
 const std::string resultsPath("../../Results/");
@@ -24,6 +25,7 @@ int main(){
 
     // Functions names
     std::string dynamicsFunctionName(libforward_dynamics_casadi_name());
+    std::string forwardKinFunctionName(libforward_kinematics_casadi_name());
 
     // Chose the ODE solver
     int odeSolver(ODE_SOLVER::RK);
@@ -50,42 +52,37 @@ int main(){
     };
 
     // Bounds and initial guess for the state
+    std::vector<biorbd::utils::Range> ranges;
+    for (unsigned int i=0; i<m.nbSegment(); ++i){
+        std::vector<biorbd::utils::Range> segRanges(m.segment(i).ranges());
+        for(unsigned int j=0; j<segRanges.size(); ++j){
+            ranges.push_back(segRanges[j]);
+        }
+    }
     BoundaryConditions xBounds;
     InitialConditions xInit;
     for (unsigned int i=0; i<m.nbQ(); ++i) {
-        xBounds.min.push_back(-100);
-        xBounds.starting_min.push_back(0);
-        if (i == 0) xBounds.end_min.push_back(10);
-        else if (i == 1) xBounds.end_min.push_back(0);
-        else if (i == 2) xBounds.end_min.push_back(0);
-        else if (i == 3) xBounds.end_min.push_back(M_PI/4);
-        else if (i == 4) xBounds.end_min.push_back(M_PI/6);
-        else if (i == 5) xBounds.end_min.push_back(M_PI/8);
+        xBounds.starting_min.push_back(ranges[i].min());
+        xBounds.min.push_back(ranges[i].min());
+        xBounds.end_min.push_back(ranges[i].min());
 
-        xBounds.max.push_back(100);
-        xBounds.starting_max.push_back(0);
-        if (i == 0) xBounds.end_max.push_back(10);
-        else if (i == 1) xBounds.end_max.push_back(0);
-        else if (i == 2) xBounds.end_max.push_back(0);
-        else if (i == 3) xBounds.end_max.push_back(M_PI/4);
-        else if (i == 4) xBounds.end_max.push_back(M_PI/6);
-        else if (i == 5) xBounds.end_max.push_back(M_PI/8);
+        xBounds.starting_max.push_back(ranges[i].max());
+        xBounds.max.push_back(ranges[i].max());
+        xBounds.end_max.push_back(ranges[i].max());
 
         xInit.val.push_back(0);
     };
     for (unsigned int i=0; i<m.nbQdot(); ++i) {
+        xBounds.starting_min.push_back(-100);
         xBounds.min.push_back(-100);
-        xBounds.starting_min.push_back(0);
-        xBounds.end_min.push_back(0);
+        xBounds.end_min.push_back(-100);
 
+        xBounds.starting_max.push_back(100);
         xBounds.max.push_back(100);
-        xBounds.starting_max.push_back(0);
-        xBounds.end_max.push_back(0);
+        xBounds.end_max.push_back(100);
 
         xInit.val.push_back(0);
     };
-
-
 
     // From here, unless one wants to fundamentally change the problem,
     // they should not change anything
@@ -114,6 +111,11 @@ int main(){
     else
         throw std::runtime_error("ODE solver not implemented..");
 
+//    // Forward kinematics
+//    casadi::Dict opts_forwardKin;
+//    opts_forwardKin["enable_fd"] = true; // This is for now, someday, it will provide the dynamic derivative!
+//    casadi::Function forwardKin = casadi::external(forwardKinFunctionName, opts_forwardKin);
+
     // Prepare the NLP problem
     casadi::MX V;
     BoundaryConditions vBounds;
@@ -126,6 +128,9 @@ int main(){
     // Continuity constraints
     std::vector<casadi::MX> g;
     continuityConstraints(F, probSize, U, X, g);
+
+    // Path constraints
+    //pathConstraints(F, forwardKin, probSize, U, X, g);
 
     // Objective function
     casadi::MX J;
@@ -168,6 +173,5 @@ int main(){
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
     std::cout<<"Execution time: "<<time_exec<<std::endl;
-    return  0;
     return 0;
 }

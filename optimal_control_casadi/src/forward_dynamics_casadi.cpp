@@ -12,7 +12,7 @@ static casadi_int Qddot_sparsity[3] = {-1, 1, 1};
 static casadi_int Tau_sparsity[3] = {-1, 1, 1};
 static casadi_int Xp_sparsity[3] = {-1, 1, 1};
 
-void fillSparsity(){
+void libforward_dynamics_casadi_fillSparsity(){
     if (!isSparsityFilled){
         assert(m.nbQ() == m.nbQdot()); // Quaternions are not implemented so far
         assert(m.nbQdot() == m.nbGeneralizedTorque()); // Free falling model
@@ -30,7 +30,12 @@ const char* libforward_dynamics_casadi_name(void){
     return "libforward_dynamics_casadi";
 }
 
-int libforward_dynamics_casadi(const casadi_real** arg, casadi_real** res, casadi_int*, casadi_real*, void*){
+int libforward_dynamics_casadi(
+        const casadi_real** arg,
+        casadi_real** res,
+        casadi_int*,
+        casadi_real*,
+        void*){
     biorbd::rigidbody::GeneralizedCoordinates Q(m), Qdot(m), Qddot(m);
     biorbd::rigidbody::GeneralizedTorque Tau(m);
 
@@ -65,7 +70,7 @@ const char* libforward_dynamics_casadi_name_in(casadi_int i){
     }
 }
 const casadi_int* libforward_dynamics_casadi_sparsity_in(casadi_int i) {
-    fillSparsity();
+    libforward_dynamics_casadi_fillSparsity();
     switch (i) {
         case 0: return Xp_sparsity;
         case 1: return Tau_sparsity;
@@ -84,7 +89,7 @@ const char* libforward_dynamics_casadi_name_out(casadi_int i){
     }
 }
 const casadi_int* libforward_dynamics_casadi_sparsity_out(casadi_int i) {
-    fillSparsity();
+    libforward_dynamics_casadi_fillSparsity();
     switch (i) {
         case 0: return Xp_sparsity;
     default: return nullptr;

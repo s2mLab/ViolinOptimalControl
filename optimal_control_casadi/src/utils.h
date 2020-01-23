@@ -80,6 +80,14 @@ void defineMultipleShootingNodes(
         std::vector<casadi::MX> &U,
         std::vector<casadi::MX> &X);
 
+void pathConstraints(
+        const casadi::Function& dynamics,
+        const casadi::Function &forwardKin,
+        const ProblemSize& ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g);
+
 void continuityConstraints(
         const casadi::Function& dynamics,
         const ProblemSize& ps,

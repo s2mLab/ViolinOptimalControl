@@ -74,8 +74,26 @@ void defineMultipleShootingNodes(
     vInit.val.insert(vInit.val.end(), xInit.val.begin(), xInit.val.end());
     offset += ps.nx;
 
-    // Make sure that the size of the variable vector is consistent with the number of variables that we have referenced
+    // Make sure that the size of the variable vector is consistent with the
+    // number of variables that we have referenced
     casadi_assert(offset==static_cast<int>(NV), "");
+}
+
+void pathConstraints(
+        const casadi::Function &dynamics,
+        const casadi::Function &forwardKin,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g)
+{
+    casadi::MXDict frogAtStart = forwardKin(casadi::MXDict{{"States", X[0]}, {"MarkerIndex", 16}});
+    casadi::MXDict string = forwardKin(casadi::MXDict{{"States", X[0]}, {"MarkerIndex", 34}});
+    g.push_back( frogAtStart.at("Marker") - string.at("Marker") );
+
+    casadi::MXDict I_out = dynamics(casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
+    casadi::MXDict tipAtEnd = forwardKin(casadi::MXDict{{"States", I_out.at("xf")}, {"MarkerIndex", 18}});
+    g.push_back( tipAtEnd.at("Marker") - string.at("Marker") );
 }
 
 void continuityConstraints(

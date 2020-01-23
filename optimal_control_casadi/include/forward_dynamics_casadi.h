@@ -1,5 +1,5 @@
-#ifndef BIORBD_ACADO_INTERFACE_H
-#define BIORBD_ACADO_INTERFACE_H
+#ifndef FORWARD_DYNAMICS_CASADI_H
+#define FORWARD_DYNAMICS_CASADI_H
 
 #include <math.h>
 
@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 // Preparing stuff
-void fillSparsity();
+void libforward_dynamics_casadi_fillSparsity();
 
 // Functions
 BIORBD_API const char* libforward_dynamics_casadi_name(void);
@@ -49,4 +49,4 @@ BIORBD_API int libforward_dynamics_casadi_work(casadi_int *sz_arg,
 } /* extern "C" */
 #endif
 
-#endif // BIORBD_ACADO_INTERFACE_H
+#endif // FORWARD_DYNAMICS_CASADI_H
