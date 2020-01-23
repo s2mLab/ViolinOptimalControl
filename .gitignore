@@ -108,8 +108,8 @@ venv.bak/
 */[Dd]ebug/
 */[Rr]elease/
 */[Bb]uild/
-*/[Rr]esults/
-*/[Rr]esultats/
+[Rr]esults/
+[Rr]esultats/
 *.user*
 *.DS_Store
 *.png

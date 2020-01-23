@@ -5,11 +5,11 @@
 
 #include "biorbd.h"
 #include "includes/dynamics.h"
-biorbd::Model m("../../models/simple.bioMod");
+biorbd::Model m("../../models/eocar.bioMod");
 #include "includes/biorbd_initializer.h"
 
-const std::string optimizationName("eocarBiorbd");
-const std::string resultsPath("../Results/");
+const std::string optimizationName("eocarBiorbdAcado");
+const std::string resultsPath("../../Results/");
 const std::string controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
 const std::string stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
 
@@ -28,7 +28,7 @@ int  main(){
     OCP ocp(t_Start, t_End, nPoints);
 
     // ------------ CONSTRAINTS ----------- //
-    DifferentialState x("",nQ + nQdot,1);
+    DifferentialState x("",nQ + nQdot, 1);
     Control u("", nTau, 1);
     IntermediateState is("", nTau + nQ + nQdot, 1);
 
@@ -40,21 +40,21 @@ int  main(){
     DifferentialEquation f;
     ocp.subjectTo( (f << dot(x)) == cDynamics(is) );
 
-    for (int i=0; i<m.nbQ(); ++i){
+    for (unsigned int i=0; i<m.nbQ(); ++i){
         ocp.subjectTo( AT_START, x(i) ==  0 );
         if (i == 0){
-            ocp.subjectTo( AT_END, x(0) == 10.0);
+            ocp.subjectTo( AT_END, x(i) == 10.0);
         } else if (i == 1) {
-            ocp.subjectTo( AT_END, x(1) == 10.0);
+            ocp.subjectTo( AT_END, x(i) == 0.0);
         } else if (i == 2) {
-            ocp.subjectTo( AT_END, x(2) == 0.0);
+            ocp.subjectTo( AT_END, x(i) == 0.0);
         } else if (i == 3) {
-            ocp.subjectTo( AT_END, x(3) == M_PI/4);
+            ocp.subjectTo( AT_END, x(i) == M_PI/4);
         } else {
             throw std::runtime_error("Not valid dof");
         }
     }
-    for (int i=m.nbQ(); i<m.nbQ() + m.nbQdot(); ++i){
+    for (unsigned int i=m.nbQ(); i<m.nbQ() + m.nbQdot(); ++i){
         ocp.subjectTo( AT_START, x(i) == 0);
         ocp.subjectTo( AT_END, x(i) == 0);
     }
@@ -65,18 +65,18 @@ int  main(){
 
 
     // ------------ OBJECTIVE ----------- //
-    Expression sumLagrange(u*u);
+    Expression sumLagrange(u.transpose()*u);
     ocp.minimizeLagrangeTerm(sumLagrange);
 
     // ---------- VISUALIZATION ------------ //
     GnuplotWindow window;
-    for (int i=0; i<m.nbQ();  ++i){
+    for (unsigned int i=0; i<m.nbQ();  ++i){
         window.addSubplot( x(i), "Position" );
     }
-    for (int i=m.nbQ(); i<m.nbQ()+m.nbQdot();  ++i){
+    for (unsigned int i=m.nbQ(); i<m.nbQ()+m.nbQdot();  ++i){
         window.addSubplot( x(i), "Vitesse" );
     }
-    for (int i=0; i<m.nbGeneralizedTorque();  ++i){
+    for (unsigned int i=0; i<m.nbGeneralizedTorque();  ++i){
         window.addSubplot( u(i),  "Acceleration" );
     }
 
@@ -84,7 +84,7 @@ int  main(){
     // ---------- OPTIMIZATION  ------------ //
     OptimizationAlgorithm  algorithm( ocp ) ;
     algorithm.set(INTEGRATOR_TYPE, INT_RK45);
-    algorithm.set(HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE);
+    algorithm.set(HESSIAN_APPROXIMATION, BLOCK_BFGS_UPDATE);
     algorithm.set(KKT_TOLERANCE, 1e-6);
     algorithm << window;
     clock_t start = clock();

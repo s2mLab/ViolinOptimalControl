@@ -12,6 +12,7 @@ const double t_End = 2.0;
 const int nPoints(30);
 
 void finalPosition(double *x, double *g, void *){
+//    g[0] = 0;
     g[0] = 10 - x[0];
     g[1] = 10 - x[1];
     g[2] = x[2];
@@ -19,6 +20,7 @@ void finalPosition(double *x, double *g, void *){
 }
 
 void dynamics(double *is, double *g, void *){
+//    g[0] = 0;
     g[0] = is[2];
     g[1] = is[3];
     g[2] = is[4]-9.8;
@@ -26,8 +28,8 @@ void dynamics(double *is, double *g, void *){
 }
 
 int  main(){
-    int nx(4);
-    int nu(2);
+    unsigned int nx(4);
+    unsigned int nu(2);
     CFunction cFinalPosition(nx, finalPosition);
     CFunction cDynamics(nx, dynamics);
 
@@ -58,18 +60,18 @@ int  main(){
 //        ocp.subjectTo(-100 <= u(i) <= 100);
 
     // ------------ OBJECTIVE ----------- //
-    Expression sumLagrange(u*u);
+    Expression sumLagrange(u(0)*u(0) +u(1)*u(1));
     ocp.minimizeLagrangeTerm(sumLagrange);
 
     // ---------- VISUALIZATION ------------ //
     GnuplotWindow window;
-    for (int i=0; i<nx/2;  ++i){
+    for (unsigned int i=0; i<nx/2;  ++i){
         window.addSubplot( x(i), "Position" );
     }
-    for (int i=nx/2; i<nx;  ++i){
+    for (unsigned int i=nx/2; i<nx;  ++i){
         window.addSubplot( x(i), "Vitesse" );
     }
-    for (int i=0; i<nu;  ++i){
+    for (unsigned int i=0; i<nu;  ++i){
         window.addSubplot( u(i),  "Acceleration" );
     }
 

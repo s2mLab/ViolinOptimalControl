@@ -53,7 +53,8 @@ target_include_directories(utils PUBLIC
 # Problem definitions
 set(source_files
     eocar.cpp
-    arm.cpp
+    eocarBiorbd.cpp
+    UpAndDownBow.cpp
 )
 
 # Setup each project

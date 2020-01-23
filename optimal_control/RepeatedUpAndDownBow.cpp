@@ -53,7 +53,7 @@ const std::vector<double> initQFrogOnEString =
 const std::vector<double> initQTipOnEString =
 {0.03328374, -0.27888401, 0.7623438, 0.59379268, 0.16563931, 0.2443971, 0.1824652, 0.1587049, 0.52812319};
 
-const std::string resultsPath("../Results/");
+const std::string resultsPath("../../Results/");
 const std::string initializePath("../Initialisation/");
 const std::string optimizationName("RepeatedUpAndDownBow");
 

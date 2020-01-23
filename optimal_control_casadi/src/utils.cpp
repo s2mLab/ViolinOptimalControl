@@ -122,13 +122,8 @@ void solveProblemWithIpopt(
     // Set options
     casadi::Dict opts;
     opts["ipopt.tol"] = 1e-6;
-//    opts["ipopt.max_iter"] = 100;
+    opts["ipopt.max_iter"] = 1000;
     opts["ipopt.hessian_approximation"] = "limited-memory";
-//    opts["ipopt.lbfgs_memory"] = 20;
-    casadi::Dict opts_qpoases;
-    opts_qpoases["printLevel"] = "none";
-//    opts["qpsol_options"] = opts_qpoases;
-
 
     // Create an NLP solver and buffers
     casadi::Function solver = nlpsol("nlpsol", "ipopt", nlp, opts);

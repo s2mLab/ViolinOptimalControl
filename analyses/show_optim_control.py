@@ -8,8 +8,8 @@ import analyses.utils as utils
 
 
 # Options
-model_name = "simple"
-output_files = "eocarBiorbd"
+model_name = "eocar"
+output_files = "eocarBiorbdAcado"
 fun_dyn = utils.dynamics_no_contact
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
@@ -48,12 +48,12 @@ else:
     nb_controls = m.nbMuscleTotal()+m.nbGeneralizedTorque()
 
 # Read values
-t, all_q, all_qdot = utils.read_acado_output_states(f"../optimal_control/Results/States{output_files}.txt", m, nb_intervals,
+t, all_q, all_qdot = utils.read_acado_output_states(f"../Results/States{output_files}.txt", m, nb_intervals,
                                                     nb_phases)
-all_u = utils.read_acado_output_controls(f"../optimal_control/Results/Controls{output_files}.txt", nb_intervals, nb_phases,
+all_u = utils.read_acado_output_controls(f"../Results/Controls{output_files}.txt", nb_intervals, nb_phases,
                                          nb_controls)
 all_u = np.append(all_u, all_u[:, -1:], axis=1)  # For facilitate the visualization, add back the last values
-t_final = utils.organize_time(f"../optimal_control/Results/Parameters{output_files}.txt", t, nb_phases, nb_intervals, parameter=False)
+t_final = utils.organize_time(f"../Results/Parameters{output_files}.txt", t, nb_phases, nb_intervals, parameter=False)
 
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(
@@ -66,7 +66,7 @@ qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
 
 
-print(f"Objective function = {np.sum(all_u**2 * (t[1] - t[0]))}")
+print(f"Objective function = {np.sum(all_u[:, :-1]**2 * (t[1] - t[0]))}")
 # Show data
 plt.figure("States and torques res")
 for i in range(m.nbQ()):

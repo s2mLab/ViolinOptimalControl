@@ -1,29 +1,138 @@
 version 3
 
+// 4 MARQUEURS PAR SEGMENT
+
+
 // Informations générales
-root_actuated	0
+root_actuated	1
 external_forces	0
 
-// DEFINITION DU SEGMENTS
+// DEFINITION DES SEGMENTS
 
-// Thorax
-    segment Nothing
-        translations	x
-	endsegment
-	
-// Thorax
-    segment Thorax
-        parent Nothing
-        translations	y //z
-        //rotations	x
-		mass 1
-		inertia 
-		  1 0 0 
-		  0 1 0
-		  0 0 1
-		com 0 .5 0
-		mesh 0 0 0
-		mesh  0 1 0
+	segment	Cube1
+		RTinMatrix	1
+
+		RT
+			1.0000000000	0.0000000000	0.0000000000	0.0000000000
+			0.0000000000	1.0000000000	0.0000000000	0.0000000000
+			0.0000000000	0.0000000000	1.0000000000	0.0000000000
+			0.0000000000	0.0000000000	0.0000000000	1.0000000000
+
+		//translations	xyz 
+		//rotations	xyz
+
+		mass	1.00000
+
+		inertia
+			1.0000000000	0.0000000000	0.0000000000
+			0.0000000000	1.0000000000	0.0000000000
+			0.0000000000	0.0000000000	1.0000000000
+
+		com		0.0000000000		0.0000000000		0
+        
+        mesh -1 -1 -1
+        mesh -1 1 -1
+        mesh -1 1 1
+        mesh -1 -1 1
+        mesh -1 -1 -1
+        mesh 1 -1 -1
+        mesh 1 1 -1
+        mesh -1 1 -1
+        mesh 1 1 -1
+        mesh 1 1 1
+        mesh -1 1 1
+        mesh 1 1 1
+        mesh 1 -1 1
+        mesh -1 -1 1
+        mesh 1 -1 1
+        mesh 1 -1 -1
+
 	endsegment
 
+
+	segment	Cube2
+		RTinMatrix	1
+
+		RT
+			1.0000000000	0.0000000000	0.0000000000	0.0000000000
+			0.0000000000	1.0000000000	0.0000000000	0.0000000000
+			0.0000000000	0.0000000000	1.0000000000	-5.00000000000
+			0.0000000000	0.0000000000	0.0000000000	1.0000000000
+
+		//translations	xyz 
+		rotations	xyz
+
+		mass	1.00000
+
+		inertia
+			1.0000000000	0.0000000000	0.0000000000
+			0.0000000000	1.0000000000	0.0000000000
+			0.0000000000	0.0000000000	1.0000000000
+
+		com		0.0000000000		0.0000000000		0
+        
+        mesh -1 -1 -1
+        mesh -1 1 -1
+        mesh -1 1 1
+        mesh -1 -1 1
+        mesh -1 -1 -1
+        mesh 1 -1 -1
+        mesh 1 1 -1
+        mesh -1 1 -1
+        mesh 1 1 -1
+        mesh 1 1 1
+        mesh -1 1 1
+        mesh 1 1 1
+        mesh 1 -1 1
+        mesh -1 -1 1
+        mesh 1 -1 1
+        mesh 1 -1 -1
+
+	endsegment
+
+// DEFINITION DES MUSCLES
+
+// Cube1 > Cube2
+musclegroup Cube1Cube2
+	OriginParent		Cube1
+	InsertionParent		Cube2
+endmusclegroup 	
+
+	muscle	Coin1
+		Type 				IdealizedActuator
+		statetype			buchanan
+		musclegroup 		Cube1Cube2
+		OriginPosition		0.5 -0.5 -1
+		InsertionPosition	0.5 -0.5 1
+		maximalForce		1000
+	endmuscle
+
+	muscle	Coin2
+		Type 				IdealizedActuator
+		statetype			buchanan
+		musclegroup 		Cube1Cube2
+		OriginPosition		-0.5 -0.5 -1
+		InsertionPosition	-0.5 -0.5 1
+		maximalForce		1000
+	endmuscle
+
+	muscle	Coin3
+		Type 				IdealizedActuator
+		statetype			buchanan
+		musclegroup 		Cube1Cube2
+		OriginPosition		-0.5 0.5 -1
+		InsertionPosition	-0.5 0.5 1
+		maximalForce		1000
+	endmuscle
+
+	muscle	Coin4
+		Type 				IdealizedActuator
+		statetype			buchanan
+		musclegroup 		Cube1Cube2
+		OriginPosition		0.5 0.5 -1
+		InsertionPosition	0.5 0.5 1
+		maximalForce		1000
+	endmuscle
+
+			
 

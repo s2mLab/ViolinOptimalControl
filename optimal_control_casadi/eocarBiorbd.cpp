@@ -5,10 +5,10 @@
 #include "forward_dynamics_casadi.h"
 #include "biorbd.h"
 extern biorbd::Model m;
-biorbd::Model m("../../models/simple.bioMod");
+biorbd::Model m("../../models/eocar.bioMod");
 
 const std::string optimizationName("eocarBiorbdCasadi");
-const std::string resultsPath("../Results/");
+const std::string resultsPath("../../Results/");
 const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
 const biorbd::utils::Path stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
 
