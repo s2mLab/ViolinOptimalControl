@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED ( VERSION 3.1 )
-PROJECT("ViolonOptimal" CXX C)
+PROJECT("ViolonOptimalAcado" CXX C)
 
 # Set folder to look path to
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/modules)
