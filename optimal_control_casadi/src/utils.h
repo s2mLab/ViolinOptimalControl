@@ -84,6 +84,15 @@ struct IndexPairing{
     unsigned int idx2;
 };
 
+enum AXIS{
+    X,
+    Y,
+    Z,
+    MINUS_X,
+    MINUS_Y,
+    MINUS_Z,
+};
+
 enum PLANE{
     XY,
     YZ,
@@ -121,6 +130,16 @@ void defineMultipleShootingNodes(
         std::vector<casadi::MX> &U,
         std::vector<casadi::MX> &X);
 
+void alignAxesConstraint(
+        const casadi::Function &dynamics,
+        const casadi::Function &axesFunction,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g,
+        const std::vector<IndexPairing> &segmentsToAlign,
+        const std::vector<std::pair<AXIS, AXIS>> &axesOfSegmentToAlign);
+
 void projectionOnPlaneConstraint(
         const casadi::Function &dynamics,
         const casadi::Function &forwardKin,
@@ -128,7 +147,7 @@ void projectionOnPlaneConstraint(
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
-        std::vector<std::pair<IndexPairing, PLANE> > &pairs
+        const std::vector<std::pair<IndexPairing, PLANE> > &projectionPolicy
         );
 
 void followMarkerConstraint(
@@ -138,7 +157,7 @@ void followMarkerConstraint(
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
-        std::vector<IndexPairing>& pairs);
+        const std::vector<IndexPairing> &markerIdx);
 
 void continuityConstraints(
         const casadi::Function& dynamics,

@@ -79,6 +79,85 @@ void defineMultipleShootingNodes(
     casadi_assert(offset==static_cast<int>(NV), "");
 }
 
+void alignAxesConstraint(
+        const casadi::Function &dynamics,
+        const casadi::Function &axesFunction,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g,
+        const std::vector<IndexPairing> &segmentsToAlign,
+        const std::vector<std::pair<AXIS, AXIS>> &axesOfSegmentToAlign)
+{
+    // Compute the state at final in case one pairing needs it
+    casadi::MXDict I_end = dynamics(
+                casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
+
+    for (unsigned int p=0; p<segmentsToAlign.size(); ++p){
+        const IndexPairing& policy(segmentsToAlign[p]);
+        const std::pair<AXIS, AXIS>& axes(axesOfSegmentToAlign[p]);
+        for (unsigned int t=0; t<ps.ns+1; ++t){
+            casadi::MX x;
+            if (t == 0 && (policy.t == Instant::START || policy.t == Instant::ALL)){
+                // If at starting point
+                x = X[t];
+            }
+            else if (t == ps.ns && (policy.t == Instant::END || policy.t == Instant::ALL)){
+                // If at end point
+                x = I_end.at("xf");
+            }
+            else if (policy.t == Instant::MID || policy.t == Instant::ALL){
+                // If at mid points
+                x = X[t];
+            }
+            else {
+                continue;
+            }
+
+            std::vector<casadi::MXDict> rotSegment(2);
+            std::vector<casadi::MX> axisSegment(2);
+            for (unsigned int i=0; i<2; ++i){
+                int currentIdx;
+                AXIS currentAxis;
+                if (i == 0){
+                    currentIdx = policy.idx1;
+                    currentAxis = axes.first;
+                }
+                else {
+                    currentIdx = policy.idx2;
+                    currentAxis = axes.second;
+                }
+
+                rotSegment[i] = axesFunction(casadi::MXDict{
+                        {"States", x},
+                        {"UpdateKinematics", true},
+                        {"SegmentIndex", currentIdx}
+                        });
+
+                if (currentAxis == AXIS::X){
+                    axisSegment[i] = rotSegment[i].at("Axes")(casadi::Slice(0, 3), 0);
+                }
+                else if (currentAxis == AXIS::MINUS_X){
+                    axisSegment[i] = -rotSegment[i].at("Axes")(casadi::Slice(0, 3), 0);
+                }
+                else if (currentAxis == AXIS::Y){
+                    axisSegment[i] = rotSegment[i].at("Axes")(casadi::Slice(3, 6), 0);
+                }
+                else if (currentAxis == AXIS::MINUS_Y){
+                    axisSegment[i] = -rotSegment[i].at("Axes")(casadi::Slice(3, 6), 0);
+                }
+                else if (currentAxis == AXIS::Z){
+                    axisSegment[i] = rotSegment[i].at("Axes")(casadi::Slice(6, 9), 0);
+                }
+                else if (currentAxis == AXIS::MINUS_Z){
+                    axisSegment[i] = -rotSegment[i].at("Axes")(casadi::Slice(6, 9), 0);
+                }
+            }
+            g.push_back( 1 - casadi::MX::dot(axisSegment[0], axisSegment[1]) );
+        }
+    }
+}
+
 void projectionOnPlaneConstraint(
         const casadi::Function &dynamics,
         const casadi::Function &projectionFunction,
@@ -86,7 +165,7 @@ void projectionOnPlaneConstraint(
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
-        std::vector<std::pair<IndexPairing, PLANE>>& projectionPolicy
+        const std::vector<std::pair<IndexPairing, PLANE> > &projectionPolicy
         )
 {
     // Compute the state at final in case one pairing needs it
@@ -142,14 +221,14 @@ void followMarkerConstraint(
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
-        std::vector<IndexPairing>& pairs
+        const std::vector<IndexPairing>& markerIdx
         )
 {
     // Compute the state at final in case one pairing needs it
     casadi::MXDict I_end = dynamics(
                 casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
 
-    for (auto pair : pairs){
+    for (auto pair : markerIdx){
         for (unsigned int t=0; t<ps.ns+1; ++t){
             casadi::MX x;
             if (t == 0 && (pair.t == Instant::START || pair.t == Instant::ALL)){

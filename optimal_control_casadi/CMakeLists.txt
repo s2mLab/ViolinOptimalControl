@@ -23,66 +23,6 @@ link_directories(
   ${CMAKE_INSTALL_PREFIX}/lib
 )
 
-# Forward dynamics library
-add_library(forward_dynamics_casadi SHARED src/forward_dynamics_casadi.cpp)
-target_link_libraries(forward_dynamics_casadi
-    ${Biorbd_LIBRARIES}
-    ${RBDL_LIBRARY}
-)
-target_include_directories(forward_dynamics_casadi PUBLIC
-    include
-    ${CMAKE_INSTALL_PREFIX}/include
-    ${Biorbd_INCLUDE_DIR}
-    ${EIGEN3_INCLUDE_DIR}
-    ${RBDL_INCLUDE_DIR}
-    ${Boost_INCLUDE_DIRS}
-    ${IPOPT_INCLUDE_DIR}
-)
-
-# Forward kinematics library
-add_library(forward_kinematics_casadi SHARED src/forward_kinematics_casadi.cpp)
-target_link_libraries(forward_kinematics_casadi
-    ${Biorbd_LIBRARIES}
-    ${RBDL_LIBRARY}
-)
-target_include_directories(forward_kinematics_casadi PUBLIC
-    include
-    ${CMAKE_INSTALL_PREFIX}/include
-    ${Biorbd_INCLUDE_DIR}
-    ${EIGEN3_INCLUDE_DIR}
-    ${RBDL_INCLUDE_DIR}
-    ${Boost_INCLUDE_DIRS}
-    ${IPOPT_INCLUDE_DIR}
-)
-
-
-# Projection on XY plane library
-add_library(projectionOnSegment_casadi SHARED src/projectionOnSegment_casadi.cpp)
-target_link_libraries(projectionOnSegment_casadi
-    ${Biorbd_LIBRARIES}
-    ${RBDL_LIBRARY}
-)
-target_include_directories(projectionOnSegment_casadi PUBLIC
-    include
-    ${CMAKE_INSTALL_PREFIX}/include
-    ${Biorbd_INCLUDE_DIR}
-    ${EIGEN3_INCLUDE_DIR}
-    ${RBDL_INCLUDE_DIR}
-    ${Boost_INCLUDE_DIRS}
-    ${IPOPT_INCLUDE_DIR}
-)
-
-# NLP related functions
-add_library(utils SHARED src/utils.cpp)
-target_include_directories(utils PUBLIC
-    ${RBDL_INCLUDE_DIR}
-    ${EIGEN3_INCLUDE_DIR}
-    ${Biorbd_INCLUDE_DIR}
-    ${Casadi_INCLUDE_DIR}
-    ${Casadi_INCLUDE_DIR}/..
-    ${IPOPT_INCLUDE_DIR}
-)
-
 # Problem definitions
 set(source_files
     eocar.cpp
@@ -90,6 +30,36 @@ set(source_files
     eocarBiorbdKinConstraint.cpp
     UpAndDownBow.cpp
 )
+
+# library files
+set(library_names
+    utils
+    forward_dynamics_casadi
+    forward_kinematics_casadi
+    projectionOnSegment_casadi
+    segment_axes_casadi
+)
+
+# Setup each project
+foreach(library_name ${library_names})
+    # Forward dynamics library
+    add_library(${library_name} SHARED src/${library_name}.cpp)
+    target_link_libraries(${library_name}
+        ${Biorbd_LIBRARIES}
+        ${RBDL_LIBRARY}
+    )
+    target_include_directories(${library_name} PUBLIC
+        include
+        ${CMAKE_INSTALL_PREFIX}/include
+        ${Biorbd_INCLUDE_DIR}
+        ${EIGEN3_INCLUDE_DIR}
+        ${RBDL_INCLUDE_DIR}
+        ${Boost_INCLUDE_DIRS}
+        ${IPOPT_INCLUDE_DIR}
+        ${Casadi_INCLUDE_DIR}
+        ${Casadi_INCLUDE_DIR}/..
+    )
+endforeach()
 
 # Setup each project
 foreach(src_file ${source_files})
@@ -105,21 +75,14 @@ foreach(src_file ${source_files})
     )
 
     target_link_libraries(${filename}
-        forward_dynamics_casadi
-        forward_kinematics_casadi
-        projectionOnSegment_casadi
-        utils
+        ${library_names}
         ${Biorbd_LIBRARIES}
         ${Casadi_LIBRARY}
       )
 endforeach()
 
 install(
-    TARGETS forward_dynamics_casadi
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(
-    TARGETS forward_kinematics_casadi
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(
-    TARGETS projectionOnSegment_casadi
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+    TARGETS ${library_names}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+

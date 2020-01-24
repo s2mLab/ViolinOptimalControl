@@ -5,6 +5,7 @@
 #include "forward_dynamics_casadi.h"
 #include "forward_kinematics_casadi.h"
 #include "projectionOnSegment_casadi.h"
+#include "segment_axes_casadi.h"
 
 #include "biorbd.h"
 extern biorbd::Model m;
@@ -29,6 +30,7 @@ int main(){
     std::string dynamicsFunctionName(libforward_dynamics_casadi_name());
     std::string forwardKinFunctionName(libforward_kinematics_casadi_name());
     std::string projectionFunctionName(libprojectionOnSegment_casadi_name());
+    std::string axesFunctionName(libsegment_axes_casadi_name());
 
     // Chose the ODE solver
     int odeSolver(ODE_SOLVER::RK);
@@ -88,16 +90,20 @@ int main(){
     };
 
     // Start at the starting point and finish at the ending point
-    std::vector<IndexPairing> markersToPair(2);
-    markersToPair[0] = IndexPairing(Instant::START, 0, 1);
-    markersToPair[1] = IndexPairing(Instant::END, 0, 2);
+    std::vector<IndexPairing> markersToPair;
+    markersToPair.push_back(IndexPairing(Instant::START, 0, 1));
+    markersToPair.push_back(IndexPairing(Instant::END, 0, 2));
 
     // Always point towards the point(3)
     std::vector<std::pair<IndexPairing, PLANE>> markerToProject;
-    markerToProject.push_back(std::pair<IndexPairing, PLANE>(
-                                 IndexPairing (Instant::ALL, 0, 3), PLANE::XZ));
+//    markerToProject.push_back(std::pair<IndexPairing, PLANE>(
+//                                 IndexPairing (Instant::ALL, 0, 3), PLANE::XZ));
 
-
+    // Always point upward
+    std::vector<IndexPairing> axesToAlign(2);
+    axesToAlign[0] = IndexPairing(Instant::ALL, 0, 1);
+    std::vector<std::pair<AXIS, AXIS>> axes;
+    axes.push_back(std::pair<AXIS, AXIS>(AXIS::X, AXIS::X));
 
     // From here, unless one wants to fundamentally change the problem,
     // they should not change anything
@@ -152,6 +158,12 @@ int main(){
     opts_projectionFunction["enable_fd"] = true;
     casadi::Function projectionFunction = casadi::external(projectionFunctionName, opts_projectionFunction);
     projectionOnPlaneConstraint(F, projectionFunction, probSize, U, X, g, markerToProject);
+
+    // Path constraints
+    casadi::Dict opts_axesFunction;
+    opts_axesFunction["enable_fd"] = true;
+    casadi::Function axesFunction = casadi::external(axesFunctionName, opts_axesFunction);
+    alignAxesConstraint(F, axesFunction, probSize, U, X, g, axesToAlign, axes);
 
     // Objective function
     casadi::MX J;
