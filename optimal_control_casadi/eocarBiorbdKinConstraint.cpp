@@ -8,39 +8,9 @@
 
 #include "biorbd.h"
 extern biorbd::Model m;
+biorbd::Model m("../../models/eocar.bioMod");
 
-biorbd::Model m("../../models/BrasViolon.bioMod");
-const std::string optimizationName("UpAndDowsBowCasadi");
-const ViolinStringNames stringPlayed(ViolinStringNames::E);
-
-static int idxSegmentBow(8);
-static int tagBowFrog(16);
-static int tagBowTip(18);
-static int tagViolinBString(38);
-static int tagViolinEString(34);
-static int tagViolinAString(35);
-static int tagViolinDString(36);
-static int tagViolinGString(37);
-static int tagViolinCString(39);
-
-// The following values for initialization were determined using the "find_initial_pose.py" script
-const std::vector<double> initQFrogOnGString =
-{-0.07018473, -0.0598567, 1.1212999, 0.90238053, 1.4856272, -0.09812186, 0.1498479, -0.48374356, -0.41007239};
-const std::vector<double> initQTipOnGString =
-{0.07919993, -0.80789739, 0.96181894, 0.649565, 0.24537634, -0.16297839, 0.0659226, 0.14617512, 0.49722962};
-const std::vector<double> initQFrogOnDString =
-{0.02328389, 0.03568661, 0.99308077, 0.93208313, 1.48380368, -0.05939737, 0.26778731, -0.50387155, -0.43094647};
-const std::vector<double> initQTipOnDString =
-{0.08445998, -0.66837886, 0.91480044, 0.66766976, 0.25110097, -0.07526545, 0.09689908, -0.00561614, 0.62755419};
-const std::vector<double> initQFrogOnAString =
-{-0.0853157, -0.03099135, 1.04751851, 0.93222374, 1.50707542, -0.12888636, 0.04174079, -0.57032577, -0.31175627};
-const std::vector<double> initQTipOnAString =
-{-0.06506266, -0.44904332, 0.97090727, 1.00055219, 0.17983593, -0.3363436, -0.03281452, 0.04678383, 0.64465767};
-const std::vector<double> initQFrogOnEString =
-{-0.19923285, 0.08890963, 0.99469991, 0.97362544, 1.48863482, -0.09960671, 0.01607784, -0.44009434, -0.36712403};
-const std::vector<double> initQTipOnEString =
-{0.03328374, -0.27888401, 0.7623438, 0.59379268, 0.16563931, 0.2443971, 0.1824652, 0.1587049, 0.52812319};
-
+const std::string optimizationName("eocarBiorbdConstraintCasadi");
 const std::string resultsPath("../../Results/");
 const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
 const biorbd::utils::Path stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
@@ -94,24 +64,6 @@ int main(){
     }
     BoundaryConditions xBounds;
     InitialConditions xInit;
-//    std::vector<double> initQFrog;
-//    std::vector<double> initQTip;
-//    if (stringPlayed == ViolinStringNames::E){
-//        initQFrog = tagViolinEString;
-//        initQTip = tagViolinEString;
-//    }
-//    else if (stringPlayed == ViolinStringNames::A){
-//        initQFrog = tagViolinEString;
-//        initQTip = tagViolinEString;
-//    }
-//    else if (stringPlayed == ViolinStringNames::D){
-//        initQFrog = tagViolinDString;
-//        initQTip = tagViolinEString;
-//    }
-//    else if (stringPlayed == ViolinStringNames::G){
-//        initQFrog = tagViolinGString;
-//        initQTip = tagViolinEString;
-//    }
     for (unsigned int i=0; i<m.nbQ(); ++i) {
         xBounds.starting_min.push_back(ranges[i].min());
         xBounds.min.push_back(ranges[i].min());
@@ -124,39 +76,26 @@ int main(){
         xInit.val.push_back(0);
     };
     for (unsigned int i=0; i<m.nbQdot(); ++i) {
-        xBounds.starting_min.push_back(-100);
+        xBounds.starting_min.push_back(0);
         xBounds.min.push_back(-100);
-        xBounds.end_min.push_back(-100);
+        xBounds.end_min.push_back(0);
 
-        xBounds.starting_max.push_back(100);
+        xBounds.starting_max.push_back(0);
         xBounds.max.push_back(100);
-        xBounds.end_max.push_back(100);
+        xBounds.end_max.push_back(0);
 
         xInit.val.push_back(0);
     };
 
-    // Get to frog and tip at beggining and end
-    int stringIdx;
-    if (stringPlayed == ViolinStringNames::E){
-        stringIdx = tagViolinEString;
-    }
-    else if (stringPlayed == ViolinStringNames::A){
-        stringIdx = tagViolinAString;
-    }
-    else if (stringPlayed == ViolinStringNames::D){
-        stringIdx = tagViolinDString;
-    }
-    else if (stringPlayed == ViolinStringNames::G){
-        stringIdx = tagViolinGString;
-    }
-    std::vector<IndexPairing> markersToPair;
-    markersToPair.push_back(IndexPairing(Instant::START, tagBowFrog, stringIdx));
-    markersToPair.push_back(IndexPairing(Instant::END, tagBowTip, stringIdx));
+    // Start at the starting point and finish at the ending point
+    std::vector<IndexPairing> markersToPair(2);
+    markersToPair[0] = IndexPairing(Instant::START, 0, 1);
+    markersToPair[1] = IndexPairing(Instant::END, 0, 2);
 
-    // Keep the bow on the string
+    // Always point towards the point(3)
     std::vector<std::pair<IndexPairing, PLANE>> markerToProject;
     markerToProject.push_back(std::pair<IndexPairing, PLANE>(
-        IndexPairing (Instant::ALL, idxSegmentBow, stringIdx), PLANE::XZ));
+                                 IndexPairing (Instant::ALL, 0, 3), PLANE::XZ));
 
 
 
@@ -189,7 +128,7 @@ int main(){
 
     // Forward kinematics
     casadi::Dict opts_forwardKin;
-    opts_forwardKin["enable_fd"] = true; // This is for now, someday, it will provide the dynamic derivative!
+    opts_forwardKin["enable_fd"] = true;
     casadi::Function forwardKin = casadi::external(forwardKinFunctionName, opts_forwardKin);
 
     // Prepare the NLP problem
@@ -220,8 +159,8 @@ int main(){
 
     // Optimize
     std::cout << "Solving the optimal control problem..." << std::endl;
-    clock_t start = clock();
     std::vector<double> V_opt;
+    clock_t start = clock();
     solveProblemWithIpopt(V, vBounds, vInit, J, g, V_opt);
     clock_t end=clock();
     std::cout << "Done!" << std::endl;
@@ -255,5 +194,6 @@ int main(){
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
     std::cout<<"Execution time: "<<time_exec<<std::endl;
+    return  0;
     return 0;
 }

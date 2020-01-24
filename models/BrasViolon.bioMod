@@ -260,7 +260,7 @@ external_forces	0
 	endmarker
     marker Tete                 //18
 	    parent Archet
-	    position 0 -0.550 0.001
+	    position 0 -0.550 0
 	endmarker
 	
 // Deuxième bras

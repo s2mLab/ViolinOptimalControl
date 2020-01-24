@@ -79,21 +79,108 @@ void defineMultipleShootingNodes(
     casadi_assert(offset==static_cast<int>(NV), "");
 }
 
-void pathConstraints(
+void projectionOnPlaneConstraint(
+        const casadi::Function &dynamics,
+        const casadi::Function &projectionFunction,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g,
+        std::vector<std::pair<IndexPairing, PLANE>>& projectionPolicy
+        )
+{
+    // Compute the state at final in case one pairing needs it
+    casadi::MXDict I_end = dynamics(
+                casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
+
+    for (auto policy : projectionPolicy){
+        for (unsigned int t=0; t<ps.ns+1; ++t){
+            casadi::MX x;
+            if (t == 0 && (policy.first.t == Instant::START || policy.first.t == Instant::ALL)){
+                // If at starting point
+                x = X[t];
+            }
+            else if (t == ps.ns && (policy.first.t == Instant::END || policy.first.t == Instant::ALL)){
+                // If at end point
+                x = I_end.at("xf");
+            }
+            else if (policy.first.t == Instant::MID || policy.first.t == Instant::ALL){
+                // If at mid points
+                x = X[t];
+            }
+            else {
+                continue;
+            }
+            casadi::MXDict M(projectionFunction(casadi::MXDict{
+                    {"States", x},
+                    {"UpdateKinematics", true},
+                    {"SegmentToProjectOnIndex", policy.first.idx1},
+                    {"MarkerToProjectIndex", policy.first.idx2},
+                    }));
+
+            if (policy.second == PLANE::XY){
+                g.push_back( M.at("ProjectedMarker")(0, 0) );
+                g.push_back( M.at("ProjectedMarker")(1, 0) );
+            }
+            else if (policy.second == PLANE::YZ){
+                g.push_back( M.at("ProjectedMarker")(1, 0) );
+                g.push_back( M.at("ProjectedMarker")(2, 0) );
+            }
+            else if (policy.second == PLANE::XZ){
+                g.push_back( M.at("ProjectedMarker")(0, 0) );
+                g.push_back( M.at("ProjectedMarker")(2, 0) );
+            }
+
+        }
+    }
+}
+
+void followMarkerConstraint(
         const casadi::Function &dynamics,
         const casadi::Function &forwardKin,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
-        std::vector<casadi::MX> &g)
+        std::vector<casadi::MX> &g,
+        std::vector<IndexPairing>& pairs
+        )
 {
-    casadi::MXDict frogAtStart = forwardKin(casadi::MXDict{{"States", X[0]}, {"MarkerIndex", 16}});
-    casadi::MXDict string = forwardKin(casadi::MXDict{{"States", X[0]}, {"MarkerIndex", 34}});
-    g.push_back( frogAtStart.at("Marker") - string.at("Marker") );
+    // Compute the state at final in case one pairing needs it
+    casadi::MXDict I_end = dynamics(
+                casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
 
-    casadi::MXDict I_out = dynamics(casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
-    casadi::MXDict tipAtEnd = forwardKin(casadi::MXDict{{"States", I_out.at("xf")}, {"MarkerIndex", 18}});
-    g.push_back( tipAtEnd.at("Marker") - string.at("Marker") );
+    for (auto pair : pairs){
+        for (unsigned int t=0; t<ps.ns+1; ++t){
+            casadi::MX x;
+            if (t == 0 && (pair.t == Instant::START || pair.t == Instant::ALL)){
+                // If at starting point
+                x = X[t];
+            }
+            else if (t == ps.ns && (pair.t == Instant::END || pair.t == Instant::ALL)){
+                // If at end point
+                x = I_end.at("xf");
+            }
+            else if (pair.t == Instant::MID || pair.t == Instant::ALL){
+                // If at mid points
+                x = X[t];
+            }
+            else {
+                continue;
+            }
+
+            casadi::MXDict M1(forwardKin(casadi::MXDict{
+                    {"States", x},
+                    {"UpdateKinematics", true},
+                    {"MarkerIndex", pair.idx1}
+                    }));
+            casadi::MXDict M2(forwardKin(casadi::MXDict{
+                    {"States", x},
+                    {"UpdateKinematics", false},
+                    {"MarkerIndex", pair.idx2}
+                    }));
+            g.push_back( M1.at("Marker") - M2.at("Marker") );
+        }
+    }
 }
 
 void continuityConstraints(

@@ -9,15 +9,39 @@ external_forces	0
 // Thorax
     segment Thorax
     translations	xyz
-    rotations	x
+    rotations	xyz
 		mass 1
 		inertia 
 		  1 0 0 
 		  0 1 0
 		  0 0 1
-		com 0 .5 0
+		com 0.5 0.5 0.5
 		mesh 0 0 0
 		mesh  0 1 0
 	endsegment
+	
+// Marker on thorax
+    marker m1
+        parent Thorax
+        position 0 0 0
+    endmarker
 
-
+// Ground
+    segment ground
+    endsegment
+    
+// Markers on ground
+    marker m1
+        parent ground
+        position 1 0 0
+    endmarker
+    
+    marker m2
+        parent ground
+        position 0 0 1
+    endmarker
+    
+    marker m3
+        parent ground
+        position 1 1 1
+    endmarker

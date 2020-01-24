@@ -51,10 +51,51 @@ struct BoundaryConditions{
 };
 
 struct InitialConditions{
-    InitialConditions(std::vector<double> initialGuess = {}){
-        this->val = initialGuess;
-    }
+    InitialConditions(
+            std::vector<double> initialGuess = {}):
+            val(initialGuess)
+    {}
     std::vector<double> val;
+};
+
+enum Instant{
+    START = 0,
+    MID,
+    END,
+    ALL,
+    NONE
+};
+
+struct IndexPairing{
+    IndexPairing():
+        t(Instant::NONE),
+        idx1(UINT_MAX),
+        idx2(UINT_MAX)
+    {}
+    IndexPairing(const Instant& _t,
+                 unsigned int _idx1,
+                 unsigned int _idx2):
+        t(_t),
+        idx1(_idx1),
+        idx2(_idx2)
+    {}
+    Instant t;
+    unsigned int idx1;
+    unsigned int idx2;
+};
+
+enum PLANE{
+    XY,
+    YZ,
+    XZ
+};
+
+enum ViolinStringNames{
+    E,
+    A,
+    D,
+    G,
+    NO_STRING
 };
 
 enum ODE_SOLVER{
@@ -80,13 +121,24 @@ void defineMultipleShootingNodes(
         std::vector<casadi::MX> &U,
         std::vector<casadi::MX> &X);
 
-void pathConstraints(
+void projectionOnPlaneConstraint(
+        const casadi::Function &dynamics,
+        const casadi::Function &forwardKin,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g,
+        std::vector<std::pair<IndexPairing, PLANE> > &pairs
+        );
+
+void followMarkerConstraint(
         const casadi::Function& dynamics,
         const casadi::Function &forwardKin,
         const ProblemSize& ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
-        std::vector<casadi::MX> &g);
+        std::vector<casadi::MX> &g,
+        std::vector<IndexPairing>& pairs);
 
 void continuityConstraints(
         const casadi::Function& dynamics,

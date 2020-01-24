@@ -55,6 +55,23 @@ target_include_directories(forward_kinematics_casadi PUBLIC
     ${IPOPT_INCLUDE_DIR}
 )
 
+
+# Projection on XY plane library
+add_library(projectionOnSegment_casadi SHARED src/projectionOnSegment_casadi.cpp)
+target_link_libraries(projectionOnSegment_casadi
+    ${Biorbd_LIBRARIES}
+    ${RBDL_LIBRARY}
+)
+target_include_directories(projectionOnSegment_casadi PUBLIC
+    include
+    ${CMAKE_INSTALL_PREFIX}/include
+    ${Biorbd_INCLUDE_DIR}
+    ${EIGEN3_INCLUDE_DIR}
+    ${RBDL_INCLUDE_DIR}
+    ${Boost_INCLUDE_DIRS}
+    ${IPOPT_INCLUDE_DIR}
+)
+
 # NLP related functions
 add_library(utils SHARED src/utils.cpp)
 target_include_directories(utils PUBLIC
@@ -70,6 +87,7 @@ target_include_directories(utils PUBLIC
 set(source_files
     eocar.cpp
     eocarBiorbd.cpp
+    eocarBiorbdKinConstraint.cpp
     UpAndDownBow.cpp
 )
 
@@ -89,6 +107,7 @@ foreach(src_file ${source_files})
     target_link_libraries(${filename}
         forward_dynamics_casadi
         forward_kinematics_casadi
+        projectionOnSegment_casadi
         utils
         ${Biorbd_LIBRARIES}
         ${Casadi_LIBRARY}
@@ -100,4 +119,7 @@ install(
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(
     TARGETS forward_kinematics_casadi
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(
+    TARGETS projectionOnSegment_casadi
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
