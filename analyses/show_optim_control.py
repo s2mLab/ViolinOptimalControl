@@ -8,8 +8,8 @@ import analyses.utils as utils
 
 
 # Options
-model_name = "eocar"  # "eocar" "BrasViolon"
-output_files = "eocarBiorbdConstraintCasadi"  # "eocarBiorbdConstraintCasadi" "UpAndDowsBowCasadi"
+model_name = "BrasViolon"  # "eocar" "BrasViolon"
+output_files = "UpAndDowsBowCasadi"  # "eocarBiorbdConstraintCasadi" "UpAndDowsBowCasadi"
 fun_dyn = utils.dynamics_no_contact
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
@@ -57,7 +57,7 @@ t_final = utils.organize_time(f"../Results/Parameters{output_files}.txt", t, nb_
 
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(
-    m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=True, algo=runge_kutta_algo
+    m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=False, algo=runge_kutta_algo
 )
 
 # Interpolate

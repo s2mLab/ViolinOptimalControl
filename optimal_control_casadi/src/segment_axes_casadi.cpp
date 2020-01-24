@@ -9,7 +9,10 @@ static bool isSparsityFilled(false);
 static casadi_int Q_sparsity[3] = {-1, 1, 1};
 static casadi_int UpdateKin_sparsity[3] = {-1, 1, 1};
 
-static casadi_int SegmentIndex_sparsity[3] = {-1, 1, 1};
+static casadi_int Segment1Index_sparsity[3] = {-1, 1, 1};
+static casadi_int Segment1Axis_sparsity[3] = {-1, 1, 1};
+static casadi_int Segment2Index_sparsity[3] = {-1, 1, 1};
+static casadi_int Segment2Axis_sparsity[3] = {-1, 1, 1};
 static casadi_int Axis_sparsity[3] = {-1, 1, 1};
 
 void libsegment_axes_casadi_fillSparsity(){
@@ -17,8 +20,11 @@ void libsegment_axes_casadi_fillSparsity(){
         Q_sparsity[0] = m.nbQ() + m.nbQdot();
         UpdateKin_sparsity[0] = 1;
 
-        SegmentIndex_sparsity[0] = 1;
-        Axis_sparsity[0] = 9;
+        Segment1Index_sparsity[0] = 1;
+        Segment1Axis_sparsity[0] = 1;
+        Segment2Index_sparsity[0] = 1;
+        Segment2Axis_sparsity[0] = 1;
+        Axis_sparsity[0] = 1;
 
         isSparsityFilled = true;
     }
@@ -42,28 +48,66 @@ int libsegment_axes_casadi(
     bool updateKinematics = static_cast<bool>(arg[1][0]);
 
     // Get the RT for the segment
-    unsigned int segmentIdx = static_cast<unsigned int>(arg[2][0]);
-    biorbd::utils::Rotation rt(m.globalJCS(Q, segmentIdx).rot());
+    unsigned int segment1Idx = static_cast<unsigned int>(arg[2][0]);
+    unsigned int segment2Idx = static_cast<unsigned int>(arg[4][0]);
+    biorbd::utils::Rotation rt1(m.globalJCS(Q, segment1Idx).rot());
+    biorbd::utils::Rotation rt2(m.globalJCS(Q, segment2Idx).rot());
+
+    // Extract the respective axes
+    AXIS axis1Idx = static_cast<AXIS>(arg[3][0]);
+    AXIS axis2Idx = static_cast<AXIS>(arg[5][0]);
+
+    biorbd::utils::Vector axis1;
+    if (axis1Idx == AXIS::X){
+        axis1 = rt1.axe(0);
+    } else if (axis1Idx == AXIS::MINUS_X){
+        axis1 = -rt1.axe(0);
+    } else if (axis1Idx == AXIS::Y){
+        axis1 = rt1.axe(1);
+    } else if (axis1Idx == AXIS::MINUS_Y){
+        axis1 = -rt1.axe(1);
+    } else if (axis1Idx == AXIS::Z){
+        axis1 = rt1.axe(2);
+    } else if (axis1Idx == AXIS::MINUS_Z){
+        axis1 = -rt1.axe(2);
+    }
+
+    biorbd::utils::Vector axis2;
+    if (axis2Idx == AXIS::X){
+        axis2 = rt2.axe(0);
+    } else if (axis2Idx == AXIS::MINUS_X){
+        axis2 = -rt2.axe(0);
+    } else if (axis2Idx == AXIS::Y){
+        axis2 = rt2.axe(1);
+    } else if (axis2Idx == AXIS::MINUS_Y){
+        axis2 = -rt2.axe(1);
+    } else if (axis2Idx == AXIS::Z){
+        axis2 = rt2.axe(2);
+    } else if (axis2Idx == AXIS::MINUS_Z){
+        axis2 = -rt2.axe(2);
+    }
 
     // Return the answers
-    for (unsigned int i=0; i<3; ++i){
-        for (unsigned int j=0; j<3; ++j){
-            res[0][i*3+j] = rt(i, j);
-        }
-    }
+    res[0][0] = 1 - axis1.dot(axis2);
+//    res[0][0] = (axis1 - axis2)[0];
+//    res[0][1] = (axis1 - axis2)[1];
+//    res[0][2] = (axis1 - axis2)[2];
 
     return 0;
 }
 
 // IN
 casadi_int libsegment_axes_casadi_n_in(void){
-    return 3;
+    return 6;
 }
 const char* libsegment_axes_casadi_name_in(casadi_int i){
     switch (i) {
     case 0: return "States";
     case 1: return "UpdateKinematics";
-    case 2: return "SegmentIndex";
+    case 2: return "Segment1Index";
+    case 3: return "Segment1Axis";
+    case 4: return "Segment2Index";
+    case 5: return "Segment2Axis";
     default: return nullptr;
     }
 }
@@ -72,7 +116,10 @@ const casadi_int* libsegment_axes_casadi_sparsity_in(casadi_int i) {
     switch (i) {
     case 0: return Q_sparsity;
     case 1: return UpdateKin_sparsity;
-    case 2: return SegmentIndex_sparsity;
+    case 2: return Segment1Index_sparsity;
+    case 3: return Segment1Axis_sparsity;
+    case 4: return Segment2Index_sparsity;
+    case 5: return Segment2Axis_sparsity;
     default: return nullptr;
     }
 }

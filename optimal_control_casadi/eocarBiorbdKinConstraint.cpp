@@ -100,10 +100,12 @@ int main(){
 //                                 IndexPairing (Instant::ALL, 0, 3), PLANE::XZ));
 
     // Always point upward
-    std::vector<IndexPairing> axesToAlign(2);
-    axesToAlign[0] = IndexPairing(Instant::ALL, 0, 1);
-    std::vector<std::pair<AXIS, AXIS>> axes;
-    axes.push_back(std::pair<AXIS, AXIS>(AXIS::X, AXIS::X));
+    std::vector<IndexPairing> axesToAlign;
+    axesToAlign.push_back(IndexPairing(Instant::ALL, 0, 1));
+    std::vector<std::pair<int, int>> axes;
+    axes.push_back(std::pair<int, int>(AXIS::X, AXIS::MINUS_X));
+
+
 
     // From here, unless one wants to fundamentally change the problem,
     // they should not change anything

@@ -84,15 +84,6 @@ struct IndexPairing{
     unsigned int idx2;
 };
 
-enum AXIS{
-    X,
-    Y,
-    Z,
-    MINUS_X,
-    MINUS_Y,
-    MINUS_Z,
-};
-
 enum PLANE{
     XY,
     YZ,
@@ -138,7 +129,7 @@ void alignAxesConstraint(
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
         const std::vector<IndexPairing> &segmentsToAlign,
-        const std::vector<std::pair<AXIS, AXIS>> &axesOfSegmentToAlign);
+        const std::vector<std::pair<int, int>> &axesOfSegmentToAlign);
 
 void projectionOnPlaneConstraint(
         const casadi::Function &dynamics,

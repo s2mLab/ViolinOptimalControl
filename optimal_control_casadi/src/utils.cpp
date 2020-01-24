@@ -87,7 +87,7 @@ void alignAxesConstraint(
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
         const std::vector<IndexPairing> &segmentsToAlign,
-        const std::vector<std::pair<AXIS, AXIS>> &axesOfSegmentToAlign)
+        const std::vector<std::pair<int, int> > &axesOfSegmentToAlign)
 {
     // Compute the state at final in case one pairing needs it
     casadi::MXDict I_end = dynamics(
@@ -95,7 +95,7 @@ void alignAxesConstraint(
 
     for (unsigned int p=0; p<segmentsToAlign.size(); ++p){
         const IndexPairing& policy(segmentsToAlign[p]);
-        const std::pair<AXIS, AXIS>& axes(axesOfSegmentToAlign[p]);
+        const std::pair<int, int>& axes(axesOfSegmentToAlign[p]);
         for (unsigned int t=0; t<ps.ns+1; ++t){
             casadi::MX x;
             if (t == 0 && (policy.t == Instant::START || policy.t == Instant::ALL)){
@@ -113,47 +113,15 @@ void alignAxesConstraint(
             else {
                 continue;
             }
-
-            std::vector<casadi::MXDict> rotSegment(2);
-            std::vector<casadi::MX> axisSegment(2);
-            for (unsigned int i=0; i<2; ++i){
-                int currentIdx;
-                AXIS currentAxis;
-                if (i == 0){
-                    currentIdx = policy.idx1;
-                    currentAxis = axes.first;
-                }
-                else {
-                    currentIdx = policy.idx2;
-                    currentAxis = axes.second;
-                }
-
-                rotSegment[i] = axesFunction(casadi::MXDict{
-                        {"States", x},
-                        {"UpdateKinematics", true},
-                        {"SegmentIndex", currentIdx}
-                        });
-
-                if (currentAxis == AXIS::X){
-                    axisSegment[i] = rotSegment[i].at("Axes")(casadi::Slice(0, 3), 0);
-                }
-                else if (currentAxis == AXIS::MINUS_X){
-                    axisSegment[i] = -rotSegment[i].at("Axes")(casadi::Slice(0, 3), 0);
-                }
-                else if (currentAxis == AXIS::Y){
-                    axisSegment[i] = rotSegment[i].at("Axes")(casadi::Slice(3, 6), 0);
-                }
-                else if (currentAxis == AXIS::MINUS_Y){
-                    axisSegment[i] = -rotSegment[i].at("Axes")(casadi::Slice(3, 6), 0);
-                }
-                else if (currentAxis == AXIS::Z){
-                    axisSegment[i] = rotSegment[i].at("Axes")(casadi::Slice(6, 9), 0);
-                }
-                else if (currentAxis == AXIS::MINUS_Z){
-                    axisSegment[i] = -rotSegment[i].at("Axes")(casadi::Slice(6, 9), 0);
-                }
-            }
-            g.push_back( 1 - casadi::MX::dot(axisSegment[0], axisSegment[1]) );
+            casadi::MXDict angle = axesFunction(casadi::MXDict{
+                             {"States", x},
+                             {"UpdateKinematics", true},
+                             {"Segment1Index", policy.idx1},
+                             {"Segment1Axis", axes.first},
+                             {"Segment2Index", policy.idx2},
+                             {"Segment2Axis", axes.second}
+                            });
+            g.push_back( angle.at("Axes") );
         }
     }
 }

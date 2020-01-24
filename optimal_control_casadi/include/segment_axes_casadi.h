@@ -6,6 +6,15 @@
 #include "biorbd.h"
 extern biorbd::Model m;
 
+enum AXIS{
+    X,
+    Y,
+    Z,
+    MINUS_X,
+    MINUS_Y,
+    MINUS_Z,
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
