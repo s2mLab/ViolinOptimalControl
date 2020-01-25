@@ -5,7 +5,7 @@
 #include "forward_dynamics_casadi.h"
 #include "forward_kinematics_casadi.h"
 #include "projectionOnSegment_casadi.h"
-#include "segment_axes_casadi.h"
+#include "angle_between_segments_casadi.h"
 
 #include "biorbd.h"
 extern biorbd::Model m;
@@ -14,15 +14,16 @@ biorbd::Model m("../../models/BrasViolon.bioMod");
 const std::string optimizationName("UpAndDowsBowCasadi");
 const ViolinStringNames stringPlayed(ViolinStringNames::E);
 
-static int idxSegmentBow(8);
-static int tagBowFrog(16);
-static int tagBowTip(18);
-static int tagViolinBString(38);
-static int tagViolinEString(34);
-static int tagViolinAString(35);
-static int tagViolinDString(36);
-static int tagViolinGString(37);
-static int tagViolinCString(39);
+static unsigned int idxSegmentBow(8);
+static unsigned int idxSegmentViolin(16);
+static unsigned int tagBowFrog(16);
+static unsigned int tagBowTip(18);
+static unsigned int tagViolinBString(38);
+static unsigned int tagViolinEString(34);
+static unsigned int tagViolinAString(35);
+static unsigned int tagViolinDString(36);
+static unsigned int tagViolinGString(37);
+static unsigned int tagViolinCString(39);
 
 // The following values for initialization were determined using the "find_initial_pose.py" script
 const std::vector<double> initQFrogOnGString =
@@ -52,7 +53,7 @@ int main(){
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
     ProblemSize probSize;
-    probSize.tf = 2.0;
+    probSize.tf = 0.5;
     probSize.ns = 30;
     probSize.dt = probSize.tf/probSize.ns; // length of a control interval
 
@@ -60,7 +61,7 @@ int main(){
     std::string dynamicsFunctionName(libforward_dynamics_casadi_name());
     std::string forwardKinFunctionName(libforward_kinematics_casadi_name());
     std::string projectionFunctionName(libprojectionOnSegment_casadi_name());
-    std::string axesFunctionName(libsegment_axes_casadi_name());
+    std::string axesFunctionName(libangle_between_segments_casadi_name());
 
     // Chose the ODE solver
     int odeSolver(ODE_SOLVER::RK);
@@ -138,7 +139,7 @@ int main(){
     };
 
     // Get to frog and tip at beggining and end
-    int stringIdx;
+    unsigned int stringIdx;
     if (stringPlayed == ViolinStringNames::E){
         stringIdx = tagViolinEString;
     }
@@ -162,9 +163,9 @@ int main(){
 
     // Have the bow to lie on the string
     std::vector<IndexPairing> axesToAlign;
-    axesToAlign.push_back(IndexPairing(Instant::ALL, 0, 1));
+    axesToAlign.push_back(IndexPairing(Instant::ALL, idxSegmentBow, idxSegmentViolin));
     std::vector<std::pair<int, int>> axes;
-    axes.push_back(std::pair<int, int>(AXIS::X, AXIS::MINUS_X));
+    axes.push_back(std::pair<int, int>(AXIS::Z, AXIS::MINUS_Z));
 
 
 

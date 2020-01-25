@@ -5,7 +5,7 @@
 #include "forward_dynamics_casadi.h"
 #include "forward_kinematics_casadi.h"
 #include "projectionOnSegment_casadi.h"
-#include "segment_axes_casadi.h"
+#include "angle_between_segments_casadi.h"
 
 #include "biorbd.h"
 extern biorbd::Model m;
@@ -30,7 +30,7 @@ int main(){
     std::string dynamicsFunctionName(libforward_dynamics_casadi_name());
     std::string forwardKinFunctionName(libforward_kinematics_casadi_name());
     std::string projectionFunctionName(libprojectionOnSegment_casadi_name());
-    std::string axesFunctionName(libsegment_axes_casadi_name());
+    std::string axesFunctionName(libangle_between_segments_casadi_name());
 
     // Chose the ODE solver
     int odeSolver(ODE_SOLVER::RK);
@@ -101,9 +101,9 @@ int main(){
 
     // Always point upward
     std::vector<IndexPairing> axesToAlign;
-    axesToAlign.push_back(IndexPairing(Instant::ALL, 0, 1));
+    axesToAlign.push_back(IndexPairing(Instant::MID, 0, 1));
     std::vector<std::pair<int, int>> axes;
-    axes.push_back(std::pair<int, int>(AXIS::X, AXIS::MINUS_X));
+    axes.push_back(std::pair<int, int>(AXIS::X, AXIS::Y));
 
 
 

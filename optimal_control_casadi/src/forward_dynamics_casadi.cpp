@@ -96,17 +96,6 @@ const casadi_int* libforward_dynamics_casadi_sparsity_out(casadi_int i) {
     }
 }
 
-int libforward_dynamics_casadi_work(casadi_int *sz_arg,
-                                               casadi_int* sz_res,
-                                               casadi_int *sz_iw,
-                                               casadi_int *sz_w) {
-    if (sz_arg) *sz_arg = m.nbQ() + m.nbQdot() + m.nbGeneralizedTorque();
-    if (sz_res) *sz_res = m.nbQdot() + m.nbQddot();
-    if (sz_iw) *sz_iw = 0;
-    if (sz_w) *sz_w = 0;
-    return 0;
-}
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

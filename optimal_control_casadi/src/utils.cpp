@@ -113,15 +113,19 @@ void alignAxesConstraint(
             else {
                 continue;
             }
+            casadi::MX firstSegmentIndexAndAxis(2, 1);
+            firstSegmentIndexAndAxis(0) = policy.idx1;
+            firstSegmentIndexAndAxis(1) = axes.first;
+            casadi::MX secondSegmentIndexAndAxis(2, 1);
+            secondSegmentIndexAndAxis(0) = policy.idx2;
+            secondSegmentIndexAndAxis(1) = axes.second;
             casadi::MXDict angle = axesFunction(casadi::MXDict{
                              {"States", x},
                              {"UpdateKinematics", true},
-                             {"Segment1Index", policy.idx1},
-                             {"Segment1Axis", axes.first},
-                             {"Segment2Index", policy.idx2},
-                             {"Segment2Axis", axes.second}
+                             {"FirstSegmentIndexAndAxis", firstSegmentIndexAndAxis},
+                             {"SecondSegmentIndexAndAxis", secondSegmentIndexAndAxis}
                             });
-            g.push_back( angle.at("Axes") );
+            g.push_back( 1 - angle.at("Angle") );
         }
     }
 }
@@ -255,7 +259,7 @@ void minimizeControls(
 {
     obj = 0;
     for(unsigned int k=0; k<ps.ns; ++k)
-        obj += casadi::MX::dot(U[k], U[k]);
+        obj += casadi::MX::dot(U[k], U[k])*ps.dt;
 }
 
 void solveProblemWithIpopt(

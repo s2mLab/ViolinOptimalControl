@@ -37,7 +37,7 @@ set(library_names
     forward_dynamics_casadi
     forward_kinematics_casadi
     projectionOnSegment_casadi
-    segment_axes_casadi
+    angle_between_segments_casadi
 )
 
 # Setup each project
