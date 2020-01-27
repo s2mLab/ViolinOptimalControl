@@ -120,6 +120,39 @@ void defineMultipleShootingNodes(
         std::vector<casadi::MX> &U,
         std::vector<casadi::MX> &X);
 
+///
+/// This functions constraints the euler angle between a segment's
+/// joint coordinate systeme (JCS) to a system of axes made from two
+/// points and an origin to be 0.
+/// segmentsToAlign is
+/// 1) The index of the segment to align
+/// 2) The index of the marker that describes the identity of the first axis (X, Y, Z)
+/// 3) The index of the marker that describes the beginning of the first axis
+/// 4) The index of the marker that describes the ending of the first axis
+/// 5) The index of the marker that describes the identity of the second axis (X, Y, Z)
+/// 6) The index of the marker that describes the beginning of the second axis
+/// 7) The index of the marker that describes the ending of the second axis
+/// 8) Which axis (X, Y, Z) to recalculate to
+/// ensures orthonormal system of axis
+///
+void alignJcsToMarkersConstraint(
+        const casadi::Function &dynamics,
+        const casadi::Function &axesFunction,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g,
+        const std::vector<IndexPairing> &segmentsToAlign);
+
+///
+/// This functions constraints the dot product of a segment's axis and a
+/// vector made from two points to be 1.
+/// segmentsToAlign is
+/// 1) The index of the segment to align
+/// 2) The axis of the segment
+/// 3) The index of the marker that describes the beginning of the vector to align
+/// 4) The index of the marker that describes the ending of the vector to align
+///
 void alignAxesToMarkersConstraint(
         const casadi::Function &dynamics,
         const casadi::Function &axesFunction,
@@ -129,6 +162,14 @@ void alignAxesToMarkersConstraint(
         std::vector<casadi::MX> &g,
         const std::vector<IndexPairing> &segmentsToAlign);
 
+///
+/// This function constraints the dot product of two segments' axis to be 0.
+/// segmentsToAlign is
+/// 1) The index of the segment 1
+/// 2) The axis of the segment 1
+/// 3) the index of the segment 2
+/// 3) the axis of the segment 2
+///
 void alignAxesConstraint(
         const casadi::Function &dynamics,
         const casadi::Function &axesFunction,
@@ -138,6 +179,14 @@ void alignAxesConstraint(
         std::vector<casadi::MX> &g,
         const std::vector<IndexPairing> &segmentsToAlign);
 
+///
+/// This function constraints the projection of a point in the reference frame of
+/// segment to be 0 on two axes (to lie on a plane).
+/// projectionPolicy is
+/// 1) Index of the segment to project on
+/// 2) the index of the marker
+/// 3) the plane to project on
+///
 void projectionOnPlaneConstraint(
         const casadi::Function &dynamics,
         const casadi::Function &forwardKin,
@@ -148,6 +197,12 @@ void projectionOnPlaneConstraint(
         const std::vector<IndexPairing> &projectionPolicy
         );
 
+///
+/// This function constraints the difference of the position of two markers to be 0.
+/// markerIdx is
+/// 1) The index of the marker 1
+/// 2) The index of the marker 2
+///
 void followMarkerConstraint(
         const casadi::Function& dynamics,
         const casadi::Function &forwardKin,
@@ -157,6 +212,9 @@ void followMarkerConstraint(
         std::vector<casadi::MX> &g,
         const std::vector<IndexPairing> &markerIdx);
 
+///
+/// This function ensures the end of a node to be equal to the next node
+///
 void continuityConstraints(
         const casadi::Function& dynamics,
         const ProblemSize& ps,

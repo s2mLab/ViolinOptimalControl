@@ -76,9 +76,7 @@ int libangle_between_segment_and_markers_casadi(
 
     // Return the answers
     res[0][0] = axes[0].dot(axes[1]);
-//    for (unsigned int i=0; i<3; ++i){
-//        res[0][i] = (axes[0] - axes[1])[i];
-//    }
+
     return 0;
 }
 

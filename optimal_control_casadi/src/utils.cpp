@@ -79,6 +79,60 @@ void defineMultipleShootingNodes(
     casadi_assert(offset==static_cast<int>(NV), "");
 }
 
+
+void alignJcsToMarkersConstraint(
+        const casadi::Function &dynamics,
+        const casadi::Function &axesFunction,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g,
+        const std::vector<IndexPairing> &segmentsToAlign)
+{
+    // Compute the state at final in case one pairing needs it
+    casadi::MXDict I_end = dynamics(
+                casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
+
+    for (unsigned int p=0; p<segmentsToAlign.size(); ++p){
+        const IndexPairing& alignPolicy(segmentsToAlign[p]);
+        for (unsigned int t=0; t<ps.ns+1; ++t){
+            casadi::MX x;
+            if (t == 0 && (alignPolicy.t == Instant::START || alignPolicy.t == Instant::ALL)){
+                // If at starting point
+                x = X[t];
+            }
+            else if (t == ps.ns && (alignPolicy.t == Instant::END || alignPolicy.t == Instant::ALL)){
+                // If at end point
+                x = I_end.at("xf");
+            }
+            else if (alignPolicy.t == Instant::MID || alignPolicy.t == Instant::ALL){
+                // If at mid points
+                x = X[t];
+            }
+            else {
+                continue;
+            }
+            casadi::MX axis1(3, 1);
+            axis1(0) = alignPolicy.idx(1);
+            axis1(1) = alignPolicy.idx(2);
+            axis1(2) = alignPolicy.idx(3);
+            casadi::MX axis2(3, 1);
+            axis2(0) = alignPolicy.idx(4);
+            axis2(1) = alignPolicy.idx(5);
+            axis2(2) = alignPolicy.idx(6);
+            casadi::MXDict angle = axesFunction(casadi::MXDict{
+                             {"States", x},
+                             {"UpdateKinematics", true},
+                             {"SegmentIndex", alignPolicy.idx(0)},
+                             {"Axis1Description", axis1},
+                             {"Axis2Description", axis2},
+                             {"AxisToRecalculate", alignPolicy.idx(7)},
+                            });
+            g.push_back( angle.at("Angles") );
+        }
+    }
+}
+
 void alignAxesToMarkersConstraint(
         const casadi::Function &dynamics,
         const casadi::Function &axesFunction,

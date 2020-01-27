@@ -15,6 +15,18 @@ enum AXIS{
     MINUS_Y,
     MINUS_Z,
 };
+
+biorbd::utils::String getAxisInString(AXIS axis){
+    biorbd::utils::String axis_out;
+    if (axis == AXIS::X){
+        axis_out = "x";
+    } else if (axis == AXIS::Y){
+        axis_out = "y";
+    } else if (axis == AXIS::Z){
+        axis_out = "z";
+    }
+    return axis_out;
+}
 #endif
 
 

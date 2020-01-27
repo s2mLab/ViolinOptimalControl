@@ -474,32 +474,52 @@ external_forces	0
 		meshfile Geometry/Violin.obj
 	endsegment
 
-    marker Mi_violon        //34
+    marker EstringBridge        // 34
 	    parent Violon
-	    position -0.0140 -0.28 -0.041
+	    position -0.014111 -0.2845 -0.041979
+	endmarker
+	
+    marker EstringNeck       // 35
+	    parent Violon
+	    position -0.008398  0.000679    -0.02094
 	endmarker
 
-    marker La_violon        //35
+    marker AstringBridge        // 36
 	    parent Violon
-	    position -0.0065 -0.28 -0.042
+	    position -0.006533 -0.28469 -0.043179
+	endmarker
+	
+    marker AstringNeck        // 37
+	    parent Violon
+	    position -0.0001799 0.000094    -0.022836
 	endmarker
 
-    marker Ré_violon        //36
+    marker DstringBridge        // 38
 	    parent Violon
-	    position 0.0035 -0.28 -0.042
+	    position 0.003744 -0.28477 -0.043224
+	endmarker
+	
+    marker DstringNeck        // 39
+	    parent Violon
+	    position 0.005498   0.000598    -0.023055
 	endmarker
 
-    marker Sol_violon        //37
+    marker GstringBridge        // 40
 	    parent Violon
-	    position 0.0115 -0.28 -0.041
+	    position 0.011744 -0.28481 -0.041691
+	endmarker
+	
+    marker GstringNeck        // 41
+	    parent Violon
+	    position 0.011828   0.000595    -0.021162
 	endmarker
 
-    marker int_violon //38
+    marker BstringVirtual // 42
         parent Violon
         position -0.0215 -0.28 -0.037
     endmarker
 
-    marker ext_violon //39
+    marker CstringVirtual // 43
         parent Violon
         position 0.0190 -0.28 -0.039
     endmarker

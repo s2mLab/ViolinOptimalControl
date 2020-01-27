@@ -19,12 +19,16 @@ static unsigned int idxSegmentBow(8);
 static unsigned int idxSegmentViolin(16);
 static unsigned int tagBowFrog(16);
 static unsigned int tagBowTip(18);
-static unsigned int tagViolinBString(38);
-static unsigned int tagViolinEString(34);
-static unsigned int tagViolinAString(35);
-static unsigned int tagViolinDString(36);
-static unsigned int tagViolinGString(37);
-static unsigned int tagViolinCString(39);
+static unsigned int tagViolinBStringBridge(42);
+static unsigned int tagViolinEStringBridge(34);
+static unsigned int tagViolinEStringNeck(35);
+static unsigned int tagViolinAStringBridge(36);
+static unsigned int tagViolinAStringNeck(37);
+static unsigned int tagViolinDStringBridge(38);
+static unsigned int tagViolinDStringNeck(39);
+static unsigned int tagViolinGStringBridge(40);
+static unsigned int tagViolinGStringNeck(41);
+static unsigned int tagViolinCStringBridge(43);
 
 // The following values for initialization were determined using the "find_initial_pose.py" script
 const std::vector<double> initQFrogOnGString =
@@ -154,16 +158,16 @@ int main(){
     // Get to frog a`nd tip at beggining and end
     unsigned int stringIdx;
     if (stringPlayed == ViolinStringNames::E){
-        stringIdx = tagViolinEString;
+        stringIdx = tagViolinEStringBridge;
     }
     else if (stringPlayed == ViolinStringNames::A){
-        stringIdx = tagViolinAString;
+        stringIdx = tagViolinAStringBridge;
     }
     else if (stringPlayed == ViolinStringNames::D){
-        stringIdx = tagViolinDString;
+        stringIdx = tagViolinDStringBridge;
     }
     else if (stringPlayed == ViolinStringNames::G){
-        stringIdx = tagViolinGString;
+        stringIdx = tagViolinGStringBridge;
     }
     std::vector<IndexPairing> markersToPair;
     markersToPair.push_back(IndexPairing(Instant::START, {tagBowFrog, stringIdx}));
@@ -178,20 +182,20 @@ int main(){
     unsigned int idxLowStringBound;
     unsigned int idxHighStringBound;
     if (stringPlayed == ViolinStringNames::E){
-        idxLowStringBound = tagViolinAString;
-        idxHighStringBound = tagViolinBString;
+        idxLowStringBound = tagViolinAStringBridge;
+        idxHighStringBound = tagViolinBStringBridge;
     }
     else if (stringPlayed == ViolinStringNames::A){
-        idxLowStringBound = tagViolinDString;
-        idxHighStringBound = tagViolinEString;
+        idxLowStringBound = tagViolinDStringBridge;
+        idxHighStringBound = tagViolinEStringBridge;
     }
     else if (stringPlayed == ViolinStringNames::D){
-        idxLowStringBound = tagViolinGString;
-        idxHighStringBound = tagViolinAString;
+        idxLowStringBound = tagViolinGStringBridge;
+        idxHighStringBound = tagViolinAStringBridge;
     }
     else if (stringPlayed == ViolinStringNames::G){
-        idxLowStringBound = tagViolinCString;
-        idxHighStringBound = tagViolinDString;
+        idxLowStringBound = tagViolinCStringBridge;
+        idxHighStringBound = tagViolinDStringBridge;
     }
     std::vector<IndexPairing> alignWithMarkers;
     alignWithMarkers.push_back(IndexPairing(

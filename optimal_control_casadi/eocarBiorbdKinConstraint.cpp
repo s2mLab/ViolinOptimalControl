@@ -7,6 +7,7 @@
 #include "projectionOnSegment_casadi.h"
 #include "angle_between_segments_casadi.h"
 #include "angle_between_segment_and_markers_casadi.h"
+#include "angle_between_segment_and_markerSystem_casadi.h"
 
 #include "biorbd.h"
 extern biorbd::Model m;
@@ -33,6 +34,7 @@ int main(){
     std::string projectionFunctionName(libprojectionOnSegment_casadi_name());
     std::string axesFunctionName(libangle_between_segments_casadi_name());
     std::string axesToMarkersFunctionName(libangle_between_segment_and_markers_casadi_name());
+    std::string axesToMarkerSystemFunctionName(libangle_between_segment_and_markerSystem_casadi_name());
 
     // Chose the ODE solver
     int odeSolver(ODE_SOLVER::RK);
@@ -106,7 +108,12 @@ int main(){
 
     // Always point in line with a given vector described by markers
     std::vector<IndexPairing> alignWithMarkers;
-    alignWithMarkers.push_back(IndexPairing(Instant::MID, {0, AXIS::X, 2, 3}));
+//    alignWithMarkers.push_back(IndexPairing(Instant::MID, {0, AXIS::X, 2, 3}));
+
+    // Always have the segment aligned with a certain system of axes
+    std::vector<IndexPairing> alignWithMarkersReferenceFrame;
+    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
+            {0, AXIS::X, 0, 1, AXIS::Y, 0, 2, AXIS::Y}));
 
 
     // From here, unless one wants to fundamentally change the problem,
@@ -174,6 +181,13 @@ int main(){
     opts_axesToMarkersFunction["enable_fd"] = true;
     casadi::Function axesToMarkersFunction = casadi::external(axesToMarkersFunctionName, opts_axesToMarkersFunction);
     alignAxesToMarkersConstraint(F, axesToMarkersFunction, probSize, U, X, g, alignWithMarkers);
+
+    // Path constraints
+    casadi::Dict opts_axesToMarkerSystemFunction;
+    opts_axesToMarkerSystemFunction["enable_fd"] = true;
+    casadi::Function axesToMarkerSystemFunction = casadi::external(axesToMarkerSystemFunctionName, opts_axesToMarkerSystemFunction);
+    alignJcsToMarkersConstraint(F, axesToMarkerSystemFunction, probSize, U, X, g, alignWithMarkersReferenceFrame);
+
 
     // Objective function
     casadi::MX J;

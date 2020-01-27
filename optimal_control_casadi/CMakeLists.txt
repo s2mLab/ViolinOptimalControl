@@ -39,6 +39,7 @@ set(library_names
     projectionOnSegment_casadi
     angle_between_segments_casadi
     angle_between_segment_and_markers_casadi
+    angle_between_segment_and_markerSystem_casadi
 )
 
 # Setup each project
