@@ -6,6 +6,7 @@
 #include "forward_kinematics_casadi.h"
 #include "projectionOnSegment_casadi.h"
 #include "angle_between_segments_casadi.h"
+#include "angle_between_segment_and_markers_casadi.h"
 
 #include "biorbd.h"
 extern biorbd::Model m;
@@ -31,6 +32,7 @@ int main(){
     std::string forwardKinFunctionName(libforward_kinematics_casadi_name());
     std::string projectionFunctionName(libprojectionOnSegment_casadi_name());
     std::string axesFunctionName(libangle_between_segments_casadi_name());
+    std::string axesToMarkersFunctionName(libangle_between_segment_and_markers_casadi_name());
 
     // Chose the ODE solver
     int odeSolver(ODE_SOLVER::RK);
@@ -91,20 +93,20 @@ int main(){
 
     // Start at the starting point and finish at the ending point
     std::vector<IndexPairing> markersToPair;
-    markersToPair.push_back(IndexPairing(Instant::START, 0, 1));
-    markersToPair.push_back(IndexPairing(Instant::END, 0, 2));
+    markersToPair.push_back(IndexPairing(Instant::START, {0, 1}));
+    markersToPair.push_back(IndexPairing(Instant::END, {0, 2}));
 
     // Always point towards the point(3)
-    std::vector<std::pair<IndexPairing, PLANE>> markerToProject;
-//    markerToProject.push_back(std::pair<IndexPairing, PLANE>(
-//                                 IndexPairing (Instant::ALL, 0, 3), PLANE::XZ));
+    std::vector<IndexPairing> markerToProject;
+//    markerToProject.push_back(IndexPairing (Instant::ALL, {0, 3, PLANE::XZ}));
 
     // Always point upward
     std::vector<IndexPairing> axesToAlign;
-    axesToAlign.push_back(IndexPairing(Instant::MID, 0, 1));
-    std::vector<std::pair<int, int>> axes;
-    axes.push_back(std::pair<int, int>(AXIS::X, AXIS::Y));
+//    axesToAlign.push_back(IndexPairing(Instant::MID, {0, AXIS::X, 1, AXIS::Y}));
 
+    // Always point in line with a given vector described by markers
+    std::vector<IndexPairing> alignWithMarkers;
+    alignWithMarkers.push_back(IndexPairing(Instant::MID, {0, AXIS::X, 2, 3}));
 
 
     // From here, unless one wants to fundamentally change the problem,
@@ -165,7 +167,13 @@ int main(){
     casadi::Dict opts_axesFunction;
     opts_axesFunction["enable_fd"] = true;
     casadi::Function axesFunction = casadi::external(axesFunctionName, opts_axesFunction);
-    alignAxesConstraint(F, axesFunction, probSize, U, X, g, axesToAlign, axes);
+    alignAxesConstraint(F, axesFunction, probSize, U, X, g, axesToAlign);
+
+    // Path constraints
+    casadi::Dict opts_axesToMarkersFunction;
+    opts_axesToMarkersFunction["enable_fd"] = true;
+    casadi::Function axesToMarkersFunction = casadi::external(axesToMarkersFunctionName, opts_axesToMarkersFunction);
+    alignAxesToMarkersConstraint(F, axesToMarkersFunction, probSize, U, X, g, alignWithMarkers);
 
     // Objective function
     casadi::MX J;

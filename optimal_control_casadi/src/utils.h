@@ -69,19 +69,18 @@ enum Instant{
 struct IndexPairing{
     IndexPairing():
         t(Instant::NONE),
-        idx1(UINT_MAX),
-        idx2(UINT_MAX)
+        toPair(std::vector<unsigned int>())
     {}
     IndexPairing(const Instant& _t,
-                 unsigned int _idx1,
-                 unsigned int _idx2):
+                 std::vector<unsigned int> _idx):
         t(_t),
-        idx1(_idx1),
-        idx2(_idx2)
+        toPair(_idx)
     {}
+    unsigned int idx(unsigned i) const{
+        return toPair[i];
+    }
     Instant t;
-    unsigned int idx1;
-    unsigned int idx2;
+    std::vector<unsigned int> toPair;
 };
 
 enum PLANE{
@@ -121,6 +120,15 @@ void defineMultipleShootingNodes(
         std::vector<casadi::MX> &U,
         std::vector<casadi::MX> &X);
 
+void alignAxesToMarkersConstraint(
+        const casadi::Function &dynamics,
+        const casadi::Function &axesFunction,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g,
+        const std::vector<IndexPairing> &segmentsToAlign);
+
 void alignAxesConstraint(
         const casadi::Function &dynamics,
         const casadi::Function &axesFunction,
@@ -128,8 +136,7 @@ void alignAxesConstraint(
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &segmentsToAlign,
-        const std::vector<std::pair<int, int>> &axesOfSegmentToAlign);
+        const std::vector<IndexPairing> &segmentsToAlign);
 
 void projectionOnPlaneConstraint(
         const casadi::Function &dynamics,
@@ -138,7 +145,7 @@ void projectionOnPlaneConstraint(
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
-        const std::vector<std::pair<IndexPairing, PLANE> > &projectionPolicy
+        const std::vector<IndexPairing> &projectionPolicy
         );
 
 void followMarkerConstraint(

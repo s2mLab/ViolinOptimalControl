@@ -6,6 +6,7 @@
 #include "forward_kinematics_casadi.h"
 #include "projectionOnSegment_casadi.h"
 #include "angle_between_segments_casadi.h"
+#include "angle_between_segment_and_markers_casadi.h"
 
 #include "biorbd.h"
 extern biorbd::Model m;
@@ -62,6 +63,7 @@ int main(){
     std::string forwardKinFunctionName(libforward_kinematics_casadi_name());
     std::string projectionFunctionName(libprojectionOnSegment_casadi_name());
     std::string axesFunctionName(libangle_between_segments_casadi_name());
+    std::string axesToMarkersFunctionName(libangle_between_segment_and_markers_casadi_name());
 
     // Chose the ODE solver
     int odeSolver(ODE_SOLVER::RK);
@@ -97,24 +99,35 @@ int main(){
     }
     BoundaryConditions xBounds;
     InitialConditions xInit;
-//    std::vector<double> initQFrog;
-//    std::vector<double> initQTip;
-//    if (stringPlayed == ViolinStringNames::E){
-//        initQFrog = tagViolinEString;
-//        initQTip = tagViolinEString;
-//    }
-//    else if (stringPlayed == ViolinStringNames::A){
-//        initQFrog = tagViolinEString;
-//        initQTip = tagViolinEString;
-//    }
-//    else if (stringPlayed == ViolinStringNames::D){
-//        initQFrog = tagViolinDString;
-//        initQTip = tagViolinEString;
-//    }
-//    else if (stringPlayed == ViolinStringNames::G){
-//        initQFrog = tagViolinGString;
-//        initQTip = tagViolinEString;
-//    }
+    std::vector<double> initQFrog;
+    std::vector<double> initQTip;
+    if (stringPlayed == ViolinStringNames::E){
+        initQFrog = initQFrogOnEString;
+        initQTip = initQTipOnEString;
+    }
+    else if (stringPlayed == ViolinStringNames::A){
+        initQFrog = initQFrogOnAString;
+        initQTip = initQTipOnAString;
+    }
+    else if (stringPlayed == ViolinStringNames::D){
+        initQFrog = initQFrogOnDString;
+        initQTip = initQTipOnDString;
+    }
+    else if (stringPlayed == ViolinStringNames::G){
+        initQFrog = initQFrogOnGString;
+        initQTip = initQTipOnGString;
+    }
+    biorbd::rigidbody::GeneralizedCoordinates initQ(m);
+    biorbd::rigidbody::GeneralizedVelocity initQdot(m);
+    biorbd::rigidbody::GeneralizedAcceleration initQddot(m);
+    for (unsigned int i=0; i<m.nbQ(); ++i){
+        initQ(i) = initQFrog[i];
+        initQdot(i) = 0;
+        initQddot(i) = 0;
+    }
+    m.UpdateKinematicsCustom(&initQ, &initQdot, &initQddot);
+    biorbd::rigidbody::GeneralizedTorque initTau(m);
+    RigidBodyDynamics::InverseDynamics(m, initQ, initQdot, initQddot, initTau);
     for (unsigned int i=0; i<m.nbQ(); ++i) {
         xBounds.starting_min.push_back(ranges[i].min());
         xBounds.min.push_back(ranges[i].min());
@@ -124,7 +137,7 @@ int main(){
         xBounds.max.push_back(ranges[i].max());
         xBounds.end_max.push_back(ranges[i].max());
 
-        xInit.val.push_back(0);
+        xInit.val.push_back(initQFrog[i]);
     };
     for (unsigned int i=0; i<m.nbQdot(); ++i) {
         xBounds.starting_min.push_back(-100);
@@ -135,10 +148,10 @@ int main(){
         xBounds.max.push_back(100);
         xBounds.end_max.push_back(100);
 
-        xInit.val.push_back(0);
+        xInit.val.push_back(initTau(i));
     };
 
-    // Get to frog and tip at beggining and end
+    // Get to frog a`nd tip at beggining and end
     unsigned int stringIdx;
     if (stringPlayed == ViolinStringNames::E){
         stringIdx = tagViolinEString;
@@ -153,19 +166,40 @@ int main(){
         stringIdx = tagViolinGString;
     }
     std::vector<IndexPairing> markersToPair;
-    markersToPair.push_back(IndexPairing(Instant::START, tagBowFrog, stringIdx));
-    markersToPair.push_back(IndexPairing(Instant::END, tagBowTip, stringIdx));
+    markersToPair.push_back(IndexPairing(Instant::START, {tagBowFrog, stringIdx}));
+    markersToPair.push_back(IndexPairing(Instant::END, {tagBowTip, stringIdx}));
 
     // Keep the bow on the string
-    std::vector<std::pair<IndexPairing, PLANE>> markerToProject;
-    markerToProject.push_back(std::pair<IndexPairing, PLANE>(
-        IndexPairing (Instant::ALL, idxSegmentBow, stringIdx), PLANE::XZ));
+    std::vector<IndexPairing> markerToProject;
+    markerToProject.push_back(
+                IndexPairing (Instant::ALL, {idxSegmentBow, stringIdx, PLANE::XZ}));
 
     // Have the bow to lie on the string
+    unsigned int idxLowStringBound;
+    unsigned int idxHighStringBound;
+    if (stringPlayed == ViolinStringNames::E){
+        idxLowStringBound = tagViolinAString;
+        idxHighStringBound = tagViolinBString;
+    }
+    else if (stringPlayed == ViolinStringNames::A){
+        idxLowStringBound = tagViolinDString;
+        idxHighStringBound = tagViolinEString;
+    }
+    else if (stringPlayed == ViolinStringNames::D){
+        idxLowStringBound = tagViolinGString;
+        idxHighStringBound = tagViolinAString;
+    }
+    else if (stringPlayed == ViolinStringNames::G){
+        idxLowStringBound = tagViolinCString;
+        idxHighStringBound = tagViolinDString;
+    }
+    std::vector<IndexPairing> alignWithMarkers;
+    alignWithMarkers.push_back(IndexPairing(
+                    Instant::MID,
+                    {idxSegmentBow, AXIS::MINUS_Y, idxHighStringBound, idxLowStringBound}));
+
+    // No need to aligning two segments
     std::vector<IndexPairing> axesToAlign;
-    axesToAlign.push_back(IndexPairing(Instant::ALL, idxSegmentBow, idxSegmentViolin));
-    std::vector<std::pair<int, int>> axes;
-    axes.push_back(std::pair<int, int>(AXIS::Z, AXIS::MINUS_Z));
 
 
 
@@ -227,7 +261,13 @@ int main(){
     casadi::Dict opts_axesFunction;
     opts_axesFunction["enable_fd"] = true;
     casadi::Function axesFunction = casadi::external(axesFunctionName, opts_axesFunction);
-    alignAxesConstraint(F, axesFunction, probSize, U, X, g, axesToAlign, axes);
+    alignAxesConstraint(F, axesFunction, probSize, U, X, g, axesToAlign);
+
+    // Path constraints
+    casadi::Dict opts_axesToMarkersFunction;
+    opts_axesToMarkersFunction["enable_fd"] = true;
+    casadi::Function axesToMarkersFunction = casadi::external(axesToMarkersFunctionName, opts_axesToMarkersFunction);
+    alignAxesToMarkersConstraint(F, axesToMarkersFunction, probSize, U, X, g, alignWithMarkers);
 
     // Objective function
     casadi::MX J;

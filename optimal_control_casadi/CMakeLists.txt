@@ -38,6 +38,7 @@ set(library_names
     forward_kinematics_casadi
     projectionOnSegment_casadi
     angle_between_segments_casadi
+    angle_between_segment_and_markers_casadi
 )
 
 # Setup each project

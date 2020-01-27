@@ -1,30 +1,10 @@
 #ifndef ANGLE_BETWEEN_SEGMENTS_CASADI_H
 #define ANGLE_BETWEEN_SEGMENTS_CASADI_H
 
-#include <math.h>
-
-#include "biorbd.h"
-extern biorbd::Model m;
-
-enum AXIS{
-    X,
-    Y,
-    Z,
-    MINUS_X,
-    MINUS_Y,
-    MINUS_Z,
-};
+#include "biorbdCasadi_interface_common.h"
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#ifndef casadi_real
-#define casadi_real double
-#endif
-
-#ifndef casadi_int
-#define casadi_int long long int
 #endif
 
 // Preparing stuff

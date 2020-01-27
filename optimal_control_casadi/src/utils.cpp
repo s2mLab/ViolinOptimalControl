@@ -79,6 +79,55 @@ void defineMultipleShootingNodes(
     casadi_assert(offset==static_cast<int>(NV), "");
 }
 
+void alignAxesToMarkersConstraint(
+        const casadi::Function &dynamics,
+        const casadi::Function &axesFunction,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g,
+        const std::vector<IndexPairing> &segmentsToAlign)
+{
+    // Compute the state at final in case one pairing needs it
+    casadi::MXDict I_end = dynamics(
+                casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
+
+    for (unsigned int p=0; p<segmentsToAlign.size(); ++p){
+        const IndexPairing& alignPolicy(segmentsToAlign[p]);
+        for (unsigned int t=0; t<ps.ns+1; ++t){
+            casadi::MX x;
+            if (t == 0 && (alignPolicy.t == Instant::START || alignPolicy.t == Instant::ALL)){
+                // If at starting point
+                x = X[t];
+            }
+            else if (t == ps.ns && (alignPolicy.t == Instant::END || alignPolicy.t == Instant::ALL)){
+                // If at end point
+                x = I_end.at("xf");
+            }
+            else if (alignPolicy.t == Instant::MID || alignPolicy.t == Instant::ALL){
+                // If at mid points
+                x = X[t];
+            }
+            else {
+                continue;
+            }
+            casadi::MX segmentIndexAndAxis(2, 1);
+            segmentIndexAndAxis(0) = alignPolicy.idx(0);
+            segmentIndexAndAxis(1) = alignPolicy.idx(1);
+            casadi::MX markersIdx(2, 1);
+            markersIdx(0) = alignPolicy.idx(2);
+            markersIdx(1) = alignPolicy.idx(3);
+            casadi::MXDict angle = axesFunction(casadi::MXDict{
+                             {"States", x},
+                             {"UpdateKinematics", true},
+                             {"SegmentIndexAndAxis", segmentIndexAndAxis},
+                             {"MarkersIndex", markersIdx}
+                            });
+            g.push_back( 1 - angle.at("Angle") );
+        }
+    }
+}
+
 void alignAxesConstraint(
         const casadi::Function &dynamics,
         const casadi::Function &axesFunction,
@@ -86,27 +135,25 @@ void alignAxesConstraint(
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &segmentsToAlign,
-        const std::vector<std::pair<int, int> > &axesOfSegmentToAlign)
+        const std::vector<IndexPairing> &segmentsToAlign)
 {
     // Compute the state at final in case one pairing needs it
     casadi::MXDict I_end = dynamics(
                 casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
 
     for (unsigned int p=0; p<segmentsToAlign.size(); ++p){
-        const IndexPairing& policy(segmentsToAlign[p]);
-        const std::pair<int, int>& axes(axesOfSegmentToAlign[p]);
+        const IndexPairing& alignPolicy(segmentsToAlign[p]);
         for (unsigned int t=0; t<ps.ns+1; ++t){
             casadi::MX x;
-            if (t == 0 && (policy.t == Instant::START || policy.t == Instant::ALL)){
+            if (t == 0 && (alignPolicy.t == Instant::START || alignPolicy.t == Instant::ALL)){
                 // If at starting point
                 x = X[t];
             }
-            else if (t == ps.ns && (policy.t == Instant::END || policy.t == Instant::ALL)){
+            else if (t == ps.ns && (alignPolicy.t == Instant::END || alignPolicy.t == Instant::ALL)){
                 // If at end point
                 x = I_end.at("xf");
             }
-            else if (policy.t == Instant::MID || policy.t == Instant::ALL){
+            else if (alignPolicy.t == Instant::MID || alignPolicy.t == Instant::ALL){
                 // If at mid points
                 x = X[t];
             }
@@ -114,11 +161,11 @@ void alignAxesConstraint(
                 continue;
             }
             casadi::MX firstSegmentIndexAndAxis(2, 1);
-            firstSegmentIndexAndAxis(0) = policy.idx1;
-            firstSegmentIndexAndAxis(1) = axes.first;
+            firstSegmentIndexAndAxis(0) = alignPolicy.idx(0);
+            firstSegmentIndexAndAxis(1) = alignPolicy.idx(1);
             casadi::MX secondSegmentIndexAndAxis(2, 1);
-            secondSegmentIndexAndAxis(0) = policy.idx2;
-            secondSegmentIndexAndAxis(1) = axes.second;
+            secondSegmentIndexAndAxis(0) = alignPolicy.idx(2);
+            secondSegmentIndexAndAxis(1) = alignPolicy.idx(3);
             casadi::MXDict angle = axesFunction(casadi::MXDict{
                              {"States", x},
                              {"UpdateKinematics", true},
@@ -137,7 +184,7 @@ void projectionOnPlaneConstraint(
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
-        const std::vector<std::pair<IndexPairing, PLANE> > &projectionPolicy
+        const std::vector<IndexPairing> &projectionPolicy
         )
 {
     // Compute the state at final in case one pairing needs it
@@ -147,15 +194,15 @@ void projectionOnPlaneConstraint(
     for (auto policy : projectionPolicy){
         for (unsigned int t=0; t<ps.ns+1; ++t){
             casadi::MX x;
-            if (t == 0 && (policy.first.t == Instant::START || policy.first.t == Instant::ALL)){
+            if (t == 0 && (policy.t == Instant::START || policy.t == Instant::ALL)){
                 // If at starting point
                 x = X[t];
             }
-            else if (t == ps.ns && (policy.first.t == Instant::END || policy.first.t == Instant::ALL)){
+            else if (t == ps.ns && (policy.t == Instant::END || policy.t == Instant::ALL)){
                 // If at end point
                 x = I_end.at("xf");
             }
-            else if (policy.first.t == Instant::MID || policy.first.t == Instant::ALL){
+            else if (policy.t == Instant::MID || policy.t == Instant::ALL){
                 // If at mid points
                 x = X[t];
             }
@@ -165,19 +212,19 @@ void projectionOnPlaneConstraint(
             casadi::MXDict M(projectionFunction(casadi::MXDict{
                     {"States", x},
                     {"UpdateKinematics", true},
-                    {"SegmentToProjectOnIndex", policy.first.idx1},
-                    {"MarkerToProjectIndex", policy.first.idx2},
+                    {"SegmentToProjectOnIndex", policy.idx(0)},
+                    {"MarkerToProjectIndex", policy.idx(1)},
                     }));
 
-            if (policy.second == PLANE::XY){
+            if (policy.idx(2) == PLANE::XY){
                 g.push_back( M.at("ProjectedMarker")(0, 0) );
                 g.push_back( M.at("ProjectedMarker")(1, 0) );
             }
-            else if (policy.second == PLANE::YZ){
+            else if (policy.idx(2) == PLANE::YZ){
                 g.push_back( M.at("ProjectedMarker")(1, 0) );
                 g.push_back( M.at("ProjectedMarker")(2, 0) );
             }
-            else if (policy.second == PLANE::XZ){
+            else if (policy.idx(2) == PLANE::XZ){
                 g.push_back( M.at("ProjectedMarker")(0, 0) );
                 g.push_back( M.at("ProjectedMarker")(2, 0) );
             }
@@ -222,12 +269,12 @@ void followMarkerConstraint(
             casadi::MXDict M1(forwardKin(casadi::MXDict{
                     {"States", x},
                     {"UpdateKinematics", true},
-                    {"MarkerIndex", pair.idx1}
+                    {"MarkerIndex", pair.idx(0)}
                     }));
             casadi::MXDict M2(forwardKin(casadi::MXDict{
                     {"States", x},
                     {"UpdateKinematics", false},
-                    {"MarkerIndex", pair.idx2}
+                    {"MarkerIndex", pair.idx(1)}
                     }));
             g.push_back( M1.at("Marker") - M2.at("Marker") );
         }
