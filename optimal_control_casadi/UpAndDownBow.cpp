@@ -7,6 +7,7 @@
 #include "projectionOnSegment_casadi.h"
 #include "angle_between_segments_casadi.h"
 #include "angle_between_segment_and_markers_casadi.h"
+#include "angle_between_segment_and_markerSystem_casadi.h"
 
 #include "biorbd.h"
 extern biorbd::Model m;
@@ -68,6 +69,7 @@ int main(){
     std::string projectionFunctionName(libprojectionOnSegment_casadi_name());
     std::string axesFunctionName(libangle_between_segments_casadi_name());
     std::string axesToMarkersFunctionName(libangle_between_segment_and_markers_casadi_name());
+    std::string axesToMarkerSystemFunctionName(libangle_between_segment_and_markerSystem_casadi_name());
 
     // Chose the ODE solver
     int odeSolver(ODE_SOLVER::RK);
@@ -83,15 +85,6 @@ int main(){
     casadi::MX u;
     casadi::MX x;
     defineDifferentialVariables(probSize, u, x);
-
-    // Bounds and initial guess for the control
-    BoundaryConditions uBounds;
-    InitialConditions uInit;
-    for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i) {
-        uBounds.min.push_back(-100);
-        uBounds.max.push_back(100);
-        uInit.val.push_back(0);
-    };
 
     // Bounds and initial guess for the state
     std::vector<biorbd::utils::Range> ranges;
@@ -155,55 +148,66 @@ int main(){
         xInit.val.push_back(initTau(i));
     };
 
-    // Get to frog a`nd tip at beggining and end
-    unsigned int stringIdx;
-    if (stringPlayed == ViolinStringNames::E){
-        stringIdx = tagViolinEStringBridge;
-    }
-    else if (stringPlayed == ViolinStringNames::A){
-        stringIdx = tagViolinAStringBridge;
-    }
-    else if (stringPlayed == ViolinStringNames::D){
-        stringIdx = tagViolinDStringBridge;
-    }
-    else if (stringPlayed == ViolinStringNames::G){
-        stringIdx = tagViolinGStringBridge;
-    }
-    std::vector<IndexPairing> markersToPair;
-    markersToPair.push_back(IndexPairing(Instant::START, {tagBowFrog, stringIdx}));
-    markersToPair.push_back(IndexPairing(Instant::END, {tagBowTip, stringIdx}));
+    // Bounds and initial guess for the control
+    BoundaryConditions uBounds;
+    InitialConditions uInit;
+    for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i) {
+        uBounds.min.push_back(-100);
+        uBounds.max.push_back(100);
+        uInit.val.push_back(0);
+    };
 
-    // Keep the bow on the string
-    std::vector<IndexPairing> markerToProject;
-    markerToProject.push_back(
-                IndexPairing (Instant::ALL, {idxSegmentBow, stringIdx, PLANE::XZ}));
-
-    // Have the bow to lie on the string
+    // Prepare constraints
+    unsigned int stringBridgeIdx;
+    unsigned int stringNeckIdx;
     unsigned int idxLowStringBound;
     unsigned int idxHighStringBound;
     if (stringPlayed == ViolinStringNames::E){
+        stringBridgeIdx = tagViolinEStringBridge;
+        stringNeckIdx = tagViolinEStringNeck;
         idxLowStringBound = tagViolinAStringBridge;
         idxHighStringBound = tagViolinBStringBridge;
     }
     else if (stringPlayed == ViolinStringNames::A){
+        stringBridgeIdx = tagViolinAStringBridge;
+        stringNeckIdx = tagViolinAStringNeck;
         idxLowStringBound = tagViolinDStringBridge;
         idxHighStringBound = tagViolinEStringBridge;
     }
     else if (stringPlayed == ViolinStringNames::D){
+        stringBridgeIdx = tagViolinDStringBridge;
+        stringNeckIdx = tagViolinDStringNeck;
         idxLowStringBound = tagViolinGStringBridge;
         idxHighStringBound = tagViolinAStringBridge;
     }
     else if (stringPlayed == ViolinStringNames::G){
+        stringBridgeIdx = tagViolinGStringBridge;
+        stringNeckIdx = tagViolinGStringNeck;
         idxLowStringBound = tagViolinCStringBridge;
         idxHighStringBound = tagViolinDStringBridge;
     }
+    // Get to frog and tip at beggining and end
+    std::vector<IndexPairing> markersToPair;
+    markersToPair.push_back(IndexPairing(Instant::START, {tagBowFrog, stringBridgeIdx}));
+    markersToPair.push_back(IndexPairing(Instant::END, {tagBowTip, stringBridgeIdx}));
+
+    // Keep the bow on the string
+    std::vector<IndexPairing> markerToProject;
+    markerToProject.push_back(
+                IndexPairing (Instant::ALL, {idxSegmentBow, stringBridgeIdx, PLANE::XZ}));
+
+    // Have the bow to lie on the string
+    std::vector<IndexPairing> alignWithMarkersReferenceFrame;
+    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::START,
+            {idxSegmentBow, AXIS::X, stringNeckIdx, stringBridgeIdx,
+             AXIS::Y, idxLowStringBound, idxHighStringBound, AXIS::Y}));
+
+    // No need to aligning with markers
     std::vector<IndexPairing> alignWithMarkers;
-    alignWithMarkers.push_back(IndexPairing(
-                    Instant::MID,
-                    {idxSegmentBow, AXIS::MINUS_Y, idxHighStringBound, idxLowStringBound}));
 
     // No need to aligning two segments
     std::vector<IndexPairing> axesToAlign;
+
 
 
 
@@ -272,6 +276,12 @@ int main(){
     opts_axesToMarkersFunction["enable_fd"] = true;
     casadi::Function axesToMarkersFunction = casadi::external(axesToMarkersFunctionName, opts_axesToMarkersFunction);
     alignAxesToMarkersConstraint(F, axesToMarkersFunction, probSize, U, X, g, alignWithMarkers);
+
+    // Path constraints
+    casadi::Dict opts_axesToMarkerSystemFunction;
+    opts_axesToMarkerSystemFunction["enable_fd"] = true;
+    casadi::Function axesToMarkerSystemFunction = casadi::external(axesToMarkerSystemFunctionName, opts_axesToMarkerSystemFunction);
+    alignJcsToMarkersConstraint(F, axesToMarkerSystemFunction, probSize, U, X, g, alignWithMarkersReferenceFrame);
 
     // Objective function
     casadi::MX J;

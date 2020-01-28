@@ -51,15 +51,6 @@ int main(){
     casadi::MX x;
     defineDifferentialVariables(probSize, u, x);
 
-    // Bounds and initial guess for the control
-    BoundaryConditions uBounds;
-    InitialConditions uInit;
-    for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i) {
-        uBounds.min.push_back(-100);
-        uBounds.max.push_back(100);
-        uInit.val.push_back(0);
-    };
-
     // Bounds and initial guess for the state
     std::vector<biorbd::utils::Range> ranges;
     for (unsigned int i=0; i<m.nbSegment(); ++i){
@@ -93,6 +84,15 @@ int main(){
         xInit.val.push_back(0);
     };
 
+    // Bounds and initial guess for the control
+    BoundaryConditions uBounds;
+    InitialConditions uInit;
+    for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i) {
+        uBounds.min.push_back(-100);
+        uBounds.max.push_back(100);
+        uInit.val.push_back(0);
+    };
+
     // Start at the starting point and finish at the ending point
     std::vector<IndexPairing> markersToPair;
     markersToPair.push_back(IndexPairing(Instant::START, {0, 1}));
@@ -113,7 +113,9 @@ int main(){
     // Always have the segment aligned with a certain system of axes
     std::vector<IndexPairing> alignWithMarkersReferenceFrame;
     alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
-            {0, AXIS::X, 0, 1, AXIS::Y, 0, 2, AXIS::Y}));
+            {0, AXIS::X, 1, 2, AXIS::Y, 1, 3, AXIS::Y}));
+
+
 
 
     // From here, unless one wants to fundamentally change the problem,

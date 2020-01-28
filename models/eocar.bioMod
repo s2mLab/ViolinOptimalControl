@@ -8,8 +8,14 @@ external_forces	0
 
 // Thorax
     segment Thorax
-    translations	xyz
-    rotations	xyz
+        translations	xyz
+        rotations	xyz
+        ranges  -10 10
+                -10 10
+                -10 10
+                -2*pi 2*pi
+                -2*pi 2*pi
+                -2*pi 2*pi
 		mass 1
 		inertia 
 		  1 0 0 
@@ -38,10 +44,10 @@ external_forces	0
     
     marker m2
         parent ground
-        position 0 0 1
+        position 2 0 0
     endmarker
     
     marker m3
         parent ground
-        position 1 1 1
+        position 1 1 0
     endmarker

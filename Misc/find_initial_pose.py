@@ -12,12 +12,12 @@ idxSegmentBow = 8
 idxSegmentViolin = 16
 tagBowFrog = 16
 tagBowTip = 18
-tagViolinBString = 38
+tagViolinBString = 42
 tagViolinEString = 34
-tagViolinAString = 35
-tagViolinDString = 36
-tagViolinGString = 37
-tagViolinCString = 39
+tagViolinAString = 36
+tagViolinDString = 38
+tagViolinGString = 40
+tagViolinCString = 43
 
 if bow_place == 'frog':
     tabBowPosition = tagBowFrog

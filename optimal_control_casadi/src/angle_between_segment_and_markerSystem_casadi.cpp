@@ -45,6 +45,7 @@ int libangle_between_segment_and_markerSystem_casadi(
     for (unsigned int i = 0; i < m.nbQ(); ++i){
         Q[i] = arg[0][i];
     }
+
     bool updateKinematics = static_cast<bool>(arg[1][0]);
     if (updateKinematics){
         m.UpdateKinematicsCustom(&Q);
@@ -52,25 +53,25 @@ int libangle_between_segment_and_markerSystem_casadi(
 
     // Get the system of axes of the segment to align
     biorbd::utils::Rotation r_seg(
-                m.globalJCS(static_cast<unsigned int>(arg[3][0])).rot());
+                m.globalJCS(static_cast<unsigned int>(arg[2][0])).rot());
 
     // Get the system of axes from the markers
     biorbd::utils::String axis1name(
-                getAxisInString(static_cast<AXIS>(arg[4][0])));
+                getAxisInString(static_cast<AXIS>(arg[3][0])));
     biorbd::rigidbody::NodeSegment axis1Beg(
-                m.marker(Q, static_cast<unsigned int>(arg[4][1]), true, false));
+                m.marker(Q, static_cast<unsigned int>(arg[3][1]), true, false));
     biorbd::rigidbody::NodeSegment axis1End(
-                m.marker(Q, static_cast<unsigned int>(arg[4][2]), true, false));
+                m.marker(Q, static_cast<unsigned int>(arg[3][2]), true, false));
 
     biorbd::utils::String axis2name(
-                getAxisInString(static_cast<AXIS>(arg[5][0])));
+                getAxisInString(static_cast<AXIS>(arg[4][0])));
     biorbd::rigidbody::NodeSegment axis2Beg(
-                m.marker(Q, static_cast<unsigned int>(arg[5][1]), true, false));
+                m.marker(Q, static_cast<unsigned int>(arg[4][1]), true, false));
     biorbd::rigidbody::NodeSegment axis2End(
-                m.marker(Q, static_cast<unsigned int>(arg[5][2]), true, false));
+                m.marker(Q, static_cast<unsigned int>(arg[4][2]), true, false));
 
     biorbd::utils::String axisToRecalculate(
-                getAxisInString(static_cast<AXIS>(arg[6][0])));
+                getAxisInString(static_cast<AXIS>(arg[5][0])));
 
     biorbd::utils::Rotation r_markers(
                 biorbd::utils::Rotation::fromMarkers(
@@ -79,13 +80,12 @@ int libangle_between_segment_and_markerSystem_casadi(
 
     // Get the angle between the two reference frames
     biorbd::utils::Rotation r(r_seg.transpose() * r_markers);
-    biorbd::utils::Vector angles(biorbd::utils::Rotation::toEulerAngles(r, "xyz"));
+    biorbd::utils::Vector angles(biorbd::utils::Rotation::toEulerAngles(r, "xzy"));
 
     // Return the answers
-    for (unsigned int i=0; i<angles.size(); ++i){
+    for (unsigned int i=0; i<3; ++i){
         res[0][i] = angles(i);
     }
-
     return 0;
 }
 

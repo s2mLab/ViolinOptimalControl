@@ -122,8 +122,8 @@ if m.nbMuscleTotal() > 0:
 plt.show()
 
 # Animate the model
-# b = BiorbdViz(loaded_model=m, markers_size=0.003)
-b = BiorbdViz(loaded_model=m)
+b = BiorbdViz(loaded_model=m, markers_size=0.003)
+# b = BiorbdViz(loaded_model=m)
 b.load_movement(q_interp)
 b.exec()
 
