@@ -7,15 +7,22 @@ void defineDifferentialVariables(
         casadi::MX& x)
 {
     // Controls
-    for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i)
-        u = vertcat(u, casadi::MX::sym("Control_" + m.nameDof()[i]));
+    std::vector<biorbd::utils::String> muscleNames(m.muscleNames());
+    std::vector<biorbd::utils::String> dofNames(m.nameDof());
+
+    for (unsigned int i=0; i<m.nbMuscleTotal(); ++i){
+        u = vertcat(u, casadi::MX::sym("Control_" + muscleNames[i]));
+    }
+    for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i){
+        u = vertcat(u, casadi::MX::sym("Control_" + dofNames[i]));
+    }
 
     // States
     casadi::MX q;
     casadi::MX qdot;
     for (unsigned int i=0; i<m.nbQ(); ++i){
         q = vertcat(q, casadi::MX::sym("Q_" + m.nameDof()[i]));
-        qdot = vertcat(qdot, casadi::MX::sym("Qdot_" + m.nameDof()[i]));
+        qdot = vertcat(qdot, casadi::MX::sym("Qdot_" + dofNames[i]));
     }
     x = vertcat(q, qdot);
 
@@ -405,19 +412,20 @@ void extractSolution(
         const ProblemSize& ps,
         std::vector<biorbd::rigidbody::GeneralizedCoordinates>& Q,
         std::vector<biorbd::rigidbody::GeneralizedVelocity>& Qdot,
-        std::vector<biorbd::rigidbody::GeneralizedTorque>& Tau)
+        std::vector<biorbd::rigidbody::Vector>& u)
 {
     // Resizing the output variables
     for (unsigned int q=0; q<m.nbQ(); ++q){
-        Tau.push_back(biorbd::rigidbody::GeneralizedTorque(ps.ns));
+        u.push_back(biorbd::rigidbody::Vector(ps.ns));
         Q.push_back(biorbd::rigidbody::GeneralizedCoordinates(ps.ns+1));
         Qdot.push_back(biorbd::rigidbody::GeneralizedVelocity(ps.ns+1));
     }
 
     // Get the optimal controls
     for(unsigned int i=0; i<ps.ns; ++i)
-        for (unsigned int q=0; q<m.nbQ(); ++q)
-            Tau[q][i] = V_opt.at(q + ps.nx + i*(ps.nx+m.nbQ()));
+        for (unsigned int q=0; q<m.nbMuscleTotal() + m.nbGeneralizedTorque(); ++q)
+            u[q][i] = V_opt.at(q + ps.nx + i*(ps.nx+m.nbQ()));
+    // look at that  i*(ps.nx+m.nbQ())
 
     // Get the states
     for(unsigned int i=0; i<ps.ns+1; ++i){

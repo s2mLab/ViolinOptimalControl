@@ -12,7 +12,7 @@ int main(){
     double T(5.0);
     int N(30);
     int nQ(static_cast<int>(m.nbQ()));
-    int nu(static_cast<int>(m.nbGeneralizedTorque()));
+    int nu(static_cast<int>(m.nbMuscleTotal() + m.nbGeneralizedTorque()));
     double dt = T/static_cast<double>(N); // length of a control interval
     casadi::Opti opti;
     casadi::MX x(opti.variable(N+1, nQ));

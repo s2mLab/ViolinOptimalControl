@@ -12,6 +12,12 @@ static casadi_int Qddot_sparsity[3] = {-1, 1, 1};
 static casadi_int Tau_sparsity[3] = {-1, 1, 1};
 static casadi_int Xp_sparsity[3] = {-1, 1, 1};
 
+static biorbd::rigidbody::GeneralizedCoordinates Q;
+static biorbd::rigidbody::GeneralizedVelocity Qdot;
+static biorbd::rigidbody::GeneralizedAcceleration Qddot;
+biorbd::rigidbody::GeneralizedTorque Tau;
+static std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates;
+
 void libforward_dynamics_casadi_fillSparsity(){
     if (!isSparsityFilled){
         assert(m.nbQ() == m.nbQdot()); // Quaternions are not implemented so far
@@ -20,9 +26,20 @@ void libforward_dynamics_casadi_fillSparsity(){
         Q_sparsity[0] = m.nbQ();
         Qdot_sparsity[0] = m.nbQdot();
         Qddot_sparsity[0] = m.nbQdot();
-        Tau_sparsity[0] = m.nbGeneralizedTorque();
+        Tau_sparsity[0] = m.nbMuscleTotal() + m.nbGeneralizedTorque();
         Xp_sparsity[0] = m.nbQ() + m.nbQdot();
         isSparsityFilled = true;
+
+
+        // Allocate proper memory
+        Q = biorbd::rigidbody::GeneralizedCoordinates(m);
+        Qdot = biorbd::rigidbody::GeneralizedVelocity(m);
+        Qddot = biorbd::rigidbody::GeneralizedAcceleration(m);
+        Tau = biorbd::rigidbody::GeneralizedTorque(m);
+        for(unsigned int i = 0; i<m.nbMuscleTotal(); ++i){
+            musclesStates.push_back(std::make_shared<biorbd::muscles::StateDynamics>(
+                        biorbd::muscles::StateDynamics()));
+        }
     }
 }
 
@@ -36,14 +53,22 @@ int libforward_dynamics_casadi(
         casadi_int*,
         casadi_real*,
         void*){
-    biorbd::rigidbody::GeneralizedCoordinates Q(m), Qdot(m), Qddot(m);
-    biorbd::rigidbody::GeneralizedTorque Tau(m);
 
     // Dispatch data
     for (unsigned int i = 0; i < m.nbQ(); ++i){
         Q[i] = arg[0][i];
         Qdot[i] = arg[0][i+m.nbQ()];
-        Tau[i] = arg[1][i];
+    }
+    for (unsigned int i=0; i<m.nbMuscleTotal(); ++i){
+        musclesStates[i]->setActivation(arg[1][i]);
+    }
+    if (m.nbMuscleTotal() > 0){
+        Tau = m.muscularJointTorque(musclesStates, true, &Q, &Qdot);
+    } else {
+        Tau.setZero();
+    }
+    for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i){
+        Tau[i] += arg[1][i + m.nbMuscleTotal()];
     }
 
     // Perform the forward dynamics

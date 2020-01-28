@@ -526,7 +526,7 @@ external_forces	0
 
 
 // DEFINITION DES MUSCLES
-/*
+
 // Arm > Thorax
 musclegroup Arm2Thorax
 	OriginParent		Arm
@@ -1033,5 +1033,5 @@ endmusclegroup
 		PCSA				1.8
 		maxVelocity 		10
 	endmuscle
-*/
+
 

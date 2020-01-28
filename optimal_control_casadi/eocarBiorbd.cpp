@@ -43,6 +43,11 @@ int main(){
     // Bounds and initial guess for the control
     BoundaryConditions uBounds;
     InitialConditions uInit;
+    for (unsigned int i=0; i<m.nbMuscleTotal(); ++i) {
+        uBounds.min.push_back(0);
+        uBounds.max.push_back(1);
+        uInit.val.push_back(0.5);
+    };
     for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i) {
         uBounds.min.push_back(-100);
         uBounds.max.push_back(100);

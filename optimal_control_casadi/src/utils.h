@@ -241,7 +241,7 @@ void extractSolution(
         const ProblemSize& ps,
         std::vector<biorbd::rigidbody::GeneralizedCoordinates>& Q,
         std::vector<biorbd::rigidbody::GeneralizedVelocity>& Qdot,
-        std::vector<biorbd::rigidbody::GeneralizedTorque>& Tau);
+        std::vector<biorbd::rigidbody::Vector> &u);
 
 void createTreePath(const std::string& path);
 bool dirExists(const char* const path);
