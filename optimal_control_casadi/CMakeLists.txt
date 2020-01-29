@@ -19,6 +19,8 @@ find_package(RBDL REQUIRED)
 find_package(Dlib REQUIRED)
 find_package(Biorbd REQUIRED)
 find_package(IPOPT REQUIRED)
+find_package(Qt5 COMPONENTS Core Widgets Charts REQUIRED)
+
 link_directories(
   ${CMAKE_INSTALL_PREFIX}/lib
 )
@@ -49,6 +51,9 @@ foreach(library_name ${library_names})
     target_link_libraries(${library_name}
         ${Biorbd_LIBRARIES}
         ${RBDL_LIBRARY}
+        ${Qt5Core_LIBRARIES}
+        ${Qt5Widgets_LIBRARIES}
+        ${Qt5Charts_LIBRARIES}
     )
     target_include_directories(${library_name} PUBLIC
         include
@@ -60,6 +65,9 @@ foreach(library_name ${library_names})
         ${IPOPT_INCLUDE_DIR}
         ${Casadi_INCLUDE_DIR}
         ${Casadi_INCLUDE_DIR}/..
+        ${Qt5Core_INCLUDE_DIRS}
+        ${Qt5Widgets_INCLUDE_DIRS}
+        ${Qt5Charts_INCLUDE_DIRS}
     )
 endforeach()
 

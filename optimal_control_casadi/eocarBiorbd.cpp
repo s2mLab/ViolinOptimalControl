@@ -17,6 +17,9 @@ int main(){
     // ---- OPTIONS ---- //
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
+
+    Visualization visu;
+
     ProblemSize probSize;
     probSize.tf = 2.0;
     probSize.ns = 30;
@@ -140,14 +143,14 @@ int main(){
     std::cout << "Solving the optimal control problem..." << std::endl;
     std::vector<double> V_opt;
     clock_t start = clock();
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, V_opt);
+    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, visu);
     clock_t end=clock();
     std::cout << "Done!" << std::endl;
 
     // Get the optimal state trajectory
-    std::vector<biorbd::rigidbody::GeneralizedCoordinates> Q;
-    std::vector<biorbd::rigidbody::GeneralizedVelocity> Qdot;
-    std::vector<biorbd::rigidbody::GeneralizedTorque> Tau;
+    std::vector<biorbd::utils::Vector> Q;
+    std::vector<biorbd::utils::Vector> Qdot;
+    std::vector<biorbd::utils::Vector> Tau;
     extractSolution(V_opt, probSize, Q, Qdot, Tau);
 
     // Show the solution

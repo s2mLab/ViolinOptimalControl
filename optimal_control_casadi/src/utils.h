@@ -5,6 +5,9 @@
 #include "biorbd.h"
 extern biorbd::Model m;
 
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QMainWindow>
+
 struct ProblemSize{
     unsigned int ns; // number of shooting
     double tf; // Final time of the optimization
@@ -81,6 +84,29 @@ struct IndexPairing{
     }
     Instant t;
     std::vector<unsigned int> toPair;
+};
+
+struct Visualization{
+    enum LEVEL{
+        NONE,
+        GRAPH,
+        THREE_DIMENSION
+    };
+    Visualization(){
+        level = Visualization::LEVEL::NONE;
+    }
+    Visualization(
+            Visualization::LEVEL level_,
+            int argc, char *argv[]){
+        level = level_;
+        if (level > Visualization::LEVEL::NONE){
+            app = new QApplication(argc, argv);
+            window = new QMainWindow();
+        }
+    }
+    QApplication *app;
+    QMainWindow * window;
+    LEVEL level;
 };
 
 enum PLANE{
@@ -228,20 +254,32 @@ void minimizeControls(
         const std::vector<casadi::MX> &U,
         casadi::MX &obj);
 
+///
+/// \brief solveProblemWithIpopt Actually solving the problem
+/// \param V The casadi State and Control variables
+/// \param vBounds The boundaries for V
+/// \param vInit The initial guesses for V
+/// \param obj The objective function
+/// \param constraints The constraint set
+/// \param probSize The problem size
+/// \param V_opt The optimized values (output)
+/// \param animationLevel The level of online animation (0=None, 1=Charts, 2=Model visualization)
+///
 void solveProblemWithIpopt(
         const casadi::MX &V,
         const BoundaryConditions &vBounds,
         const InitialConditions &vInit,
         const casadi::MX &obj,
         const std::vector<casadi::MX> &constraints,
-        std::vector<double>& V_opt);
+        const ProblemSize& probSize,
+        std::vector<double>& V_opt,
+        Visualization& visu);
 
-void extractSolution(
-        const std::vector<double>& V_opt,
+void extractSolution(const std::vector<double>& V_opt,
         const ProblemSize& ps,
-        std::vector<biorbd::rigidbody::GeneralizedCoordinates>& Q,
-        std::vector<biorbd::rigidbody::GeneralizedVelocity>& Qdot,
-        std::vector<biorbd::rigidbody::Vector> &u);
+        std::vector<biorbd::utils::Vector> &Q,
+        std::vector<biorbd::utils::Vector> &Qdot,
+        std::vector<biorbd::utils::Vector> &u);
 
 void createTreePath(const std::string& path);
 bool dirExists(const char* const path);

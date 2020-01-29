@@ -19,10 +19,13 @@ const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + opti
 const biorbd::utils::Path stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
 
 
-int main(){
+int main(int argc, char *argv[]){
     // ---- OPTIONS ---- //
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
+
+    Visualization visu(Visualization::LEVEL::GRAPH, argc, argv);
+
     ProblemSize probSize;
     probSize.tf = 2.0;
     probSize.ns = 30;
@@ -204,14 +207,14 @@ int main(){
     std::cout << "Solving the optimal control problem..." << std::endl;
     std::vector<double> V_opt;
     clock_t start = clock();
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, V_opt);
+    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, visu);
     clock_t end=clock();
     std::cout << "Done!" << std::endl;
 
     // Get the optimal state trajectory
-    std::vector<biorbd::rigidbody::GeneralizedCoordinates> Q;
-    std::vector<biorbd::rigidbody::GeneralizedVelocity> Qdot;
-    std::vector<biorbd::rigidbody::GeneralizedTorque> Tau;
+    std::vector<biorbd::utils::Vector> Q;
+    std::vector<biorbd::utils::Vector> Qdot;
+    std::vector<biorbd::utils::Vector> Tau;
     extractSolution(V_opt, probSize, Q, Qdot, Tau);
 
     // Show the solution
@@ -237,6 +240,9 @@ int main(){
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
     std::cout<<"Execution time: "<<time_exec<<std::endl;
-    return  0;
+
+    while (visu.window->isVisible()){
+        visu.app->processEvents();
+    }
     return 0;
 }

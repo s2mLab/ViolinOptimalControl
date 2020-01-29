@@ -1,6 +1,11 @@
 #include "utils.h"
 #include <sys/stat.h>
 
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QVBoxLayout>
+
 void defineDifferentialVariables(
         ProblemSize& ps,
         casadi::MX& u,
@@ -370,13 +375,237 @@ void minimizeControls(
         obj += casadi::MX::dot(U[k], U[k])*ps.dt;
 }
 
+class AnimationCallback : public casadi::Callback {
+public:
+    AnimationCallback(
+            Visualization& visu,
+            const casadi::MX &V,
+            const std::vector<casadi::MX> &constraints,
+            const ProblemSize& probSize) :
+        _visu(visu){
+
+        _ps = probSize;
+
+        _sparsityX = V.size().first;
+        _sparsityG = 0;
+        for (int i=0; i<constraints.size(); ++i){
+            _sparsityG += constraints[i].size().first;
+        }
+
+        // Qrange
+        std::vector<biorbd::utils::Range> ranges;
+        for (unsigned int i=0; i<m.nbSegment(); ++i){
+            std::vector<biorbd::utils::Range> segRanges(m.segment(i).ranges());
+            for(unsigned int j=0; j<segRanges.size(); ++j){
+                ranges.push_back(segRanges[j]);
+            }
+        }
+
+        // Create the Qt visualistion
+        QWidget * mainWidget = new QWidget();
+        _visu.window->setCentralWidget(mainWidget);
+        _visu.window->resize(1000, 500);
+        _visu.window->show();
+
+        QVBoxLayout * qLayout = new QVBoxLayout();
+        for (unsigned int i=0; i<m.nbQ(); ++i){
+            _QSerie.push_back(new QtCharts::QLineSeries());
+            for (unsigned int j=0; j<probSize.ns+1; ++j){
+                _QSerie[i]->append(0, 0);
+            }
+            QtCharts::QChart *chart = new QtCharts::QChart();
+            chart->legend()->hide();
+            chart->addSeries(_QSerie[i]);
+            chart->createDefaultAxes();
+            chart->setTitle((m.nameDof()[i] + ", Q").c_str());
+            chart->axes(Qt::Horizontal)[0]->setMin(0);
+            chart->axes(Qt::Horizontal)[0]->setMax(static_cast<double>(probSize.ns) * probSize.dt);
+            chart->axes(Qt::Vertical)[0]->setMin(ranges[i].min());
+            chart->axes(Qt::Vertical)[0]->setMax(ranges[i].max());
+            chart->setMinimumHeight(200);
+            QtCharts::QChartView * chartView = new QtCharts::QChartView(chart);
+            chartView->setRenderHint(QPainter::Antialiasing);
+            qLayout->addWidget(chartView);
+        }
+        QVBoxLayout * qdotLayout = new QVBoxLayout();
+        for (unsigned int i=0; i<m.nbQdot(); ++i){
+            _QdotSerie.push_back(new QtCharts::QLineSeries());
+            for (unsigned int j=0; j<probSize.ns+1; ++j){
+                _QdotSerie[i]->append(0, 0);
+            }
+            QtCharts::QChart *chart = new QtCharts::QChart();
+            chart->legend()->hide();
+            chart->addSeries(_QdotSerie[i]);
+            chart->createDefaultAxes();
+            chart->setTitle((m.nameDof()[i] + ", Qdot").c_str());
+            chart->axes(Qt::Horizontal)[0]->setMin(0);
+            chart->axes(Qt::Horizontal)[0]->setMax(static_cast<double>(probSize.ns) * probSize.dt);
+            chart->axes(Qt::Vertical)[0]->setMin(-10);
+            chart->axes(Qt::Vertical)[0]->setMax(10);
+            chart->setMinimumHeight(200);
+            QtCharts::QChartView *chartView = new QtCharts::QChartView(chart);
+            chartView->setRenderHint(QPainter::Antialiasing);
+            qdotLayout->addWidget(chartView);
+        }
+        QVBoxLayout * tauLayout = new QVBoxLayout();
+        for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i){
+            QtCharts::QChart *chart = new QtCharts::QChart();
+            for (unsigned int j=0; j<probSize.ns; ++j){
+                _TauSerie.push_back(new QtCharts::QLineSeries());
+                _TauSerie[i]->append(0, 0);
+                _TauSerie[i]->append(0, 0);
+                chart->addSeries(_TauSerie[i]);
+            }
+            chart->legend()->hide();
+            chart->createDefaultAxes();
+            chart->setTitle((m.nameDof()[i] + ", Tau").c_str());
+            chart->axes(Qt::Horizontal)[0]->setMin(0);
+            chart->axes(Qt::Horizontal)[0]->setMax(static_cast<double>(probSize.ns) * probSize.dt);
+            chart->axes(Qt::Vertical)[0]->setMin(-10);
+            chart->axes(Qt::Vertical)[0]->setMax(10);
+            chart->setMinimumHeight(200);
+            QtCharts::QChartView *chartView = new QtCharts::QChartView(chart);
+            chartView->setRenderHint(QPainter::Antialiasing);
+            tauLayout->addWidget(chartView);
+        }
+        QVBoxLayout * muscleLayout = new QVBoxLayout();
+        for (unsigned int i=0; i<m.nbMuscleTotal(); ++i){
+            _MuscleSerie.push_back(new QtCharts::QLineSeries());
+            QtCharts::QChart *chart = new QtCharts::QChart();
+            chart->legend()->hide();
+            chart->addSeries(_MuscleSerie[i]);
+            chart->createDefaultAxes();
+            chart->setTitle((m.muscleNames()[i]).c_str());
+            chart->axes(Qt::Horizontal)[0]->setMin(0);
+            chart->axes(Qt::Horizontal)[0]->setMax(static_cast<double>(probSize.ns) * probSize.dt);
+            chart->axes(Qt::Vertical)[0]->setMin(0);
+            chart->axes(Qt::Vertical)[0]->setMax(1);
+            chart->setMinimumHeight(200);
+            QtCharts::QChartView *chartView = new QtCharts::QChartView(chart);
+            chartView->setRenderHint(QPainter::Antialiasing);
+            muscleLayout->addWidget(chartView);
+        }
+        QHBoxLayout * allLayout = new QHBoxLayout();
+
+        QWidget * qWidget = new QWidget();
+        qWidget->setLayout(qLayout);
+        QScrollArea * scrollQArea = new QScrollArea();
+        scrollQArea->setFrameShape(QFrame::Shape::StyledPanel);
+        scrollQArea->setWidgetResizable(true);
+        scrollQArea->setWidget(qWidget);
+        allLayout->addWidget(scrollQArea);
+
+        QWidget * qdotWidget = new QWidget();
+        qdotWidget->setLayout(qdotLayout);
+        QScrollArea * scrollQDotArea = new QScrollArea();
+        scrollQDotArea->setFrameShape(QFrame::Shape::StyledPanel);
+        scrollQDotArea->setWidgetResizable(true);
+        scrollQDotArea->setWidget(qdotWidget);
+        allLayout->addWidget(scrollQDotArea);
+
+        QWidget * tauWidget = new QWidget();
+        tauWidget->setLayout(tauLayout);
+        QScrollArea * scrollTauArea = new QScrollArea();
+        scrollTauArea->setFrameShape(QFrame::Shape::StyledPanel);
+        scrollTauArea->setWidgetResizable(true);
+        scrollTauArea->setWidget(tauWidget);
+        allLayout->addWidget(scrollTauArea);
+
+        mainWidget->setLayout(allLayout);
+
+        construct("Callback");
+    }
+
+    casadi_int get_n_in() override { return 6;}
+    casadi_int get_n_out() override { return 1;}
+    virtual std::string get_name_in(casadi_int i) override{
+        if (i == 0){
+            return "x";
+        } else if (i == 1){
+            return "f";
+        } else if (i == 2){
+            return "g";
+        } else if (i == 3){
+            return "lam_x";
+        } else if (i == 4){
+            return "lam_g";
+        } else if (i == 5){
+            return "lam_p";
+        } else {
+            return "";
+        }
+    }
+    virtual casadi::Sparsity get_sparsity_in(casadi_int i) override{
+        if (i == 0){
+            return casadi::Sparsity::dense(_sparsityX);
+        } else if (i == 1){
+            return casadi::Sparsity::dense(1);
+        } else if (i == 2){
+            return casadi::Sparsity::dense(_sparsityG);
+        } else if (i == 3){
+            return casadi::Sparsity::dense(_sparsityX);
+        } else if (i == 4){
+            return casadi::Sparsity::dense(_sparsityG);
+        } else if (i == 5){
+            return casadi::Sparsity::dense(0);
+        } else {
+            return casadi::Sparsity::dense(-1);
+        }
+    }
+
+
+    virtual std::vector<casadi::DM> eval(const std::vector<casadi::DM>& arg) const override{
+        std::vector<biorbd::utils::Vector> Q;
+        std::vector<biorbd::utils::Vector> Qdot;
+        std::vector<biorbd::utils::Vector> Control;
+        extractSolution(std::vector<double>(arg[0]), _ps, Q, Qdot, Control);
+
+        for (unsigned int q=0; q<m.nbQ(); ++q){
+            for (unsigned int t=0; t<_ps.ns+1; ++t){
+                _QSerie[q]->replace(t, _ps.dt*static_cast<double>(t), Q[q][t]);
+            }
+        }
+
+        for (unsigned int q=0; q<m.nbQdot(); ++q){
+            for (unsigned int t=0; t<_ps.ns+1; ++t){
+                _QdotSerie[q]->replace(t, _ps.dt*static_cast<double>(t), Qdot[q][t]);
+            }
+        }
+
+        for (unsigned int q=0; q<m.nbGeneralizedTorque(); ++q){
+            for (unsigned int t=0; t<_ps.ns; ++t){
+std::cout << Control[q+m.nbMuscleTotal()][t] << std::endl;
+                _TauSerie[q*_ps.ns+t]->replace(0, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
+                _TauSerie[q*_ps.ns+t]->replace(1, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
+
+            }
+        }
+        _visu.app->processEvents();
+
+        return {0};
+    }
+
+protected:
+    unsigned int _sparsityX;
+    unsigned int _sparsityG;
+    ProblemSize _ps;
+    Visualization& _visu;
+
+    std::vector<QtCharts::QLineSeries*> _QSerie;
+    std::vector<QtCharts::QLineSeries*> _QdotSerie;
+    std::vector<QtCharts::QLineSeries*> _TauSerie;
+    std::vector<QtCharts::QLineSeries*> _MuscleSerie;
+};
+
 void solveProblemWithIpopt(
         const casadi::MX &V,
         const BoundaryConditions& vBounds,
         const InitialConditions& vInit,
         const casadi::MX &obj,
         const std::vector<casadi::MX> &constraints,
-        std::vector<double>& V_opt)
+        const ProblemSize& probSize,
+        std::vector<double>& V_opt,
+        Visualization &visu)
 {
     // NLP
     casadi::MXDict nlp = {{"x", V},
@@ -385,6 +614,10 @@ void solveProblemWithIpopt(
 
     // Set options
     casadi::Dict opts;
+    AnimationCallback callback(visu, V, constraints, probSize);
+    if (visu.level > Visualization::LEVEL::NONE){
+        opts["iteration_callback"] = callback;
+    }
     opts["ipopt.tol"] = 1e-6;
     opts["ipopt.max_iter"] = 1000;
     opts["ipopt.hessian_approximation"] = "limited-memory";
@@ -410,28 +643,27 @@ void solveProblemWithIpopt(
 void extractSolution(
         const std::vector<double>& V_opt,
         const ProblemSize& ps,
-        std::vector<biorbd::rigidbody::GeneralizedCoordinates>& Q,
-        std::vector<biorbd::rigidbody::GeneralizedVelocity>& Qdot,
-        std::vector<biorbd::rigidbody::Vector>& u)
+        std::vector<biorbd::utils::Vector>& Q,
+        std::vector<biorbd::utils::Vector>& Qdot,
+        std::vector<biorbd::utils::Vector>& u)
 {
     // Resizing the output variables
     for (unsigned int q=0; q<m.nbQ(); ++q){
-        u.push_back(biorbd::rigidbody::Vector(ps.ns));
+        u.push_back(biorbd::utils::Vector(ps.ns));
         Q.push_back(biorbd::rigidbody::GeneralizedCoordinates(ps.ns+1));
         Qdot.push_back(biorbd::rigidbody::GeneralizedVelocity(ps.ns+1));
     }
 
     // Get the optimal controls
     for(unsigned int i=0; i<ps.ns; ++i)
-        for (unsigned int q=0; q<m.nbMuscleTotal() + m.nbGeneralizedTorque(); ++q)
-            u[q][i] = V_opt.at(q + ps.nx + i*(ps.nx+m.nbQ()));
-    // look at that  i*(ps.nx+m.nbQ())
+        for (unsigned int q=0; q<ps.nu; ++q)
+            u[q][i] = V_opt.at(q + ps.nx + i*(ps.nx+ps.nu));
 
     // Get the states
     for(unsigned int i=0; i<ps.ns+1; ++i){
         for (unsigned int q=0; q<m.nbQ(); ++q){
-            Q[q][i] = V_opt.at(q + i*(ps.nx+m.nbQ()));
-            Qdot[q][i] = V_opt.at(q + m.nbQ() + i*(ps.nx+m.nbQ()));
+            Q[q][i] = V_opt.at(q + i*(ps.nx+ps.nu));
+            Qdot[q][i] = V_opt.at(q + m.nbQ() + i*(ps.nx+ps.nu));
         }
     }
 }

@@ -8,8 +8,8 @@ import analyses.utils as utils
 
 
 # Options
-model_name = "BrasViolon"  # "eocar" "BrasViolon"
-output_files = "UpAndDowsBowCasadi"  # "eocarBiorbdConstraintCasadi" "UpAndDowsBowCasadi"
+model_name = "eocar"  # "eocar" "BrasViolon"
+output_files = "eocarBiorbdConstraintCasadi"  # "eocarBiorbdConstraintCasadi" "UpAndDowsBowCasadi"
 fun_dyn = utils.dynamics_no_contact
 runge_kutta_algo = 'rk45'
 nb_intervals = 30

@@ -58,6 +58,9 @@ int main(){
     // ---- OPTIONS ---- //
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
+
+    Visualization visu;
+
     ProblemSize probSize;
     probSize.tf = 0.5;
     probSize.ns = 30;
@@ -296,26 +299,30 @@ int main(){
     std::cout << "Solving the optimal control problem..." << std::endl;
     clock_t start = clock();
     std::vector<double> V_opt;
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, V_opt);
+    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, visu);
     clock_t end=clock();
     std::cout << "Done!" << std::endl;
 
     // Get the optimal state trajectory
-    std::vector<biorbd::rigidbody::GeneralizedCoordinates> Q;
-    std::vector<biorbd::rigidbody::GeneralizedVelocity> Qdot;
-    std::vector<biorbd::rigidbody::GeneralizedTorque> Tau;
-    extractSolution(V_opt, probSize, Q, Qdot, Tau);
+    std::vector<biorbd::utils::Vector> Q;
+    std::vector<biorbd::utils::Vector> Qdot;
+    std::vector<biorbd::utils::Vector> Controls;
+    extractSolution(V_opt, probSize, Q, Qdot, Controls);
 
     // Show the solution
     std::cout << "Results:" << std::endl;
     for (unsigned int q=0; q<m.nbQ(); ++q){
         std::cout << "Q[" << q <<"] = " << Q[q].transpose() << std::endl;
         std::cout << "Qdot[" << q <<"] = " << Qdot[q].transpose() << std::endl;
-        std::cout << "Tau[" << q <<"] = " << Tau[q].transpose() << std::endl;
+        std::cout << "Tau[" << q <<"] = " << Controls[q+m.nbMuscleTotal()].transpose() << std::endl;
+        std::cout << std::endl;
+    }
+    for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
+        std::cout << "Muscle[" << q <<"] = " << Controls[q].transpose() << std::endl;
         std::cout << std::endl;
     }
     createTreePath(resultsPath);
-    writeCasadiResults(controlResultsFileName, Tau, probSize.dt);
+    writeCasadiResults(controlResultsFileName, Controls, probSize.dt);
     std::vector<biorbd::utils::Vector> QandQdot;
     for (auto q : Q){
         QandQdot.push_back(q);
@@ -323,7 +330,7 @@ int main(){
     for (auto qdot : Qdot){
         QandQdot.push_back(qdot);
     }
-    writeCasadiResults(controlResultsFileName, Tau, probSize.dt);
+    writeCasadiResults(controlResultsFileName, Controls, probSize.dt);
     writeCasadiResults(stateResultsFileName, QandQdot, probSize.dt);
 
     // ---------- FINALIZE  ------------ //
