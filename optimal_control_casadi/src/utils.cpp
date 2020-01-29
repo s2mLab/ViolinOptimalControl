@@ -449,14 +449,13 @@ public:
         }
         QVBoxLayout * tauLayout = new QVBoxLayout();
         for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i){
-            QtCharts::QChart *chart = new QtCharts::QChart();
+            _TauSerie.push_back(new QtCharts::QLineSeries());
             for (unsigned int j=0; j<probSize.ns; ++j){
-                _TauSerie.push_back(new QtCharts::QLineSeries());
                 _TauSerie[i]->append(0, 0);
-                _TauSerie[i]->append(0, 0);
-                chart->addSeries(_TauSerie[i]);
             }
+            QtCharts::QChart *chart = new QtCharts::QChart();
             chart->legend()->hide();
+            chart->addSeries(_TauSerie[i]);
             chart->createDefaultAxes();
             chart->setTitle((m.nameDof()[i] + ", Tau").c_str());
             chart->axes(Qt::Horizontal)[0]->setMin(0);
@@ -574,9 +573,7 @@ public:
 
         for (unsigned int q=0; q<m.nbGeneralizedTorque(); ++q){
             for (unsigned int t=0; t<_ps.ns; ++t){
-std::cout << Control[q+m.nbMuscleTotal()][t] << std::endl;
-                _TauSerie[q*_ps.ns+t]->replace(0, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
-                _TauSerie[q*_ps.ns+t]->replace(1, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
+                _TauSerie[q]->replace(t, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
 
             }
         }
