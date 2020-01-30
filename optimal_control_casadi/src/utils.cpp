@@ -386,9 +386,9 @@ public:
 
         _ps = probSize;
 
-        _sparsityX = V.size().first;
+        _sparsityX = static_cast<unsigned int>(V.size().first);
         _sparsityG = 0;
-        for (int i=0; i<constraints.size(); ++i){
+        for (unsigned int i=0; i<constraints.size(); ++i){
             _sparsityG += constraints[i].size().first;
         }
 
@@ -452,6 +452,7 @@ public:
             _TauSerie.push_back(new QtCharts::QLineSeries());
             for (unsigned int j=0; j<probSize.ns; ++j){
                 _TauSerie[i]->append(0, 0);
+                _TauSerie[i]->append(0, 0);
             }
             QtCharts::QChart *chart = new QtCharts::QChart();
             chart->legend()->hide();
@@ -470,6 +471,10 @@ public:
         QVBoxLayout * muscleLayout = new QVBoxLayout();
         for (unsigned int i=0; i<m.nbMuscleTotal(); ++i){
             _MuscleSerie.push_back(new QtCharts::QLineSeries());
+            for (unsigned int j=0; j<probSize.ns; ++j){
+                _MuscleSerie[i]->append(0, 0);
+                _MuscleSerie[i]->append(0, 0);
+            }
             QtCharts::QChart *chart = new QtCharts::QChart();
             chart->legend()->hide();
             chart->addSeries(_MuscleSerie[i]);
@@ -509,6 +514,16 @@ public:
         scrollTauArea->setWidgetResizable(true);
         scrollTauArea->setWidget(tauWidget);
         allLayout->addWidget(scrollTauArea);
+
+        if (m.nbMuscleTotal() > 0){
+            QWidget * muscleWidget = new QWidget();
+            muscleWidget->setLayout(muscleLayout);
+            QScrollArea * scrollMuscleArea = new QScrollArea();
+            scrollMuscleArea->setFrameShape(QFrame::Shape::StyledPanel);
+            scrollMuscleArea->setWidgetResizable(true);
+            scrollMuscleArea->setWidget(muscleWidget);
+            allLayout->addWidget(scrollMuscleArea);
+        }
 
         mainWidget->setLayout(allLayout);
 
@@ -560,21 +575,27 @@ public:
         extractSolution(std::vector<double>(arg[0]), _ps, Q, Qdot, Control);
 
         for (unsigned int q=0; q<m.nbQ(); ++q){
-            for (unsigned int t=0; t<_ps.ns+1; ++t){
+            for (int t=0; t<static_cast<int>(_ps.ns)+1; ++t){
                 _QSerie[q]->replace(t, _ps.dt*static_cast<double>(t), Q[q][t]);
             }
         }
 
         for (unsigned int q=0; q<m.nbQdot(); ++q){
-            for (unsigned int t=0; t<_ps.ns+1; ++t){
+            for (int t=0; t<static_cast<int>(_ps.ns)+1; ++t){
                 _QdotSerie[q]->replace(t, _ps.dt*static_cast<double>(t), Qdot[q][t]);
             }
         }
 
         for (unsigned int q=0; q<m.nbGeneralizedTorque(); ++q){
-            for (unsigned int t=0; t<_ps.ns; ++t){
-                _TauSerie[q]->replace(t, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
-
+            for (int t=0; t<static_cast<int>(_ps.ns); ++t){
+                _TauSerie[q]->replace(t*2+0, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
+                _TauSerie[q]->replace(t*2+1, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
+            }
+        }
+        for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
+            for (int t=0; t<static_cast<int>(_ps.ns); ++t){
+                _MuscleSerie[q]->replace(t*2+0, _ps.dt*static_cast<double>(t), Control[q][t]);
+                _MuscleSerie[q]->replace(t*2+1, _ps.dt*static_cast<double>(t), Control[q][t]);
             }
         }
         _visu.app->processEvents();
@@ -645,6 +666,9 @@ void extractSolution(
         std::vector<biorbd::utils::Vector>& u)
 {
     // Resizing the output variables
+    for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
+        u.push_back(biorbd::utils::Vector(ps.ns));
+    }
     for (unsigned int q=0; q<m.nbQ(); ++q){
         u.push_back(biorbd::utils::Vector(ps.ns));
         Q.push_back(biorbd::rigidbody::GeneralizedCoordinates(ps.ns+1));

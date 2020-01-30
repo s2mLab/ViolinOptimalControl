@@ -54,12 +54,12 @@ const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + opti
 const biorbd::utils::Path stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
 
 
-int main(){
+int main(int argc, char *argv[]){
     // ---- OPTIONS ---- //
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
 
-    Visualization visu;
+    Visualization visu(Visualization::LEVEL::GRAPH, argc, argv);
 
     ProblemSize probSize;
     probSize.tf = 0.5;
