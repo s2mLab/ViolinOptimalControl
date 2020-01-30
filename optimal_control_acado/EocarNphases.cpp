@@ -18,7 +18,7 @@ const double t_Start = 0.0;
 const double t_End = 4.0;
 const int nPoints(31);
 const int nPhases(2);
-const std::string resultsPath("../Results/");
+const std::string resultsPath("../../Results/");
 const std::string initializePath("../Initialisation/");
 const std::string resultsName("Eocar");
 

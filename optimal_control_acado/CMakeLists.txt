@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED ( VERSION 3.1 )
-PROJECT("ViolonOptimal" CXX C)
+PROJECT("ViolonOptimalAcado" CXX C)
 
 # Set folder to look path to
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/modules)
@@ -41,6 +41,7 @@ target_include_directories(utils PUBLIC
 
 # Write down all files to include here
 set(source_files
+    eocarBiorbd.cpp
     RepeatedUpAndDownBow.cpp
     EocarNphases.cpp
 )
@@ -72,3 +73,13 @@ foreach(src_file ${source_files})
 endforeach()
 
 
+set(filename eocar)
+ADD_EXECUTABLE (  ${filename}
+    ${filename}.cpp
+)
+target_include_directories(${filename} PUBLIC
+    ${ACADO_INCLUDE_DIRS} ${ACADO_INCLUDE_DIRS}/..
+)
+target_link_libraries(${filename}
+    ${ACADO_SHARED_LIBRARIES}
+)
