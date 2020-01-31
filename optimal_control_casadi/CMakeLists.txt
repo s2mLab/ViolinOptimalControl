@@ -79,6 +79,7 @@ foreach(src_file ${source_files})
     ADD_EXECUTABLE (${filename}
         ${filename}.cpp
     )
+
     target_include_directories(${filename} PUBLIC
         src
         ${Casadi_INCLUDE_DIR}
