@@ -25,8 +25,11 @@ AnimationCallback::AnimationCallback(
 
     construct("Callback");
 
-    // Start the thread that will redraw the figure at a fixed rate
+    // Start and wait for the thread that will redraw the figure at a fixed rate to be ready
     refresh_thread = new std::thread{[this]() {QtWindowThread(); }};
+    while (!_isReady){
+
+    }
 }
 
 casadi_int AnimationCallback::get_n_in() { return 6;}
@@ -93,13 +96,13 @@ std::vector<casadi::DM> AnimationCallback::eval(
         for (unsigned int q=0; q<m.nbGeneralizedTorque(); ++q){
             for (int t=0; t<static_cast<int>(_ps.ns); ++t){
                 _TauSerie[q]->replace(t*2+0, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
-                _TauSerie[q]->replace(t*2+1, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
+                _TauSerie[q]->replace(t*2+1, _ps.dt*static_cast<double>(t+1), Control[q+m.nbMuscleTotal()][t]);
             }
         }
         for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
             for (int t=0; t<static_cast<int>(_ps.ns); ++t){
                 _MuscleSerie[q]->replace(t*2+0, _ps.dt*static_cast<double>(t), Control[q][t]);
-                _MuscleSerie[q]->replace(t*2+1, _ps.dt*static_cast<double>(t), Control[q][t]);
+                _MuscleSerie[q]->replace(t*2+1, _ps.dt*static_cast<double>(t+1), Control[q][t]);
             }
         }
 
@@ -266,6 +269,7 @@ void AnimationCallback::QtWindowThread(){
     std::mutex mtx;
     std::unique_lock<std::mutex> lck{mtx};
     std::condition_variable cv{};
+    _isReady = true;
     while (_window->isVisible()) {
         _window->repaint();
         _app->processEvents();

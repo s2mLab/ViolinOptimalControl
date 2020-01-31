@@ -74,6 +74,7 @@ protected:
     std::chrono::milliseconds refreshTime;
     std::thread * refresh_thread;
     bool _isActive = true;
+    bool _isReady = false;
 };
 
 #endif // ANIMATION_CALLBACK_H
