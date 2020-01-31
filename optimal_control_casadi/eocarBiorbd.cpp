@@ -3,6 +3,8 @@
 
 #include "utils.h"
 #include "forward_dynamics_casadi.h"
+#include "AnimationCallback.h"
+
 #include "biorbd.h"
 extern biorbd::Model m;
 biorbd::Model m("../../models/eocar.bioMod");
@@ -13,12 +15,12 @@ const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + opti
 const biorbd::utils::Path stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
 
 
-int main(){
+int main(int argc, char *argv[]){
     // ---- OPTIONS ---- //
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
 
-    Visualization visu;
+    Visualization visu(Visualization::LEVEL::NONE, argc, argv);
 
     ProblemSize probSize;
     probSize.tf = 2.0;
@@ -139,11 +141,14 @@ int main(){
     casadi::MX J;
     objectiveFunction(probSize, X, U, J);
 
+    // Online visualization
+    AnimationCallback animCallback(visu, V, g, probSize, 10);
+
     // Optimize
     std::cout << "Solving the optimal control problem..." << std::endl;
     std::vector<double> V_opt;
     clock_t start = clock();
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, visu);
+    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, animCallback);
     clock_t end=clock();
     std::cout << "Done!" << std::endl;
 
@@ -176,6 +181,7 @@ int main(){
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
     std::cout<<"Execution time: "<<time_exec<<std::endl;
-    return  0;
+
+    while(animCallback.isActive()){}
     return 0;
 }

@@ -1,11 +1,7 @@
 #include "utils.h"
 #include <sys/stat.h>
 
-#include <QtCharts/QChartView>
-#include <QtCharts/QLineSeries>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QVBoxLayout>
-#include <QTimer>
+#include "AnimationCallback.h"
 
 void defineDifferentialVariables(
         ProblemSize& ps,
@@ -386,7 +382,7 @@ void solveProblemWithIpopt(
         const std::vector<casadi::MX> &constraints,
         const ProblemSize& probSize,
         std::vector<double>& V_opt,
-        Visualization &visu)
+        AnimationCallback &visuCallback)
 {
     // NLP
     casadi::MXDict nlp = {{"x", V},
@@ -395,9 +391,8 @@ void solveProblemWithIpopt(
 
     // Set options
     casadi::Dict opts;
-    AnimationCallback callback(visu, V, constraints, probSize);
-    if (visu.level > Visualization::LEVEL::NONE){
-        opts["iteration_callback"] = callback;
+    if (visuCallback.visu().level > Visualization::LEVEL::NONE){
+        opts["iteration_callback"] = visuCallback;
     }
 
     opts["ipopt.tol"] = 1e-6;
@@ -472,164 +467,4 @@ bool dirExists(const char* const path)
     }
 
     return ( info.st_mode & S_IFDIR ) ? true : false;
-}
-
-
-AnimationCallback::AnimationCallback(
-        Visualization &visu,
-        const casadi::MX &V,
-        const std::vector<casadi::MX> &constraints,
-        const ProblemSize &probSize) :
-    _visu(visu),
-    time(1000),
-    f
-{
-
-    //        _ps = probSize;
-
-    //        _sparsityX = static_cast<unsigned int>(V.size().first);
-    //        _sparsityG = 0;
-    //        for (unsigned int i=0; i<constraints.size(); ++i){
-    //            _sparsityG += constraints[i].size().first;
-    //        }
-
-    //        // Qrange
-    //        std::vector<biorbd::utils::Range> ranges;
-    //        for (unsigned int i=0; i<m.nbSegment(); ++i){
-    //            std::vector<biorbd::utils::Range> segRanges(m.segment(i).ranges());
-    //            for(unsigned int j=0; j<segRanges.size(); ++j){
-    //                ranges.push_back(segRanges[j]);
-    //            }
-    //        }
-
-    //        // Create the Qt visualistion
-    //        QWidget * mainWidget = new QWidget();
-    //        _visu.window->setCentralWidget(mainWidget);
-    //        _visu.window->resize(1000, 500);
-    //        _visu.window->show();
-
-    //        QVBoxLayout * qLayout = new QVBoxLayout();
-    //        for (unsigned int i=0; i<m.nbQ(); ++i){
-    //            _QSerie.push_back(new QtCharts::QLineSeries());
-    //            for (unsigned int j=0; j<probSize.ns+1; ++j){
-    //                _QSerie[i]->append(0, 0);
-    //            }
-    //            QtCharts::QChart *chart = new QtCharts::QChart();
-    //            chart->legend()->hide();
-    //            chart->addSeries(_QSerie[i]);
-    //            chart->createDefaultAxes();
-    //            chart->setTitle((m.nameDof()[i] + ", Q").c_str());
-    //            chart->axes(Qt::Horizontal)[0]->setMin(0);
-    //            chart->axes(Qt::Horizontal)[0]->setMax(static_cast<double>(probSize.ns) * probSize.dt);
-    //            chart->axes(Qt::Vertical)[0]->setMin(ranges[i].min());
-    //            chart->axes(Qt::Vertical)[0]->setMax(ranges[i].max());
-    //            chart->setMinimumHeight(200);
-    //            QtCharts::QChartView * chartView = new QtCharts::QChartView(chart);
-    //            chartView->setRenderHint(QPainter::Antialiasing);
-    //            qLayout->addWidget(chartView);
-    //        }
-    //        QVBoxLayout * qdotLayout = new QVBoxLayout();
-    //        for (unsigned int i=0; i<m.nbQdot(); ++i){
-    //            _QdotSerie.push_back(new QtCharts::QLineSeries());
-    //            for (unsigned int j=0; j<probSize.ns+1; ++j){
-    //                _QdotSerie[i]->append(0, 0);
-    //            }
-    //            QtCharts::QChart *chart = new QtCharts::QChart();
-    //            chart->legend()->hide();
-    //            chart->addSeries(_QdotSerie[i]);
-    //            chart->createDefaultAxes();
-    //            chart->setTitle((m.nameDof()[i] + ", Qdot").c_str());
-    //            chart->axes(Qt::Horizontal)[0]->setMin(0);
-    //            chart->axes(Qt::Horizontal)[0]->setMax(static_cast<double>(probSize.ns) * probSize.dt);
-    //            chart->axes(Qt::Vertical)[0]->setMin(-10);
-    //            chart->axes(Qt::Vertical)[0]->setMax(10);
-    //            chart->setMinimumHeight(200);
-    //            QtCharts::QChartView *chartView = new QtCharts::QChartView(chart);
-    //            chartView->setRenderHint(QPainter::Antialiasing);
-    //            qdotLayout->addWidget(chartView);
-    //        }
-    //        QVBoxLayout * tauLayout = new QVBoxLayout();
-    //        for (unsigned int i=0; i<m.nbGeneralizedTorque(); ++i){
-    //            _TauSerie.push_back(new QtCharts::QLineSeries());
-    //            for (unsigned int j=0; j<probSize.ns; ++j){
-    //                _TauSerie[i]->append(0, 0);
-    //                _TauSerie[i]->append(0, 0);
-    //            }
-    //            QtCharts::QChart *chart = new QtCharts::QChart();
-    //            chart->legend()->hide();
-    //            chart->addSeries(_TauSerie[i]);
-    //            chart->createDefaultAxes();
-    //            chart->setTitle((m.nameDof()[i] + ", Tau").c_str());
-    //            chart->axes(Qt::Horizontal)[0]->setMin(0);
-    //            chart->axes(Qt::Horizontal)[0]->setMax(static_cast<double>(probSize.ns) * probSize.dt);
-    //            chart->axes(Qt::Vertical)[0]->setMin(-10);
-    //            chart->axes(Qt::Vertical)[0]->setMax(10);
-    //            chart->setMinimumHeight(200);
-    //            QtCharts::QChartView *chartView = new QtCharts::QChartView(chart);
-    //            chartView->setRenderHint(QPainter::Antialiasing);
-    //            tauLayout->addWidget(chartView);
-    //        }
-    //        QVBoxLayout * muscleLayout = new QVBoxLayout();
-    //        for (unsigned int i=0; i<m.nbMuscleTotal(); ++i){
-    //            _MuscleSerie.push_back(new QtCharts::QLineSeries());
-    //            for (unsigned int j=0; j<probSize.ns; ++j){
-    //                _MuscleSerie[i]->append(0, 0);
-    //                _MuscleSerie[i]->append(0, 0);
-    //            }
-    //            QtCharts::QChart *chart = new QtCharts::QChart();
-    //            chart->legend()->hide();
-    //            chart->addSeries(_MuscleSerie[i]);
-    //            chart->createDefaultAxes();
-    //            chart->setTitle((m.muscleNames()[i]).c_str());
-    //            chart->axes(Qt::Horizontal)[0]->setMin(0);
-    //            chart->axes(Qt::Horizontal)[0]->setMax(static_cast<double>(probSize.ns) * probSize.dt);
-    //            chart->axes(Qt::Vertical)[0]->setMin(0);
-    //            chart->axes(Qt::Vertical)[0]->setMax(1);
-    //            chart->setMinimumHeight(200);
-    //            QtCharts::QChartView *chartView = new QtCharts::QChartView(chart);
-    //            chartView->setRenderHint(QPainter::Antialiasing);
-    //            muscleLayout->addWidget(chartView);
-    //        }
-    //        QHBoxLayout * allLayout = new QHBoxLayout();
-
-    //        QWidget * qWidget = new QWidget();
-    //        qWidget->setLayout(qLayout);
-    //        QScrollArea * scrollQArea = new QScrollArea();
-    //        scrollQArea->setFrameShape(QFrame::Shape::StyledPanel);
-    //        scrollQArea->setWidgetResizable(true);
-    //        scrollQArea->setWidget(qWidget);
-    //        allLayout->addWidget(scrollQArea);
-
-    //        QWidget * qdotWidget = new QWidget();
-    //        qdotWidget->setLayout(qdotLayout);
-    //        QScrollArea * scrollQDotArea = new QScrollArea();
-    //        scrollQDotArea->setFrameShape(QFrame::Shape::StyledPanel);
-    //        scrollQDotArea->setWidgetResizable(true);
-    //        scrollQDotArea->setWidget(qdotWidget);
-    //        allLayout->addWidget(scrollQDotArea);
-
-    //        QWidget * tauWidget = new QWidget();
-    //        tauWidget->setLayout(tauLayout);
-    //        QScrollArea * scrollTauArea = new QScrollArea();
-    //        scrollTauArea->setFrameShape(QFrame::Shape::StyledPanel);
-    //        scrollTauArea->setWidgetResizable(true);
-    //        scrollTauArea->setWidget(tauWidget);
-    //        allLayout->addWidget(scrollTauArea);
-
-    //        if (m.nbMuscleTotal() > 0){
-    //            QWidget * muscleWidget = new QWidget();
-    //            muscleWidget->setLayout(muscleLayout);
-    //            QScrollArea * scrollMuscleArea = new QScrollArea();
-    //            scrollMuscleArea->setFrameShape(QFrame::Shape::StyledPanel);
-    //            scrollMuscleArea->setWidgetResizable(true);
-    //            scrollMuscleArea->setWidget(muscleWidget);
-    //            allLayout->addWidget(scrollMuscleArea);
-    //        }
-
-    //        mainWidget->setLayout(allLayout);
-
-
-
-//    _visu.app->exec();
-    //        construct("Callback");
 }

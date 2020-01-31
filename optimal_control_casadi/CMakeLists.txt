@@ -36,6 +36,7 @@ set(source_files
 # library files
 set(library_names
     utils
+    AnimationCallback
     forward_dynamics_casadi
     forward_kinematics_casadi
     projectionOnSegment_casadi

@@ -8,6 +8,7 @@
 #include "angle_between_segments_casadi.h"
 #include "angle_between_segment_and_markers_casadi.h"
 #include "angle_between_segment_and_markerSystem_casadi.h"
+#include "AnimationCallback.h"
 
 #include "biorbd.h"
 extern biorbd::Model m;
@@ -295,11 +296,14 @@ int main(int argc, char *argv[]){
     casadi::MX J;
     objectiveFunction(probSize, X, U, J);
 
+    // Online visualization
+    AnimationCallback animCallback(visu, V, g, probSize, 10);
+
     // Optimize
     std::cout << "Solving the optimal control problem..." << std::endl;
     clock_t start = clock();
     std::vector<double> V_opt;
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, visu);
+    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, animCallback);
     clock_t end=clock();
     std::cout << "Done!" << std::endl;
 
@@ -336,5 +340,7 @@ int main(int argc, char *argv[]){
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
     std::cout<<"Execution time: "<<time_exec<<std::endl;
+
+    while(animCallback.isActive()){}
     return 0;
 }

@@ -4,9 +4,13 @@
 #include <casadi.hpp>
 #include "biorbd.h"
 extern biorbd::Model m;
+class AnimationCallback;
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QMainWindow>
+namespace QtCharts {
+    class QLineSeries;
+}
 
 struct ProblemSize{
     unsigned int ns; // number of shooting
@@ -84,29 +88,6 @@ struct IndexPairing{
     }
     Instant t;
     std::vector<unsigned int> toPair;
-};
-
-struct Visualization{
-    enum LEVEL{
-        NONE,
-        GRAPH,
-        THREE_DIMENSION
-    };
-    Visualization(){
-        level = Visualization::LEVEL::NONE;
-    }
-    Visualization(
-            Visualization::LEVEL level_,
-            int argc, char *argv[]){
-        level = level_;
-        if (level > Visualization::LEVEL::NONE){
-            app = new QApplication(argc, argv);
-            window = new QMainWindow();
-        }
-    }
-    QApplication *app;
-    QMainWindow * window;
-    LEVEL level;
 };
 
 enum PLANE{
@@ -273,7 +254,7 @@ void solveProblemWithIpopt(
         const std::vector<casadi::MX> &constraints,
         const ProblemSize& probSize,
         std::vector<double>& V_opt,
-        Visualization& visu);
+        AnimationCallback& visu);
 
 void extractSolution(const std::vector<double>& V_opt,
         const ProblemSize& ps,
@@ -306,122 +287,6 @@ void writeCasadiResults(
         currentTime += dt;
     }
 }
-
-#include <iostream>
-#include <chrono>
-#include <thread>
-#include <functional>
-#include <mutex>
-#include <condition_variable>
-class AnimationCallback : public casadi::Callback {
-public:
-    AnimationCallback(
-            Visualization& visu,
-            const casadi::MX &V,
-            const std::vector<casadi::MX> &constraints,
-            const ProblemSize& probSize
-        );
-
-    void refresh();
-
-//    casadi_int get_n_in() override { return 6;}
-//    casadi_int get_n_out() override { return 1;}
-//    virtual std::string get_name_in(casadi_int i) override{
-//        if (i == 0){
-//            return "x";
-//        } else if (i == 1){
-//            return "f";
-//        } else if (i == 2){
-//            return "g";
-//        } else if (i == 3){
-//            return "lam_x";
-//        } else if (i == 4){
-//            return "lam_g";
-//        } else if (i == 5){
-//            return "lam_p";
-//        } else {
-//            return "";
-//        }
-//    }
-//    virtual casadi::Sparsity get_sparsity_in(casadi_int i) override{
-//        if (i == 0){
-//            return casadi::Sparsity::dense(_sparsityX);
-//        } else if (i == 1){
-//            return casadi::Sparsity::dense(1);
-//        } else if (i == 2){
-//            return casadi::Sparsity::dense(_sparsityG);
-//        } else if (i == 3){
-//            return casadi::Sparsity::dense(_sparsityX);
-//        } else if (i == 4){
-//            return casadi::Sparsity::dense(_sparsityG);
-//        } else if (i == 5){
-//            return casadi::Sparsity::dense(0);
-//        } else {
-//            return casadi::Sparsity::dense(-1);
-//        }
-//    }
-
-
-//    virtual std::vector<casadi::DM> eval(const std::vector<casadi::DM>& arg) const override{
-//        std::vector<biorbd::utils::Vector> Q;
-//        std::vector<biorbd::utils::Vector> Qdot;
-//        std::vector<biorbd::utils::Vector> Control;
-//        extractSolution(std::vector<double>(arg[0]), _ps, Q, Qdot, Control);
-
-//        for (unsigned int q=0; q<m.nbQ(); ++q){
-//            for (int t=0; t<static_cast<int>(_ps.ns)+1; ++t){
-//                _QSerie[q]->replace(t, _ps.dt*static_cast<double>(t), Q[q][t]);
-//            }
-//        }
-
-//        for (unsigned int q=0; q<m.nbQdot(); ++q){
-//            for (int t=0; t<static_cast<int>(_ps.ns)+1; ++t){
-//                _QdotSerie[q]->replace(t, _ps.dt*static_cast<double>(t), Qdot[q][t]);
-//            }
-//        }
-
-//        for (unsigned int q=0; q<m.nbGeneralizedTorque(); ++q){
-//            for (int t=0; t<static_cast<int>(_ps.ns); ++t){
-//                _TauSerie[q]->replace(t*2+0, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
-//                _TauSerie[q]->replace(t*2+1, _ps.dt*static_cast<double>(t), Control[q+m.nbMuscleTotal()][t]);
-//            }
-//        }
-//        for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
-//            for (int t=0; t<static_cast<int>(_ps.ns); ++t){
-//                _MuscleSerie[q]->replace(t*2+0, _ps.dt*static_cast<double>(t), Control[q][t]);
-//                _MuscleSerie[q]->replace(t*2+1, _ps.dt*static_cast<double>(t), Control[q][t]);
-//            }
-//        }
-
-
-//        return {0};
-//    }
-
-protected:
-    void wait_then_call(){
-        std::unique_lock<std::mutex> lck{mtx};
-        for (int i{10}; i>0; --i){
-            std::cout << "coucou " << wait_thread.get_id() << " = " << i << std::endl;
-            cv.wait_for(lck, time);
-        }
-    }
-
-    QTimer * m_timer;
-//    unsigned int _sparsityX;
-//    unsigned int _sparsityG;
-//    ProblemSize _ps;
-    Visualization& _visu;
-
-    std::mutex mtx;
-    std::condition_variable cv{};
-    std::chrono::milliseconds time;
-    std::function <void(void)> f;
-    std::thread wait_thread{[this]() {wait_then_call(); }};
-//    std::vector<QtCharts::QLineSeries*> _QSerie;
-//    std::vector<QtCharts::QLineSeries*> _QdotSerie;
-//    std::vector<QtCharts::QLineSeries*> _TauSerie;
-//    std::vector<QtCharts::QLineSeries*> _MuscleSerie;
-};
 
 
 
