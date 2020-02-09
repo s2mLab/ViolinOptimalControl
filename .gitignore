@@ -105,9 +105,9 @@ venv.bak/
 
 # Our files
 *.idea/
-*/[Dd]ebug/
-*/[Rr]elease/
-*/[Bb]uild/
+*/[Dd]ebug*/
+*/[Rr]elease*/
+*/[Bb]uild*/
 [Rr]esults/
 [Rr]esultats/
 *.user*
