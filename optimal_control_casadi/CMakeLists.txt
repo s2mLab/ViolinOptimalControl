@@ -32,6 +32,7 @@ set(source_files
 #    eocarBiorbd.cpp
 #    eocarBiorbdKinConstraint.cpp
 #    UpAndDownBow.cpp
+    UpAndDownBowAllCasadi.cpp
 )
 
 ## library files
@@ -57,7 +58,7 @@ set(source_files
 #        ${Qt5Widgets_LIBRARIES}
 #        ${Qt5Charts_LIBRARIES}
 #    )
-#    target_include_directories(${library_name} PUBLIC
+#    target_include_directories(${library_name}
 #        include
 #        ${CMAKE_INSTALL_PREFIX}/include
 #        ${Biorbd_INCLUDE_DIR}
@@ -83,12 +84,15 @@ foreach(src_file ${source_files})
     )
 
     target_include_directories(${filename} PUBLIC
-        src
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${Casadi_INCLUDE_DIR}
         ${Biorbd_INCLUDE_DIR}
         ${Casadi_INCLUDE_DIR}
         ${Casadi_INCLUDE_DIR}/..
         ${RBDL_INCLUDE_DIR}
+        ${Qt5Core_INCLUDE_DIRS}
+        ${Qt5Widgets_INCLUDE_DIRS}
+        ${Qt5Charts_INCLUDE_DIRS}
     )
 
     target_link_libraries(${filename}
@@ -96,6 +100,9 @@ foreach(src_file ${source_files})
         ${Biorbd_LIBRARIES}
         ${RBDL_LIBRARY}
         ${Casadi_LIBRARY}
+        ${Qt5Core_LIBRARIES}
+        ${Qt5Widgets_LIBRARIES}
+        ${Qt5Charts_LIBRARIES}
       )
 endforeach()
 

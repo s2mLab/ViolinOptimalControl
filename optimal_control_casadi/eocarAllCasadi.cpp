@@ -29,20 +29,22 @@ int main(){
     double T(5.0);
     int N(30);
     int nQ(static_cast<int>(m.nbQ()));
-    int nu(static_cast<int>(m.nbMuscleTotal() + m.nbGeneralizedTorque()));
+    int nu(static_cast<int>(m.nbGeneralizedTorque()));
     double dt = T/static_cast<double>(N); // length of a control interval
     casadi::Opti opti;
     casadi::MX x(opti.variable(N+1, nQ));
     casadi::MX v(opti.variable(N+1, nQ));
     casadi::MX u(opti.variable(N, nu));
 
-    RigidBodyDynamics::Math::VectorNd states = RigidBodyDynamics::Math::VectorNd::sym("x", m.nbQ()*2, 1);
-    RigidBodyDynamics::Math::VectorNd Tau = RigidBodyDynamics::Math::VectorNd::sym("u", m.nbQ(), 1);
+    // Prepare the dynamic function
+    casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
+    casadi::MX controls = casadi::MX::sym("u", m.nbQ(), 1);
     casadi::Function f = casadi::Function( "ForwardDynamics",
-                                {states, Tau},
-                                {Fd(m, states, Tau)},
-                                {"states", "Tau"},
+                                {states, controls},
+                                {Fd(m, states, controls)},
+                                {"states", "controls"},
                                 {"statesdot"}).expand();
+
     // OBJECTIVE FUNCTIONS
     casadi::MX obj(0);
     for (int j=0; j<nQ; ++j){
