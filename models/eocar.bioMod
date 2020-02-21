@@ -14,7 +14,7 @@ external_forces	0
                 -10 10
                 -10 10
                 -2*pi 2*pi
-                -2*pi 2*pi
+                -pi/2 pi/2
                 -2*pi 2*pi
 		mass 1
 		inertia 

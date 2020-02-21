@@ -2,12 +2,8 @@
 #include <casadi.hpp>
 
 #include "utils.h"
-#include "forward_dynamics_casadi.h"
-#include "forward_kinematics_casadi.h"
-#include "projectionOnSegment_casadi.h"
-#include "angle_between_segments_casadi.h"
-#include "angle_between_segment_and_markers_casadi.h"
-#include "angle_between_segment_and_markerSystem_casadi.h"
+#include "biorbdCasadi_interface_common.h"
+#include "AnimationCallback.h"
 
 #include "biorbd.h"
 extern biorbd::Model m;
@@ -54,25 +50,17 @@ const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + opti
 const biorbd::utils::Path stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
 
 
-int main(){
+int main(int argc, char *argv[]){
     // ---- OPTIONS ---- //
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
 
-    Visualization visu;
+    Visualization visu(Visualization::LEVEL::GRAPH, argc, argv);
 
     ProblemSize probSize;
     probSize.tf = 0.5;
     probSize.ns = 30;
     probSize.dt = probSize.tf/probSize.ns; // length of a control interval
-
-    // Functions names
-    std::string dynamicsFunctionName(libforward_dynamics_casadi_name());
-    std::string forwardKinFunctionName(libforward_kinematics_casadi_name());
-    std::string projectionFunctionName(libprojectionOnSegment_casadi_name());
-    std::string axesFunctionName(libangle_between_segments_casadi_name());
-    std::string axesToMarkersFunctionName(libangle_between_segment_and_markers_casadi_name());
-    std::string axesToMarkerSystemFunctionName(libangle_between_segment_and_markerSystem_casadi_name());
 
     // Chose the ODE solver
     int odeSolver(ODE_SOLVER::RK);
@@ -125,9 +113,8 @@ int main(){
         initQdot(i) = 0;
         initQddot(i) = 0;
     }
-    m.UpdateKinematicsCustom(&initQ, &initQdot, &initQddot);
-    biorbd::rigidbody::GeneralizedTorque initTau(m);
-    RigidBodyDynamics::InverseDynamics(m, initQ, initQdot, initQddot, initTau);
+    Eigen::VectorXd initTau(m.nbGeneralizedTorque());
+    initTau.setZero(); // Inverse dynamics?
     for (unsigned int i=0; i<m.nbQ(); ++i) {
         xBounds.starting_min.push_back(ranges[i].min());
         xBounds.min.push_back(ranges[i].min());
@@ -201,14 +188,14 @@ int main(){
 
     // Keep the bow on the string
     std::vector<IndexPairing> markerToProject;
-    markerToProject.push_back(
-                IndexPairing (Instant::ALL, {idxSegmentBow, stringBridgeIdx, PLANE::XZ}));
+//    markerToProject.push_back(
+//                IndexPairing (Instant::ALL, {idxSegmentBow, stringBridgeIdx, PLANE::XZ}));
 
     // Have the bow to lie on the string
     std::vector<IndexPairing> alignWithMarkersReferenceFrame;
-    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::START,
-            {idxSegmentBow, AXIS::X, stringNeckIdx, stringBridgeIdx,
-             AXIS::Y, idxLowStringBound, idxHighStringBound, AXIS::Y}));
+//    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::START,
+//            {idxSegmentBow, AXIS::X, stringNeckIdx, stringBridgeIdx,
+//             AXIS::Y, idxLowStringBound, idxHighStringBound, AXIS::Y}));
 
     // No need to aligning with markers
     std::vector<IndexPairing> alignWithMarkers;
@@ -223,9 +210,14 @@ int main(){
     // they should not change anything
 
     // ODE right hand side
-    casadi::Dict opts_dyn;
-    opts_dyn["enable_fd"] = true; // This is for now, someday, it will provide the dynamic derivative!
-    casadi::Function f = casadi::external(dynamicsFunctionName, opts_dyn);
+    casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
+    casadi::MX controls = casadi::MX::sym("p", m.nbQ(), 1);
+    casadi::Function f = casadi::Function( "ForwardDyn",
+                                {states, controls},
+                                {ForwardDyn(m, states, controls)},
+                                {"states", "controls"},
+                                {"statesdot"}).expand();
+
     casadi::MXDict ode = {
         {"x", x},
         {"p", u},
@@ -246,11 +238,6 @@ int main(){
     else
         throw std::runtime_error("ODE solver not implemented..");
 
-    // Forward kinematics
-    casadi::Dict opts_forwardKin;
-    opts_forwardKin["enable_fd"] = true; // This is for now, someday, it will provide the dynamic derivative!
-    casadi::Function forwardKin = casadi::external(forwardKinFunctionName, opts_forwardKin);
-
     // Prepare the NLP problem
     casadi::MX V;
     BoundaryConditions vBounds;
@@ -265,48 +252,39 @@ int main(){
     continuityConstraints(F, probSize, U, X, g);
 
     // Path constraints
-    followMarkerConstraint(F, forwardKin, probSize, U, X, g, markersToPair);
+    followMarkerConstraint(F, probSize, U, X, g, markersToPair);
 
     // Path constraints
-    casadi::Dict opts_projectionFunction;
-    opts_projectionFunction["enable_fd"] = true;
-    casadi::Function projectionFunction = casadi::external(projectionFunctionName, opts_projectionFunction);
-    projectionOnPlaneConstraint(F, projectionFunction, probSize, U, X, g, markerToProject);
+    projectionOnPlaneConstraint(F, probSize, U, X, g, markerToProject);
 
     // Path constraints
-    casadi::Dict opts_axesFunction;
-    opts_axesFunction["enable_fd"] = true;
-    casadi::Function axesFunction = casadi::external(axesFunctionName, opts_axesFunction);
-    alignAxesConstraint(F, axesFunction, probSize, U, X, g, axesToAlign);
+    alignAxesConstraint(F, probSize, U, X, g, axesToAlign);
 
     // Path constraints
-    casadi::Dict opts_axesToMarkersFunction;
-    opts_axesToMarkersFunction["enable_fd"] = true;
-    casadi::Function axesToMarkersFunction = casadi::external(axesToMarkersFunctionName, opts_axesToMarkersFunction);
-    alignAxesToMarkersConstraint(F, axesToMarkersFunction, probSize, U, X, g, alignWithMarkers);
+    alignAxesToMarkersConstraint(F, probSize, U, X, g, alignWithMarkers);
 
     // Path constraints
-    casadi::Dict opts_axesToMarkerSystemFunction;
-    opts_axesToMarkerSystemFunction["enable_fd"] = true;
-    casadi::Function axesToMarkerSystemFunction = casadi::external(axesToMarkerSystemFunctionName, opts_axesToMarkerSystemFunction);
-    alignJcsToMarkersConstraint(F, axesToMarkerSystemFunction, probSize, U, X, g, alignWithMarkersReferenceFrame);
+    alignJcsToMarkersConstraint(F, probSize, U, X, g, alignWithMarkersReferenceFrame);
 
     // Objective function
     casadi::MX J;
     objectiveFunction(probSize, X, U, J);
 
+    // Online visualization
+    AnimationCallback animCallback(visu, V, g, probSize, 10);
+
     // Optimize
     std::cout << "Solving the optimal control problem..." << std::endl;
     clock_t start = clock();
     std::vector<double> V_opt;
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, visu);
+    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, animCallback);
     clock_t end=clock();
     std::cout << "Done!" << std::endl;
 
     // Get the optimal state trajectory
-    std::vector<biorbd::utils::Vector> Q;
-    std::vector<biorbd::utils::Vector> Qdot;
-    std::vector<biorbd::utils::Vector> Controls;
+    std::vector<Eigen::VectorXd> Q;
+    std::vector<Eigen::VectorXd> Qdot;
+    std::vector<Eigen::VectorXd> Controls;
     extractSolution(V_opt, probSize, Q, Qdot, Controls);
 
     // Show the solution
@@ -323,7 +301,7 @@ int main(){
     }
     createTreePath(resultsPath);
     writeCasadiResults(controlResultsFileName, Controls, probSize.dt);
-    std::vector<biorbd::utils::Vector> QandQdot;
+    std::vector<Eigen::VectorXd> QandQdot;
     for (auto q : Q){
         QandQdot.push_back(q);
     }
@@ -336,5 +314,7 @@ int main(){
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
     std::cout<<"Execution time: "<<time_exec<<std::endl;
+
+    while(animCallback.isActive()){}
     return 0;
 }

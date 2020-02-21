@@ -1,12 +1,18 @@
 #ifndef UTILS_CASADI_H
 #define UTILS_CASADI_H
 
+#include <eigen3/Eigen/Dense>
 #include <casadi.hpp>
+#include "biorbdCasadi_interface_common.h"
 #include "biorbd.h"
 extern biorbd::Model m;
+class AnimationCallback;
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QMainWindow>
+namespace QtCharts {
+    class QLineSeries;
+}
 
 struct ProblemSize{
     unsigned int ns; // number of shooting
@@ -86,29 +92,6 @@ struct IndexPairing{
     std::vector<unsigned int> toPair;
 };
 
-struct Visualization{
-    enum LEVEL{
-        NONE,
-        GRAPH,
-        THREE_DIMENSION
-    };
-    Visualization(){
-        level = Visualization::LEVEL::NONE;
-    }
-    Visualization(
-            Visualization::LEVEL level_,
-            int argc, char *argv[]){
-        level = level_;
-        if (level > Visualization::LEVEL::NONE){
-            app = new QApplication(argc, argv);
-            window = new QMainWindow();
-        }
-    }
-    QApplication *app;
-    QMainWindow * window;
-    LEVEL level;
-};
-
 enum PLANE{
     XY,
     YZ,
@@ -128,6 +111,12 @@ enum ODE_SOLVER{
     RK,
     CVODES
 };
+
+
+biorbd::utils::Vector ForwardDyn(
+        biorbd::Model& model,
+        const casadi::MX& states,
+        const casadi::MX& controls);
 
 void defineDifferentialVariables(
         ProblemSize &ps,
@@ -163,7 +152,6 @@ void defineMultipleShootingNodes(
 ///
 void alignJcsToMarkersConstraint(
         const casadi::Function &dynamics,
-        const casadi::Function &axesFunction,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -181,7 +169,6 @@ void alignJcsToMarkersConstraint(
 ///
 void alignAxesToMarkersConstraint(
         const casadi::Function &dynamics,
-        const casadi::Function &axesFunction,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -198,7 +185,6 @@ void alignAxesToMarkersConstraint(
 ///
 void alignAxesConstraint(
         const casadi::Function &dynamics,
-        const casadi::Function &axesFunction,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -215,7 +201,6 @@ void alignAxesConstraint(
 ///
 void projectionOnPlaneConstraint(
         const casadi::Function &dynamics,
-        const casadi::Function &forwardKin,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -231,7 +216,6 @@ void projectionOnPlaneConstraint(
 ///
 void followMarkerConstraint(
         const casadi::Function& dynamics,
-        const casadi::Function &forwardKin,
         const ProblemSize& ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -273,13 +257,14 @@ void solveProblemWithIpopt(
         const std::vector<casadi::MX> &constraints,
         const ProblemSize& probSize,
         std::vector<double>& V_opt,
-        Visualization& visu);
+        AnimationCallback& visu);
 
-void extractSolution(const std::vector<double>& V_opt,
+void extractSolution(
+        const std::vector<double>& V_opt,
         const ProblemSize& ps,
-        std::vector<biorbd::utils::Vector> &Q,
-        std::vector<biorbd::utils::Vector> &Qdot,
-        std::vector<biorbd::utils::Vector> &u);
+        std::vector<Eigen::VectorXd> &Q,
+        std::vector<Eigen::VectorXd> &Qdot,
+        std::vector<Eigen::VectorXd> &u);
 
 void createTreePath(const std::string& path);
 bool dirExists(const char* const path);
@@ -306,4 +291,10 @@ void writeCasadiResults(
         currentTime += dt;
     }
 }
+
+
+
+
+
+
 #endif

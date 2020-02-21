@@ -1,32 +1,31 @@
 // C++ (and CasADi) from here on
 #include <casadi.hpp>
 
+#include "biorbdCasadi_interface_common.h"
 #include "utils.h"
-#include "forward_dynamics_casadi.h"
+#include "AnimationCallback.h"
+
 #include "biorbd.h"
 extern biorbd::Model m;
 biorbd::Model m("../../models/eocar.bioMod");
 
-const std::string optimizationName("eocarBiorbdCasadi");
+const std::string optimizationName("eocarBiorbd");
 const std::string resultsPath("../../Results/");
 const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
 const biorbd::utils::Path stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
 
 
-int main(){
+int main(int argc, char *argv[]){
     // ---- OPTIONS ---- //
     // Dimensions of the problem
     std::cout << "Preparing the optimal control problem..." << std::endl;
 
-    Visualization visu;
+    Visualization visu(Visualization::LEVEL::GRAPH, argc, argv);
 
     ProblemSize probSize;
     probSize.tf = 2.0;
     probSize.ns = 30;
     probSize.dt = probSize.tf/probSize.ns; // length of a control interval
-
-    // Functions names
-    std::string dynamicsFunctionName(libforward_dynamics_casadi_name());
 
     // Chose the ODE solver
     int odeSolver(ODE_SOLVER::RK);
@@ -43,6 +42,39 @@ int main(){
     casadi::MX x;
     defineDifferentialVariables(probSize, u, x);
 
+    // Bounds and initial guess for the state
+    std::vector<biorbd::utils::Range> ranges;
+    for (unsigned int i=0; i<m.nbSegment(); ++i){
+        std::vector<biorbd::utils::Range> segRanges(m.segment(i).ranges());
+        for(unsigned int j=0; j<segRanges.size(); ++j){
+            ranges.push_back(segRanges[j]);
+        }
+    }
+    BoundaryConditions xBounds;
+    InitialConditions xInit;
+    for (unsigned int i=0; i<m.nbQ(); ++i) {
+        xBounds.starting_min.push_back(ranges[i].min());
+        xBounds.min.push_back(ranges[i].min());
+        xBounds.end_min.push_back(ranges[i].min());
+
+        xBounds.starting_max.push_back(ranges[i].max());
+        xBounds.max.push_back(ranges[i].max());
+        xBounds.end_max.push_back(ranges[i].max());
+
+        xInit.val.push_back(0);
+    };
+    for (unsigned int i=0; i<m.nbQdot(); ++i) {
+        xBounds.starting_min.push_back(0);
+        xBounds.min.push_back(-100);
+        xBounds.end_min.push_back(0);
+
+        xBounds.starting_max.push_back(0);
+        xBounds.max.push_back(100);
+        xBounds.end_max.push_back(0);
+
+        xInit.val.push_back(0);
+    };
+
     // Bounds and initial guess for the control
     BoundaryConditions uBounds;
     InitialConditions uInit;
@@ -57,41 +89,28 @@ int main(){
         uInit.val.push_back(0);
     };
 
-    // Bounds and initial guess for the state
-    BoundaryConditions xBounds;
-    InitialConditions xInit;
-    for (unsigned int i=0; i<m.nbQ(); ++i) {
-        xBounds.min.push_back(-100);
-        xBounds.starting_min.push_back(0);
-        if (i == 0) xBounds.end_min.push_back(10);
-        else if (i == 1) xBounds.end_min.push_back(0);
-        else if (i == 2) xBounds.end_min.push_back(0);
-        else if (i == 3) xBounds.end_min.push_back(M_PI/4);
-        else if (i == 4) xBounds.end_min.push_back(M_PI/6);
-        else if (i == 5) xBounds.end_min.push_back(M_PI/8);
+    // Start at the starting point and finish at the ending point
+    std::vector<IndexPairing> markersToPair;
+    markersToPair.push_back(IndexPairing(Instant::START, {0, 1}));
+    markersToPair.push_back(IndexPairing(Instant::END, {0, 2}));
 
-        xBounds.max.push_back(100);
-        xBounds.starting_max.push_back(0);
-        if (i == 0) xBounds.end_max.push_back(10);
-        else if (i == 1) xBounds.end_max.push_back(0);
-        else if (i == 2) xBounds.end_max.push_back(0);
-        else if (i == 3) xBounds.end_max.push_back(M_PI/4);
-        else if (i == 4) xBounds.end_max.push_back(M_PI/6);
-        else if (i == 5) xBounds.end_max.push_back(M_PI/8);
+    // Always point towards the point(3)
+    std::vector<IndexPairing> markerToProject;
+//    markerToProject.push_back(IndexPairing (Instant::ALL, {0, 3, PLANE::XZ}));
 
-        xInit.val.push_back(0);
-    };
-    for (unsigned int i=0; i<m.nbQdot(); ++i) {
-        xBounds.min.push_back(-100);
-        xBounds.starting_min.push_back(0);
-        xBounds.end_min.push_back(0);
+    // Always point upward
+    std::vector<IndexPairing> axesToAlign;
+//    axesToAlign.push_back(IndexPairing(Instant::MID, {0, AXIS::X, 1, AXIS::MINUS_Y}));
 
-        xBounds.max.push_back(100);
-        xBounds.starting_max.push_back(0);
-        xBounds.end_max.push_back(0);
+    // Always point in line with a given vector described by markers
+    std::vector<IndexPairing> alignWithMarkers;
+//    alignWithMarkers.push_back(IndexPairing(Instant::MID, {0, AXIS::X, 2, 3}));
 
-        xInit.val.push_back(0);
-    };
+    // Always have the segment aligned with a certain system of axes
+    std::vector<IndexPairing> alignWithMarkersReferenceFrame;
+//    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
+//            {0, AXIS::X, 1, 3, AXIS::Y, 1, 2, AXIS::Y}));
+
 
 
 
@@ -99,9 +118,13 @@ int main(){
     // they should not change anything
 
     // ODE right hand side
-    casadi::Dict opts_dyn;
-    opts_dyn["enable_fd"] = true; // This is for now, someday, it will provide the dynamic derivative!
-    casadi::Function f = casadi::external(dynamicsFunctionName, opts_dyn);
+    casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
+    casadi::MX controls = casadi::MX::sym("p", m.nbQ(), 1);
+    casadi::Function f = casadi::Function( "ForwardDyn",
+                                {states, controls},
+                                {ForwardDyn(m, states, controls)},
+                                {"states", "controls"},
+                                {"statesdot"}).expand();
     casadi::MXDict ode = {
         {"x", x},
         {"p", u},
@@ -135,22 +158,41 @@ int main(){
     std::vector<casadi::MX> g;
     continuityConstraints(F, probSize, U, X, g);
 
+    // Path constraints
+    followMarkerConstraint(F, probSize, U, X, g, markersToPair);
+
+    // Path constraints
+    projectionOnPlaneConstraint(F, probSize, U, X, g, markerToProject);
+
+    // Path constraints
+    alignAxesConstraint(F, probSize, U, X, g, axesToAlign);
+
+    // Path constraints
+    alignAxesToMarkersConstraint(F, probSize, U, X, g, alignWithMarkers);
+
+    // Path constraints
+    alignJcsToMarkersConstraint(F, probSize, U, X, g, alignWithMarkersReferenceFrame);
+
+
     // Objective function
     casadi::MX J;
     objectiveFunction(probSize, X, U, J);
+
+    // Online visualization
+    AnimationCallback animCallback(visu, V, g, probSize, 10);
 
     // Optimize
     std::cout << "Solving the optimal control problem..." << std::endl;
     std::vector<double> V_opt;
     clock_t start = clock();
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, visu);
+    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, animCallback);
     clock_t end=clock();
     std::cout << "Done!" << std::endl;
 
     // Get the optimal state trajectory
-    std::vector<biorbd::utils::Vector> Q;
-    std::vector<biorbd::utils::Vector> Qdot;
-    std::vector<biorbd::utils::Vector> Tau;
+    std::vector<Eigen::VectorXd> Q;
+    std::vector<Eigen::VectorXd> Qdot;
+    std::vector<Eigen::VectorXd> Tau;
     extractSolution(V_opt, probSize, Q, Qdot, Tau);
 
     // Show the solution
@@ -163,7 +205,7 @@ int main(){
     }
     createTreePath(resultsPath);
     writeCasadiResults(controlResultsFileName, Tau, probSize.dt);
-    std::vector<biorbd::utils::Vector> QandQdot;
+    std::vector<Eigen::VectorXd> QandQdot;
     for (auto q : Q){
         QandQdot.push_back(q);
     }
@@ -176,6 +218,7 @@ int main(){
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
     std::cout<<"Execution time: "<<time_exec<<std::endl;
-    return  0;
+
+    while(animCallback.isActive()){}
     return 0;
 }

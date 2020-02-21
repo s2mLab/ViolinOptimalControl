@@ -524,7 +524,7 @@ external_forces	0
         position 0.0190 -0.28 -0.039
     endmarker
 
-
+/*
 // DEFINITION DES MUSCLES
 
 // Arm > Thorax
@@ -1033,5 +1033,5 @@ endmusclegroup
 		PCSA				1.8
 		maxVelocity 		10
 	endmuscle
-
+*/
 
