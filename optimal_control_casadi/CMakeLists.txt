@@ -14,12 +14,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/modules)
 
 find_package(Casadi REQUIRED)
 find_package(Boost REQUIRED)
-find_package(Eigen3 REQUIRED)
 find_package(RBDL REQUIRED)
 find_package(Dlib REQUIRED)
 find_package(Biorbd REQUIRED)
 find_package(IPOPT REQUIRED)
 find_package(Qt5 COMPONENTS Core Widgets Charts REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 link_directories(
   ${CMAKE_INSTALL_PREFIX}/lib
@@ -27,52 +27,43 @@ link_directories(
 
 # Problem definitions
 set(source_files
-#    eocar.cpp
-    eocarAllCasadi.cpp
-#    eocarBiorbd.cpp
-#    eocarBiorbdKinConstraint.cpp
-#    UpAndDownBow.cpp
-    UpAndDownBowAllCasadi.cpp
+    eocarOpti.cpp
+    eocarBiorbd.cpp
+    UpAndDownBow.cpp
 )
 
-## library files
-#set(library_names
-#    utils
-#    AnimationCallback
-#    forward_dynamics_casadi
-#    forward_kinematics_casadi
-#    projectionOnSegment_casadi
-#    angle_between_segments_casadi
-#    angle_between_segment_and_markers_casadi
-#    angle_between_segment_and_markerSystem_casadi
-#)
+# library files
+set(library_names
+    utils
+    AnimationCallback
+)
 
-## Setup each project
-#foreach(library_name ${library_names})
-#    # Forward dynamics library
-#    add_library(${library_name} SHARED src/${library_name}.cpp)
-#    target_link_libraries(${library_name}
-#        ${Biorbd_LIBRARIES}
-#        ${RBDL_LIBRARY}
-#        ${Qt5Core_LIBRARIES}
-#        ${Qt5Widgets_LIBRARIES}
-#        ${Qt5Charts_LIBRARIES}
-#    )
-#    target_include_directories(${library_name}
-#        include
-#        ${CMAKE_INSTALL_PREFIX}/include
-#        ${Biorbd_INCLUDE_DIR}
-#        ${EIGEN3_INCLUDE_DIR}
-#        ${RBDL_INCLUDE_DIR}
-#        ${Boost_INCLUDE_DIRS}
-#        ${IPOPT_INCLUDE_DIR}
-#        ${Casadi_INCLUDE_DIR}
-#        ${Casadi_INCLUDE_DIR}/..
-#        ${Qt5Core_INCLUDE_DIRS}
-#        ${Qt5Widgets_INCLUDE_DIRS}
-#        ${Qt5Charts_INCLUDE_DIRS}
-#    )
-#endforeach()
+# Setup each project
+foreach(library_name ${library_names})
+    # Forward dynamics library
+    add_library(${library_name} SHARED src/${library_name}.cpp)
+    target_link_libraries(${library_name}
+        ${Biorbd_LIBRARIES}
+        ${RBDL_LIBRARY}
+        ${Qt5Core_LIBRARIES}
+        ${Qt5Widgets_LIBRARIES}
+        ${Qt5Charts_LIBRARIES}
+    )
+    target_include_directories(${library_name} PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_INSTALL_PREFIX}/include
+        ${Biorbd_INCLUDE_DIR}
+        ${RBDL_INCLUDE_DIR}
+        ${Boost_INCLUDE_DIRS}
+        ${IPOPT_INCLUDE_DIR}
+        ${Casadi_INCLUDE_DIR}
+        ${Casadi_INCLUDE_DIR}/..
+        ${Qt5Core_INCLUDE_DIRS}
+        ${Qt5Widgets_INCLUDE_DIRS}
+        ${Qt5Charts_INCLUDE_DIRS}
+        ${Eigen3_INCLUDE_DIR}
+    )
+endforeach()
 
 # Setup each project
 foreach(src_file ${source_files})

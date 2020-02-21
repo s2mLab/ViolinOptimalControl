@@ -6,14 +6,15 @@
 extern biorbd::Model m;
 biorbd::Model m("../../models/simple.bioMod");
 
-RigidBodyDynamics::Math::VectorNd Fd(
+biorbd::utils::Vector Fd(
         biorbd::Model& model,
         const casadi::MX& states,
-        const casadi::MX& controls){
-    static biorbd::rigidbody::GeneralizedCoordinates Q;
-    static biorbd::rigidbody::GeneralizedVelocity QDot;
-    static biorbd::rigidbody::GeneralizedAcceleration QDDot(model.nbQ());
-    static biorbd::rigidbody::GeneralizedTorque Tau;
+        const casadi::MX& controls)
+{
+    biorbd::rigidbody::GeneralizedCoordinates Q;
+    biorbd::rigidbody::GeneralizedVelocity QDot;
+    biorbd::rigidbody::GeneralizedAcceleration QDDot(model.nbQ());
+    biorbd::rigidbody::GeneralizedTorque Tau;
 
     Q = states(casadi::Slice(0, static_cast<casadi_int>(model.nbQ())));
     QDot = states(casadi::Slice(static_cast<casadi_int>(model.nbQ()),
@@ -38,8 +39,8 @@ int main(){
 
     // Prepare the dynamic function
     casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
-    casadi::MX controls = casadi::MX::sym("u", m.nbQ(), 1);
-    casadi::Function f = casadi::Function( "ForwardDynamics",
+    casadi::MX controls = casadi::MX::sym("p", m.nbQ(), 1);
+    casadi::Function f = casadi::Function( "ForwardDyn",
                                 {states, controls},
                                 {Fd(m, states, controls)},
                                 {"states", "controls"},
@@ -56,27 +57,10 @@ int main(){
 
 
     // CONSTRAINTS
-    // Continuity constraints (rk4)
+    // Continuity constraints
     std::vector<casadi::MX> var;
-    var.push_back(casadi::MX(1, nQ*2));
-    var.push_back(casadi::MX(1, nu));
-
-//    // RK45
-//    // Create an integrator (CVodes)
-//    for(int i=0; i<N; ++i){
-//        for (int j=0; j<nQ; ++j){
-//            var[0](j) = x(i, j);
-//            var[0](j+nQ) = v(i, j);
-//            var[1](j) = u(i, j);
-//        }
-//        casadi::MXDict ode({{"x", vertcat(x, v)}, {"p", u}, {"ode", f(var)[0] }});
-//        casadi::Function F = casadi::integrator("integrator", "cvodes", ode, {{"t0", 0}, {"tf", T/nQ}});
-//        // Create an evaluation node
-////        std::vector<casadi::MX> I_out = F({x(i), v(i), u(i)});
-
-////        opti.subject_to(x(i+1)==I_out[0]); // close the gaps
-////        opti.subject_to(v(i+1)==I_out[1]); // close the gaps
-//    }
+    var.push_back(casadi::MX(nQ*2, 1));
+    var.push_back(casadi::MX(nu, 1));
 
     // RK4
     for (int i=0; i<N; ++i){ // loop over control intervals

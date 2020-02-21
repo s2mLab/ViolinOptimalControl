@@ -3,6 +3,26 @@
 
 #include "AnimationCallback.h"
 
+// Biorbd interface
+biorbd::utils::Vector ForwardDyn(
+        biorbd::Model& model,
+        const casadi::MX& states,
+        const casadi::MX& controls)
+{
+    biorbd::rigidbody::GeneralizedCoordinates Q;
+    biorbd::rigidbody::GeneralizedVelocity QDot;
+    biorbd::rigidbody::GeneralizedAcceleration QDDot(model.nbQ());
+    biorbd::rigidbody::GeneralizedTorque Tau;
+
+    Q = states(casadi::Slice(0, static_cast<casadi_int>(model.nbQ())));
+    QDot = states(casadi::Slice(static_cast<casadi_int>(model.nbQ()),
+                                static_cast<casadi_int>(model.nbQ()*2)));
+    Tau = controls(casadi::Slice(0, static_cast<casadi_int>(model.nbQ())));
+
+    RigidBodyDynamics::ForwardDynamics(model, Q, QDot, Tau, QDDot);
+    return vertcat(QDot, QDDot);
+}
+
 void defineDifferentialVariables(
         ProblemSize& ps,
         casadi::MX& u,
@@ -89,9 +109,33 @@ void defineMultipleShootingNodes(
 }
 
 
+bool getState(
+        unsigned int t,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &X,
+        const casadi::MXDict& I_end,
+        const IndexPairing& alignPolicy,
+        casadi::MX& x){
+    if (t == 0 && (alignPolicy.t == Instant::START || alignPolicy.t == Instant::ALL)){
+        // If at starting point
+        x = X[t];
+    }
+    else if (t == ps.ns && (alignPolicy.t == Instant::END || alignPolicy.t == Instant::ALL)){
+        // If at end point
+        x = I_end.at("xf");
+    }
+    else if (alignPolicy.t == Instant::MID || alignPolicy.t == Instant::ALL){
+        // If at mid points
+        x = X[t];
+    }
+    else {
+        return false;
+    }
+    return true;
+}
+
 void alignJcsToMarkersConstraint(
         const casadi::Function &dynamics,
-        const casadi::Function &axesFunction,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -106,45 +150,49 @@ void alignJcsToMarkersConstraint(
         const IndexPairing& alignPolicy(segmentsToAlign[p]);
         for (unsigned int t=0; t<ps.ns+1; ++t){
             casadi::MX x;
-            if (t == 0 && (alignPolicy.t == Instant::START || alignPolicy.t == Instant::ALL)){
-                // If at starting point
-                x = X[t];
-            }
-            else if (t == ps.ns && (alignPolicy.t == Instant::END || alignPolicy.t == Instant::ALL)){
-                // If at end point
-                x = I_end.at("xf");
-            }
-            else if (alignPolicy.t == Instant::MID || alignPolicy.t == Instant::ALL){
-                // If at mid points
-                x = X[t];
-            }
-            else {
+            if (!getState(t, ps, X, I_end, alignPolicy, x)){
                 continue;
             }
-            casadi::MX axis1(3, 1);
-            axis1(0) = alignPolicy.idx(1);
-            axis1(1) = alignPolicy.idx(2);
-            axis1(2) = alignPolicy.idx(3);
-            casadi::MX axis2(3, 1);
-            axis2(0) = alignPolicy.idx(4);
-            axis2(1) = alignPolicy.idx(5);
-            axis2(2) = alignPolicy.idx(6);
-            casadi::MXDict angle = axesFunction(casadi::MXDict{
-                             {"States", x},
-                             {"UpdateKinematics", true},
-                             {"SegmentIndex", alignPolicy.idx(0)},
-                             {"Axis1Description", axis1},
-                             {"Axis2Description", axis2},
-                             {"AxisToRecalculate", alignPolicy.idx(7)},
-                            });
-            g.push_back( angle.at("Angles") );
+
+            // Get the system of axes of the segment to align
+            unsigned int segmentIdx(alignPolicy.idx(0));
+            biorbd::utils::Rotation r_seg(
+                        m.globalJCS(x, segmentIdx).rot());
+
+            // Get the system of axes from the markers
+            biorbd::utils::String axis1name(
+                        getAxisInString(static_cast<AXIS>(alignPolicy.idx(1))));
+            biorbd::rigidbody::NodeSegment axis1Beg(
+                        m.marker(x, alignPolicy.idx(2)));
+            biorbd::rigidbody::NodeSegment axis1End(
+                        m.marker(x, alignPolicy.idx(3)));
+
+            biorbd::utils::String axis2name(
+                        getAxisInString(static_cast<AXIS>(alignPolicy.idx(4))));
+            biorbd::rigidbody::NodeSegment axis2Beg(
+                        m.marker(x, alignPolicy.idx(5)));
+            biorbd::rigidbody::NodeSegment axis2End(
+                        m.marker(x, alignPolicy.idx(6)));
+
+            biorbd::utils::String axisToRecalculate(
+                        getAxisInString(static_cast<AXIS>(alignPolicy.idx(7))));
+
+            biorbd::utils::Rotation r_markers(
+                        biorbd::utils::Rotation::fromMarkers(
+                            {axis1Beg, axis1End}, {axis2Beg, axis2End}, {axis1name, axis2name},
+                            axisToRecalculate));
+
+            // Get the angle between the two reference frames
+            biorbd::utils::Rotation r(r_seg.transpose() * r_markers);
+            casadi::MX angles(biorbd::utils::Rotation::toEulerAngles(r, "xyz"));
+
+            g.push_back( angles );
         }
     }
 }
 
 void alignAxesToMarkersConstraint(
         const casadi::Function &dynamics,
-        const casadi::Function &axesFunction,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -159,41 +207,44 @@ void alignAxesToMarkersConstraint(
         const IndexPairing& alignPolicy(segmentsToAlign[p]);
         for (unsigned int t=0; t<ps.ns+1; ++t){
             casadi::MX x;
-            if (t == 0 && (alignPolicy.t == Instant::START || alignPolicy.t == Instant::ALL)){
-                // If at starting point
-                x = X[t];
-            }
-            else if (t == ps.ns && (alignPolicy.t == Instant::END || alignPolicy.t == Instant::ALL)){
-                // If at end point
-                x = I_end.at("xf");
-            }
-            else if (alignPolicy.t == Instant::MID || alignPolicy.t == Instant::ALL){
-                // If at mid points
-                x = X[t];
-            }
-            else {
+            if (!getState(t, ps, X, I_end, alignPolicy, x)){
                 continue;
             }
-            casadi::MX segmentIndexAndAxis(2, 1);
-            segmentIndexAndAxis(0) = alignPolicy.idx(0);
-            segmentIndexAndAxis(1) = alignPolicy.idx(1);
-            casadi::MX markersIdx(2, 1);
-            markersIdx(0) = alignPolicy.idx(2);
-            markersIdx(1) = alignPolicy.idx(3);
-            casadi::MXDict angle = axesFunction(casadi::MXDict{
-                             {"States", x},
-                             {"UpdateKinematics", true},
-                             {"SegmentIndexAndAxis", segmentIndexAndAxis},
-                             {"MarkersIndex", markersIdx}
-                            });
-            g.push_back( 1 - angle.at("Angle") );
+
+            // Get the RT for the segment
+            unsigned int segmentIdx = alignPolicy.idx(0);
+            biorbd::utils::Rotation rt(m.globalJCS(x, segmentIdx).rot());
+
+            // Extract the respective axes
+            std::vector<biorbd::utils::Vector> axes;
+            AXIS axisIdx = static_cast<AXIS>(alignPolicy.idx(1));
+            if (axisIdx == AXIS::X){
+                axes.push_back(rt.axe(0));
+            } else if (axisIdx == AXIS::MINUS_X){
+                axes.push_back(-rt.axe(0));
+            } else if (axisIdx == AXIS::Y){
+                axes.push_back(rt.axe(1));
+            } else if (axisIdx == AXIS::MINUS_Y){
+                axes.push_back(-rt.axe(1));
+            } else if (axisIdx == AXIS::Z){
+                axes.push_back(rt.axe(2));
+            } else if (axisIdx == AXIS::MINUS_Z){
+                axes.push_back(-rt.axe(2));
+            }
+
+            // Get the second axis by subtracting the two markers
+            unsigned int markersIdx1(alignPolicy.idx(2));
+            unsigned int markersIdx2(alignPolicy.idx(3));
+            axes.push_back(m.marker(x, markersIdx2) - m.marker(x, markersIdx1));
+
+            // Return the answers
+            g.push_back( 1.0 - axes[0].dot(axes[1]) );
         }
     }
 }
 
 void alignAxesConstraint(
         const casadi::Function &dynamics,
-        const casadi::Function &axesFunction,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -208,41 +259,42 @@ void alignAxesConstraint(
         const IndexPairing& alignPolicy(segmentsToAlign[p]);
         for (unsigned int t=0; t<ps.ns+1; ++t){
             casadi::MX x;
-            if (t == 0 && (alignPolicy.t == Instant::START || alignPolicy.t == Instant::ALL)){
-                // If at starting point
-                x = X[t];
-            }
-            else if (t == ps.ns && (alignPolicy.t == Instant::END || alignPolicy.t == Instant::ALL)){
-                // If at end point
-                x = I_end.at("xf");
-            }
-            else if (alignPolicy.t == Instant::MID || alignPolicy.t == Instant::ALL){
-                // If at mid points
-                x = X[t];
-            }
-            else {
+            if (!getState(t, ps, X, I_end, alignPolicy, x)){
                 continue;
             }
-            casadi::MX firstSegmentIndexAndAxis(2, 1);
-            firstSegmentIndexAndAxis(0) = alignPolicy.idx(0);
-            firstSegmentIndexAndAxis(1) = alignPolicy.idx(1);
-            casadi::MX secondSegmentIndexAndAxis(2, 1);
-            secondSegmentIndexAndAxis(0) = alignPolicy.idx(2);
-            secondSegmentIndexAndAxis(1) = alignPolicy.idx(3);
-            casadi::MXDict angle = axesFunction(casadi::MXDict{
-                             {"States", x},
-                             {"UpdateKinematics", true},
-                             {"FirstSegmentIndexAndAxis", firstSegmentIndexAndAxis},
-                             {"SecondSegmentIndexAndAxis", secondSegmentIndexAndAxis}
-                            });
-            g.push_back( 1 - angle.at("Angle") );
+
+            std::vector<biorbd::utils::Vector> axes;
+            for (unsigned int i=0; i<2; ++i){
+                // Get the RT for the segment
+                unsigned int segmentRtIdx = alignPolicy.idx(i*2);
+                biorbd::utils::Rotation rt(m.globalJCS(x, segmentRtIdx).rot());
+
+                // Extract the respective axes
+                AXIS axisIdx = static_cast<AXIS>(alignPolicy.idx(i*2+1));
+                if (axisIdx == AXIS::X){
+                    axes.push_back(rt.axe(0));
+                } else if (axisIdx == AXIS::MINUS_X){
+                    axes.push_back(-rt.axe(0));
+                } else if (axisIdx == AXIS::Y){
+                    axes.push_back(rt.axe(1));
+                } else if (axisIdx == AXIS::MINUS_Y){
+                    axes.push_back(-rt.axe(1));
+                } else if (axisIdx == AXIS::Z){
+                    axes.push_back(rt.axe(2));
+                } else if (axisIdx == AXIS::MINUS_Z){
+                    axes.push_back(-rt.axe(2));
+                }
+            }
+
+            // The axes are align if they are colinear
+            g.push_back( 1.0 - axes[0].dot(axes[1]) );
         }
     }
 }
 
+
 void projectionOnPlaneConstraint(
         const casadi::Function &dynamics,
-        const casadi::Function &projectionFunction,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -257,39 +309,26 @@ void projectionOnPlaneConstraint(
     for (auto policy : projectionPolicy){
         for (unsigned int t=0; t<ps.ns+1; ++t){
             casadi::MX x;
-            if (t == 0 && (policy.t == Instant::START || policy.t == Instant::ALL)){
-                // If at starting point
-                x = X[t];
-            }
-            else if (t == ps.ns && (policy.t == Instant::END || policy.t == Instant::ALL)){
-                // If at end point
-                x = I_end.at("xf");
-            }
-            else if (policy.t == Instant::MID || policy.t == Instant::ALL){
-                // If at mid points
-                x = X[t];
-            }
-            else {
+            if (!getState(t, ps, X, I_end, policy, x)){
                 continue;
             }
-            casadi::MXDict M(projectionFunction(casadi::MXDict{
-                    {"States", x},
-                    {"UpdateKinematics", true},
-                    {"SegmentToProjectOnIndex", policy.idx(0)},
-                    {"MarkerToProjectIndex", policy.idx(1)},
-                    }));
+
+            // Project marker on the RT of a specific segment
+            biorbd::utils::RotoTrans rt(m.globalJCS(x, policy.idx(0)));
+            biorbd::rigidbody::NodeSegment M(m.marker(x, policy.idx(1)));
+            M.applyRT(rt.transpose());
 
             if (policy.idx(2) == PLANE::XY){
-                g.push_back( M.at("ProjectedMarker")(0, 0) );
-                g.push_back( M.at("ProjectedMarker")(1, 0) );
+                g.push_back( M(0, 0) );
+                g.push_back( M(1, 0) );
             }
             else if (policy.idx(2) == PLANE::YZ){
-                g.push_back( M.at("ProjectedMarker")(1, 0) );
-                g.push_back( M.at("ProjectedMarker")(2, 0) );
+                g.push_back( M(1, 0) );
+                g.push_back( M(2, 0) );
             }
             else if (policy.idx(2) == PLANE::XZ){
-                g.push_back( M.at("ProjectedMarker")(0, 0) );
-                g.push_back( M.at("ProjectedMarker")(2, 0) );
+                g.push_back( M(0, 0) );
+                g.push_back( M(2, 0) );
             }
 
         }
@@ -298,7 +337,6 @@ void projectionOnPlaneConstraint(
 
 void followMarkerConstraint(
         const casadi::Function &dynamics,
-        const casadi::Function &forwardKin,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -313,33 +351,13 @@ void followMarkerConstraint(
     for (auto pair : markerIdx){
         for (unsigned int t=0; t<ps.ns+1; ++t){
             casadi::MX x;
-            if (t == 0 && (pair.t == Instant::START || pair.t == Instant::ALL)){
-                // If at starting point
-                x = X[t];
-            }
-            else if (t == ps.ns && (pair.t == Instant::END || pair.t == Instant::ALL)){
-                // If at end point
-                x = I_end.at("xf");
-            }
-            else if (pair.t == Instant::MID || pair.t == Instant::ALL){
-                // If at mid points
-                x = X[t];
-            }
-            else {
+            if (!getState(t, ps, X, I_end, pair, x)){
                 continue;
             }
 
-            casadi::MXDict M1(forwardKin(casadi::MXDict{
-                    {"States", x},
-                    {"UpdateKinematics", true},
-                    {"MarkerIndex", pair.idx(0)}
-                    }));
-            casadi::MXDict M2(forwardKin(casadi::MXDict{
-                    {"States", x},
-                    {"UpdateKinematics", false},
-                    {"MarkerIndex", pair.idx(1)}
-                    }));
-            g.push_back( M1.at("Marker") - M2.at("Marker") );
+            casadi::MX M1_2 = m.marker(x, pair.idx(0));
+            casadi::MX M2_2 = m.marker(x, pair.idx(1));
+            g.push_back( casadi::MX::dot(M1_2 - M2_2, M1_2 - M2_2)  );
         }
     }
 }
@@ -397,7 +415,7 @@ void solveProblemWithIpopt(
 
     opts["ipopt.tol"] = 1e-6;
     opts["ipopt.max_iter"] = 1000;
-    opts["ipopt.hessian_approximation"] = "limited-memory";
+//    opts["ipopt.hessian_approximation"] = "limited-memory";
 
     // Create an NLP solver and buffers
     casadi::Function solver = nlpsol("nlpsol", "ipopt", nlp, opts);
@@ -420,18 +438,18 @@ void solveProblemWithIpopt(
 void extractSolution(
         const std::vector<double>& V_opt,
         const ProblemSize& ps,
-        std::vector<biorbd::utils::Vector>& Q,
-        std::vector<biorbd::utils::Vector>& Qdot,
-        std::vector<biorbd::utils::Vector>& u)
+        std::vector<Eigen::VectorXd>& Q,
+        std::vector<Eigen::VectorXd>& Qdot,
+        std::vector<Eigen::VectorXd>& u)
 {
     // Resizing the output variables
     for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
-        u.push_back(biorbd::utils::Vector(ps.ns));
+        u.push_back(Eigen::VectorXd(ps.ns));
     }
     for (unsigned int q=0; q<m.nbQ(); ++q){
-        u.push_back(biorbd::utils::Vector(ps.ns));
-        Q.push_back(biorbd::rigidbody::GeneralizedCoordinates(ps.ns+1));
-        Qdot.push_back(biorbd::rigidbody::GeneralizedVelocity(ps.ns+1));
+        u.push_back(Eigen::VectorXd(ps.ns));
+        Q.push_back(Eigen::VectorXd(ps.ns+1));
+        Qdot.push_back(Eigen::VectorXd(ps.ns+1));
     }
 
     // Get the optimal controls
@@ -468,3 +486,4 @@ bool dirExists(const char* const path)
 
     return ( info.st_mode & S_IFDIR ) ? true : false;
 }
+

@@ -1,5 +1,6 @@
 #include "AnimationCallback.h"
 
+#include <eigen3/Eigen/Dense>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtWidgets/QHBoxLayout>
@@ -76,9 +77,9 @@ std::vector<casadi::DM> AnimationCallback::eval(
         const std::vector<casadi::DM> &arg) const {
 
     if (_visu.level != Visualization::LEVEL::NONE && _window->isVisible()){
-        std::vector<biorbd::utils::Vector> Q;
-        std::vector<biorbd::utils::Vector> Qdot;
-        std::vector<biorbd::utils::Vector> Control;
+        std::vector<Eigen::VectorXd> Q;
+        std::vector<Eigen::VectorXd> Qdot;
+        std::vector<Eigen::VectorXd> Control;
         extractSolution(std::vector<double>(arg[0]), _ps, Q, Qdot, Control);
 
         for (unsigned int q=0; q<m.nbQ(); ++q){
