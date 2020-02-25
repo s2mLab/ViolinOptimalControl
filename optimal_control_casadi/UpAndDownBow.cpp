@@ -188,14 +188,14 @@ int main(int argc, char *argv[]){
 
     // Keep the string targetted by the bow
     std::vector<IndexPairing> markerToProject;
-//    markerToProject.push_back(
-//                IndexPairing (Instant::ALL, {idxSegmentBow, stringBridgeIdx, PLANE::XZ}));
+    markerToProject.push_back(
+                IndexPairing (Instant::ALL, {idxSegmentBow, stringBridgeIdx, PLANE::XZ}));
 
     // Stay on one string and have a good direction of the bow
     std::vector<IndexPairing> alignWithMarkersReferenceFrame;
-//    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::START,
-//            {idxSegmentBow, AXIS::X, stringNeckIdx, stringBridgeIdx,
-//             AXIS::Y, idxLowStringBound, idxHighStringBound, AXIS::Y}));
+    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
+            {idxSegmentBow, AXIS::X, stringNeckIdx, stringBridgeIdx,
+             AXIS::Y, idxLowStringBound, idxHighStringBound, AXIS::Y}));
 
     // No need to aligning with markers
     std::vector<IndexPairing> alignWithMarkers;

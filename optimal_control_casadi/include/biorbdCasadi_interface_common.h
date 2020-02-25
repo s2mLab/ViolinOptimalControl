@@ -5,8 +5,6 @@
 #include "biorbd.h"
 extern biorbd::Model m;
 
-#ifndef AXIS_DEF
-#define AXIS_DEF
 enum AXIS{
     X,
     Y,
@@ -17,17 +15,93 @@ enum AXIS{
 };
 
 biorbd::utils::String getAxisInString(AXIS axis){
-    biorbd::utils::String axis_out;
     if (axis == AXIS::X){
-        axis_out = "x";
+        return "x";
     } else if (axis == AXIS::Y){
-        axis_out = "y";
+        return "y";
     } else if (axis == AXIS::Z){
-        axis_out = "z";
+        return "z";
+    } else {
+        return "";
     }
-    return axis_out;
 }
-#endif
+
+enum ANGLE_SEQUENCE{
+    XYZ,
+    XZY,
+    YXZ,
+    YZX,
+    ZXY,
+    ZYX,
+    NO_SEQUENCE
+};
+
+biorbd::utils::String getAngleSequenceInString(ANGLE_SEQUENCE sequence){
+    if (sequence == ANGLE_SEQUENCE::XYZ){
+        return "xyz";
+    } else if (sequence == ANGLE_SEQUENCE::XZY){
+        return "xzy";
+    } else if (sequence == ANGLE_SEQUENCE::YXZ){
+        return "yxz";
+    } else if (sequence == ANGLE_SEQUENCE::YZX){
+        return "yzx";
+    } else if (sequence == ANGLE_SEQUENCE::ZXY){
+        return "zxy";
+    } else if (sequence == ANGLE_SEQUENCE::ZYX){
+        return "zyx";
+    } else {
+        return "";
+    }
+}
+
+enum PLANE{
+    XY,
+    YZ,
+    XZ,
+    NO_PLANE
+};
+
+biorbd::utils::String getPlaneInString(PLANE plane){
+    if (plane == PLANE::XY){
+        return "xy";
+    } else if (plane == PLANE::YZ){
+        return "yz";
+    } else if (plane == PLANE::XZ){
+        return "xz";
+    } else {
+        return "";
+    }
+}
+
+enum ViolinStringNames{
+    E,
+    A,
+    D,
+    G,
+    NO_STRING
+};
+
+biorbd::utils::String getViolinStringInString(ViolinStringNames name){
+    if (name == ViolinStringNames::E){
+        return "E";
+    } else if (name == ViolinStringNames::A){
+        return "A";
+    } else if (name == ViolinStringNames::D){
+        return "D";
+    } else if (name == ViolinStringNames::G){
+        return "G";
+    } else {
+        return "";
+    }
+}
+
+enum ODE_SOLVER{
+    COLLOCATION,
+    RK,
+    CVODES,
+    NO_SOLVER
+};
+
 
 
 #ifndef casadi_real

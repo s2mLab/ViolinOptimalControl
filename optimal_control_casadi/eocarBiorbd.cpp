@@ -108,8 +108,8 @@ int main(int argc, char *argv[]){
 
     // Always have the segment aligned with a certain system of axes
     std::vector<IndexPairing> alignWithMarkersReferenceFrame;
-//    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
-//            {0, AXIS::X, 1, 3, AXIS::Y, 1, 2, AXIS::Y}));
+    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
+            {0, AXIS::X, 1, 2, AXIS::Y, 1, 3, AXIS::X}));
 
 
 

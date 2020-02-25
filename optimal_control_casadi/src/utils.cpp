@@ -184,10 +184,11 @@ void alignJcsToMarkersConstraint(
                             axisToRecalculate));
 
             // Get the angle between the two reference frames
-            biorbd::utils::Rotation r(r_seg.transpose() * r_markers);
-            casadi::MX angles(biorbd::utils::Rotation::toEulerAngles(r, "xyz"));
-
-            g.push_back( casadi::MX::dot(angles, angles) );
+            casadi::MX angles(3, 1);
+            for (unsigned int i=0; i<3; ++i){
+                angles(i) = 1.0 - casadi::MX::dot(r_seg.block(0, 0, 3, 1), r_markers.block(0, 0, 3, 1));
+            }
+            g.push_back( angles );
         }
     }
 }

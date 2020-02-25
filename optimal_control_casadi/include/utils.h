@@ -92,27 +92,6 @@ struct IndexPairing{
     std::vector<unsigned int> toPair;
 };
 
-enum PLANE{
-    XY,
-    YZ,
-    XZ
-};
-
-enum ViolinStringNames{
-    E,
-    A,
-    D,
-    G,
-    NO_STRING
-};
-
-enum ODE_SOLVER{
-    COLLOCATION,
-    RK,
-    CVODES
-};
-
-
 biorbd::utils::Vector ForwardDyn(
         biorbd::Model& model,
         const casadi::MX& states,
