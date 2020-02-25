@@ -41,9 +41,9 @@ const std::vector<double> initQFrogOnAString =
 const std::vector<double> initQTipOnAString =
 {-0.06506266, -0.44904332, 0.97090727, 1.00055219, 0.17983593, -0.3363436, -0.03281452, 0.04678383, 0.64465767};
 const std::vector<double> initQFrogOnEString =
-{-0.19923285, 0.08890963, 0.99469991, 0.97362544, 1.48863482, -0.09960671, 0.01607784, -0.44009434, -0.36712403};
+{-0.0240817,  -0.20700897,  1.09072125,  0.97816456,  1.48499646, -0.42703922, -0.26375968, -0.23104843, -0.24469031};
 const std::vector<double> initQTipOnEString =
-{0.03328374, -0.27888401, 0.7623438, 0.59379268, 0.16563931, 0.2443971, 0.1824652, 0.1587049, 0.52812319};
+{0.09992321,  0.07916749,  0.80782697,  1.29078346, -0.03824035, -0.1754506, 0.08996502,  0.17308381,  0.69032343};
 
 const std::string resultsPath("../../Results/");
 const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
@@ -181,17 +181,17 @@ int main(int argc, char *argv[]){
         idxLowStringBound = tagViolinCStringBridge;
         idxHighStringBound = tagViolinDStringBridge;
     }
-    // Get to frog and tip at beggining and end
+    // Start at frog and get tip at end
     std::vector<IndexPairing> markersToPair;
     markersToPair.push_back(IndexPairing(Instant::START, {tagBowFrog, stringBridgeIdx}));
     markersToPair.push_back(IndexPairing(Instant::END, {tagBowTip, stringBridgeIdx}));
 
-    // Keep the bow on the string
+    // Keep the string targetted by the bow
     std::vector<IndexPairing> markerToProject;
 //    markerToProject.push_back(
 //                IndexPairing (Instant::ALL, {idxSegmentBow, stringBridgeIdx, PLANE::XZ}));
 
-    // Have the bow to lie on the string
+    // Stay on one string and have a good direction of the bow
     std::vector<IndexPairing> alignWithMarkersReferenceFrame;
 //    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::START,
 //            {idxSegmentBow, AXIS::X, stringNeckIdx, stringBridgeIdx,

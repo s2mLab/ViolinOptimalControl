@@ -153,26 +153,27 @@ void alignJcsToMarkersConstraint(
             if (!getState(t, ps, X, I_end, alignPolicy, x)){
                 continue;
             }
+            const casadi::MX& q = x(casadi::Slice(0, static_cast<casadi_int>(m.nbQ())), 0);
 
             // Get the system of axes of the segment to align
             unsigned int segmentIdx(alignPolicy.idx(0));
             biorbd::utils::Rotation r_seg(
-                        m.globalJCS(x, segmentIdx).rot());
+                        m.globalJCS(q, segmentIdx).rot());
 
             // Get the system of axes from the markers
             biorbd::utils::String axis1name(
                         getAxisInString(static_cast<AXIS>(alignPolicy.idx(1))));
             biorbd::rigidbody::NodeSegment axis1Beg(
-                        m.marker(x, alignPolicy.idx(2)));
+                        m.marker(q, alignPolicy.idx(2)));
             biorbd::rigidbody::NodeSegment axis1End(
-                        m.marker(x, alignPolicy.idx(3)));
+                        m.marker(q, alignPolicy.idx(3)));
 
             biorbd::utils::String axis2name(
                         getAxisInString(static_cast<AXIS>(alignPolicy.idx(4))));
             biorbd::rigidbody::NodeSegment axis2Beg(
-                        m.marker(x, alignPolicy.idx(5)));
+                        m.marker(q, alignPolicy.idx(5)));
             biorbd::rigidbody::NodeSegment axis2End(
-                        m.marker(x, alignPolicy.idx(6)));
+                        m.marker(q, alignPolicy.idx(6)));
 
             biorbd::utils::String axisToRecalculate(
                         getAxisInString(static_cast<AXIS>(alignPolicy.idx(7))));
@@ -186,7 +187,7 @@ void alignJcsToMarkersConstraint(
             biorbd::utils::Rotation r(r_seg.transpose() * r_markers);
             casadi::MX angles(biorbd::utils::Rotation::toEulerAngles(r, "xyz"));
 
-            g.push_back( angles );
+            g.push_back( casadi::MX::dot(angles, angles) );
         }
     }
 }
@@ -210,10 +211,11 @@ void alignAxesToMarkersConstraint(
             if (!getState(t, ps, X, I_end, alignPolicy, x)){
                 continue;
             }
+            const casadi::MX& q = x(casadi::Slice(0, static_cast<casadi_int>(m.nbQ())), 0);
 
             // Get the RT for the segment
             unsigned int segmentIdx = alignPolicy.idx(0);
-            biorbd::utils::Rotation rt(m.globalJCS(x, segmentIdx).rot());
+            biorbd::utils::Rotation rt(m.globalJCS(q, segmentIdx).rot());
 
             // Extract the respective axes
             std::vector<biorbd::utils::Vector> axes;
@@ -235,7 +237,9 @@ void alignAxesToMarkersConstraint(
             // Get the second axis by subtracting the two markers
             unsigned int markersIdx1(alignPolicy.idx(2));
             unsigned int markersIdx2(alignPolicy.idx(3));
-            axes.push_back(m.marker(x, markersIdx2) - m.marker(x, markersIdx1));
+            axes.push_back(
+                        m.marker(q, markersIdx2)
+                        - m.marker(q, markersIdx1));
 
             // Return the answers
             g.push_back( 1.0 - axes[0].dot(axes[1]) );
@@ -262,12 +266,13 @@ void alignAxesConstraint(
             if (!getState(t, ps, X, I_end, alignPolicy, x)){
                 continue;
             }
+            const casadi::MX& q = x(casadi::Slice(0, static_cast<casadi_int>(m.nbQ())), 0);
 
             std::vector<biorbd::utils::Vector> axes;
             for (unsigned int i=0; i<2; ++i){
                 // Get the RT for the segment
                 unsigned int segmentRtIdx = alignPolicy.idx(i*2);
-                biorbd::utils::Rotation rt(m.globalJCS(x, segmentRtIdx).rot());
+                biorbd::utils::Rotation rt(m.globalJCS(q, segmentRtIdx).rot());
 
                 // Extract the respective axes
                 AXIS axisIdx = static_cast<AXIS>(alignPolicy.idx(i*2+1));
@@ -312,10 +317,11 @@ void projectionOnPlaneConstraint(
             if (!getState(t, ps, X, I_end, policy, x)){
                 continue;
             }
+            const casadi::MX& q = x(casadi::Slice(0, static_cast<casadi_int>(m.nbQ())), 0);
 
             // Project marker on the RT of a specific segment
-            biorbd::utils::RotoTrans rt(m.globalJCS(x, policy.idx(0)));
-            biorbd::rigidbody::NodeSegment M(m.marker(x, policy.idx(1)));
+            biorbd::utils::RotoTrans rt(m.globalJCS(q, policy.idx(0)));
+            biorbd::rigidbody::NodeSegment M(m.marker(q, policy.idx(1)));
             M.applyRT(rt.transpose());
 
             if (policy.idx(2) == PLANE::XY){
@@ -354,9 +360,10 @@ void followMarkerConstraint(
             if (!getState(t, ps, X, I_end, pair, x)){
                 continue;
             }
+            const casadi::MX& q = x(casadi::Slice(0, static_cast<casadi_int>(m.nbQ())), 0);
 
-            casadi::MX M1_2 = m.marker(x, pair.idx(0));
-            casadi::MX M2_2 = m.marker(x, pair.idx(1));
+            casadi::MX M1_2 = m.marker(q, pair.idx(0));
+            casadi::MX M2_2 = m.marker(q, pair.idx(1));
             g.push_back( casadi::MX::dot(M1_2 - M2_2, M1_2 - M2_2)  );
         }
     }
