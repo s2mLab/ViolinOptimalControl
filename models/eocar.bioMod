@@ -27,7 +27,7 @@ external_forces	0
 	endsegment
 	
 // Marker on thorax
-    marker m1
+    marker m0
         parent Thorax
         position 0 0 0
     endmarker

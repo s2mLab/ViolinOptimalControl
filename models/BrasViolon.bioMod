@@ -113,10 +113,10 @@ external_forces	0
 		parent	Scapula
 		RTinMatrix	0
 		RT -0.2 0.3 -0.1 zyx -0.0162235668937676 -0.0465334917069568 -0.00199722357227
-		rotations xzy
+		rotations xyz
 		ranges  -pi/2 0.1
-		        -pi/4 pi
 		        -pi/2 pi/2
+		        -pi/4 pi
 		mass 2.537
 		inertia
 			0.040215	0.000000	0.000000

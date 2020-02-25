@@ -41,9 +41,9 @@ const std::vector<double> initQFrogOnAString =
 const std::vector<double> initQTipOnAString =
 {-0.06506266, -0.44904332, 0.97090727, 1.00055219, 0.17983593, -0.3363436, -0.03281452, 0.04678383, 0.64465767};
 const std::vector<double> initQFrogOnEString =
-{-0.0240817,  -0.20700897,  1.09072125,  0.97816456,  1.48499646, -0.42703922, -0.26375968, -0.23104843, -0.24469031};
+{-0.32244523, -0.45567388,  0.69477217,  1.14551489,  1.40942749, -0.10300415,  0.14266607, -0.23330034, -0.25421303};
 const std::vector<double> initQTipOnEString =
-{0.09992321,  0.07916749,  0.80782697,  1.29078346, -0.03824035, -0.1754506, 0.08996502,  0.17308381,  0.69032343};
+{ 0.08773515, -0.56553214,  0.64993785,  1.0591878 , -0.18567152, 0.24296588,  0.15829188,  0.21021353,  0.71442364};
 
 const std::string resultsPath("../../Results/");
 const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
@@ -249,22 +249,23 @@ int main(int argc, char *argv[]){
 
     // Continuity constraints
     std::vector<casadi::MX> g;
-    continuityConstraints(F, probSize, U, X, g);
+    BoundaryConditions gBounds;
+    continuityConstraints(F, probSize, U, X, g, gBounds);
 
     // Path constraints
-    followMarkerConstraint(F, probSize, U, X, g, markersToPair);
+    followMarkerConstraint(F, probSize, U, X, markersToPair, g, gBounds);
 
     // Path constraints
-    projectionOnPlaneConstraint(F, probSize, U, X, g, markerToProject);
+    projectionOnPlaneConstraint(F, probSize, U, X, markerToProject, g, gBounds);
 
     // Path constraints
-    alignAxesConstraint(F, probSize, U, X, g, axesToAlign);
+    alignAxesConstraint(F, probSize, U, X, axesToAlign, g, gBounds);
 
     // Path constraints
-    alignAxesToMarkersConstraint(F, probSize, U, X, g, alignWithMarkers);
+    alignAxesToMarkersConstraint(F, probSize, U, X, alignWithMarkers, g, gBounds);
 
     // Path constraints
-    alignJcsToMarkersConstraint(F, probSize, U, X, g, alignWithMarkersReferenceFrame);
+    alignJcsToMarkersConstraint(F, probSize, U, X, alignWithMarkersReferenceFrame, g, gBounds);
 
     // Objective function
     casadi::MX J;
@@ -277,7 +278,7 @@ int main(int argc, char *argv[]){
     std::cout << "Solving the optimal control problem..." << std::endl;
     clock_t start = clock();
     std::vector<double> V_opt;
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, animCallback);
+    solveProblemWithIpopt(V, vBounds, vInit, J, g, gBounds, probSize, V_opt, animCallback);
     clock_t end=clock();
     std::cout << "Done!" << std::endl;
 

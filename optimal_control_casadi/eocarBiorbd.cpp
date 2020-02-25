@@ -156,22 +156,23 @@ int main(int argc, char *argv[]){
 
     // Continuity constraints
     std::vector<casadi::MX> g;
-    continuityConstraints(F, probSize, U, X, g);
+    BoundaryConditions gBounds;
+    continuityConstraints(F, probSize, U, X, g, gBounds);
 
     // Path constraints
-    followMarkerConstraint(F, probSize, U, X, g, markersToPair);
+    followMarkerConstraint(F, probSize, U, X, markersToPair, g, gBounds);
 
     // Path constraints
-    projectionOnPlaneConstraint(F, probSize, U, X, g, markerToProject);
+    projectionOnPlaneConstraint(F, probSize, U, X, markerToProject, g, gBounds);
 
     // Path constraints
-    alignAxesConstraint(F, probSize, U, X, g, axesToAlign);
+    alignAxesConstraint(F, probSize, U, X, axesToAlign, g, gBounds);
 
     // Path constraints
-    alignAxesToMarkersConstraint(F, probSize, U, X, g, alignWithMarkers);
+    alignAxesToMarkersConstraint(F, probSize, U, X, alignWithMarkers, g, gBounds);
 
     // Path constraints
-    alignJcsToMarkersConstraint(F, probSize, U, X, g, alignWithMarkersReferenceFrame);
+    alignJcsToMarkersConstraint(F, probSize, U, X, alignWithMarkersReferenceFrame, g, gBounds);
 
 
     // Objective function
@@ -185,7 +186,7 @@ int main(int argc, char *argv[]){
     std::cout << "Solving the optimal control problem..." << std::endl;
     std::vector<double> V_opt;
     clock_t start = clock();
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, animCallback);
+    solveProblemWithIpopt(V, vBounds, vInit, J, g, gBounds, probSize, V_opt, animCallback);
     clock_t end=clock();
     std::cout << "Done!" << std::endl;
 

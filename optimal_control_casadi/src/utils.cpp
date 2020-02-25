@@ -139,8 +139,9 @@ void alignJcsToMarkersConstraint(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &segmentsToAlign,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &segmentsToAlign)
+        BoundaryConditions& gBounds)
 {
     // Compute the state at final in case one pairing needs it
     casadi::MXDict I_end = dynamics(
@@ -153,6 +154,8 @@ void alignJcsToMarkersConstraint(
             if (!getState(t, ps, X, I_end, alignPolicy, x)){
                 continue;
             }
+
+            // Get the angle between the two reference frames
             const casadi::MX& q = x(casadi::Slice(0, static_cast<casadi_int>(m.nbQ())), 0);
 
             // Get the system of axes of the segment to align
@@ -184,11 +187,13 @@ void alignJcsToMarkersConstraint(
                             axisToRecalculate));
 
             // Get the angle between the two reference frames
-            casadi::MX angles(3, 1);
-            for (unsigned int i=0; i<3; ++i){
-                angles(i) = 1.0 - casadi::MX::dot(r_seg.block(0, 0, 3, 1), r_markers.block(0, 0, 3, 1));
-            }
+            casadi::MX angles = biorbd::utils::Rotation::toEulerAngles(r_seg.transpose() * r_markers, "zyx");
             g.push_back( angles );
+            for (unsigned int i=0; i<angles.rows(); ++i){
+                gBounds.min.push_back(0);
+                gBounds.max.push_back(0);
+            }
+
         }
     }
 }
@@ -198,8 +203,9 @@ void alignAxesToMarkersConstraint(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &segmentsToAlign,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &segmentsToAlign)
+        BoundaryConditions& gBounds)
 {
     // Compute the state at final in case one pairing needs it
     casadi::MXDict I_end = dynamics(
@@ -244,6 +250,8 @@ void alignAxesToMarkersConstraint(
 
             // Return the answers
             g.push_back( 1.0 - axes[0].dot(axes[1]) );
+            gBounds.min.push_back(0);
+            gBounds.max.push_back(0);
         }
     }
 }
@@ -253,8 +261,9 @@ void alignAxesConstraint(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &segmentsToAlign,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &segmentsToAlign)
+        BoundaryConditions& gBounds)
 {
     // Compute the state at final in case one pairing needs it
     casadi::MXDict I_end = dynamics(
@@ -294,6 +303,8 @@ void alignAxesConstraint(
 
             // The axes are align if they are colinear
             g.push_back( 1.0 - axes[0].dot(axes[1]) );
+            gBounds.min.push_back(0);
+            gBounds.max.push_back(0);
         }
     }
 }
@@ -304,8 +315,9 @@ void projectionOnPlaneConstraint(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &projectionPolicy,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &projectionPolicy
+        BoundaryConditions& gBounds
         )
 {
     // Compute the state at final in case one pairing needs it
@@ -337,7 +349,10 @@ void projectionOnPlaneConstraint(
                 g.push_back( M(0, 0) );
                 g.push_back( M(2, 0) );
             }
-
+            gBounds.min.push_back(0);
+            gBounds.max.push_back(0);
+            gBounds.min.push_back(0);
+            gBounds.max.push_back(0);
         }
     }
 }
@@ -347,8 +362,9 @@ void followMarkerConstraint(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing>& markerIdx,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing>& markerIdx
+        BoundaryConditions& gBounds
         )
 {
     // Compute the state at final in case one pairing needs it
@@ -366,6 +382,8 @@ void followMarkerConstraint(
             casadi::MX M1_2 = m.marker(q, pair.idx(0));
             casadi::MX M2_2 = m.marker(q, pair.idx(1));
             g.push_back( casadi::MX::dot(M1_2 - M2_2, M1_2 - M2_2)  );
+            gBounds.min.push_back(0);
+            gBounds.max.push_back(0);
         }
     }
 }
@@ -375,7 +393,8 @@ void continuityConstraints(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
-        std::vector<casadi::MX> &g)
+        std::vector<casadi::MX> &g,
+        BoundaryConditions& gBounds)
 {
     // Loop over shooting nodes
     for(unsigned int k=0; k<ps.ns; ++k){
@@ -384,6 +403,10 @@ void continuityConstraints(
 
         // Save continuity constraints
         g.push_back( I_out.at("xf") - X[k+1] );
+        for (unsigned int i=0; i<m.nbQ()*2; ++i){
+            gBounds.min.push_back(0);
+            gBounds.max.push_back(0);
+        }
     }
 }
 
@@ -406,6 +429,7 @@ void solveProblemWithIpopt(
         const InitialConditions& vInit,
         const casadi::MX &obj,
         const std::vector<casadi::MX> &constraints,
+        const BoundaryConditions& constraintsBounds,
         const ProblemSize& probSize,
         std::vector<double>& V_opt,
         AnimationCallback &visuCallback)
@@ -432,8 +456,8 @@ void solveProblemWithIpopt(
     // Bounds and initial guess
     arg["lbx"] = vBounds.min;
     arg["ubx"] = vBounds.max;
-    arg["lbg"] = 0;
-    arg["ubg"] = 0;
+    arg["lbg"] = constraintsBounds.min;
+    arg["ubg"] = constraintsBounds.max;
     arg["x0"] = vInit.val;
 
     // Solve the problem
@@ -458,6 +482,37 @@ void extractSolution(
         u.push_back(Eigen::VectorXd(ps.ns));
         Q.push_back(Eigen::VectorXd(ps.ns+1));
         Qdot.push_back(Eigen::VectorXd(ps.ns+1));
+    }
+
+    // Get the optimal controls
+    for(unsigned int i=0; i<ps.ns; ++i)
+        for (unsigned int q=0; q<ps.nu; ++q)
+            u[q][i] = V_opt.at(q + ps.nx + i*(ps.nx+ps.nu));
+
+    // Get the states
+    for(unsigned int i=0; i<ps.ns+1; ++i){
+        for (unsigned int q=0; q<m.nbQ(); ++q){
+            Q[q][i] = V_opt.at(q + i*(ps.nx+ps.nu));
+            Qdot[q][i] = V_opt.at(q + m.nbQ() + i*(ps.nx+ps.nu));
+        }
+    }
+}
+
+void extractSolution(
+        const std::vector<double>& V_opt,
+        const ProblemSize& ps,
+        std::vector<biorbd::utils::Vector>& Q,
+        std::vector<biorbd::utils::Vector>& Qdot,
+        std::vector<biorbd::utils::Vector>& u)
+{
+    // Resizing the output variables
+    for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
+        u.push_back(biorbd::utils::Vector(ps.ns));
+    }
+    for (unsigned int q=0; q<m.nbQ(); ++q){
+        u.push_back(biorbd::utils::Vector(ps.ns));
+        Q.push_back(biorbd::utils::Vector(ps.ns+1));
+        Qdot.push_back(biorbd::utils::Vector(ps.ns+1));
     }
 
     // Get the optimal controls
