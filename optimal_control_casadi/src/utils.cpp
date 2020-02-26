@@ -3,6 +3,101 @@
 
 #include "AnimationCallback.h"
 
+void prepareMusculoSkeletalNLP(
+        ProblemSize& probSize,
+        ODE_SOLVER odeSolver,
+        const BoundaryConditions& uBounds,
+        const InitialConditions& uInit,
+        const BoundaryConditions& xBounds,
+        const InitialConditions& xInit,
+        const std::vector<IndexPairing> &markersToPair,
+        const std::vector<IndexPairing> &markerToProject,
+        const std::vector<IndexPairing> &axesToAlign,
+        const std::vector<IndexPairing> &alignWithMarkers,
+        const std::vector<IndexPairing> &alignWithMarkersReferenceFrame,
+        bool useCyclicObjective,
+        bool useCyclicConstraint,
+        std::vector<void (*)(const ProblemSize&,
+                             const std::vector<casadi::MX>&,
+                             const std::vector<casadi::MX>&,
+                             casadi::MX&)> objectiveFunctions,
+        casadi::MX& V,
+        BoundaryConditions& vBounds,
+        InitialConditions& vInit,
+        std::vector<casadi::MX>& g,
+        BoundaryConditions& gBounds,
+        casadi::MX& J
+        ){
+    // ODE right hand side
+    casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
+    casadi::MX controls = casadi::MX::sym("p", m.nbQ(), 1);
+    casadi::Function f = casadi::Function( "ForwardDyn",
+                                {states, controls},
+                                {ForwardDyn(m, states, controls)},
+                                {"states", "controls"},
+                                {"statesdot"}).expand();
+
+    // Differential variables
+    casadi::MX u;
+    casadi::MX x;
+    defineDifferentialVariables(probSize, u, x);
+
+    casadi::MXDict ode = {
+        {"x", x},
+        {"p", u},
+        {"ode", f(std::vector<casadi::MX>({x, u}))[0]}
+    };
+    casadi::Dict ode_opt;
+    ode_opt["t0"] = 0;
+    ode_opt["tf"] = probSize.dt;
+    if (odeSolver == ODE_SOLVER::RK || odeSolver == ODE_SOLVER::COLLOCATION)
+        ode_opt["number_of_finite_elements"] = 5;
+    casadi::Function F;
+    if (odeSolver == ODE_SOLVER::RK)
+        F = casadi::integrator("integrator", "rk", ode, ode_opt);
+    else if (odeSolver == ODE_SOLVER::COLLOCATION)
+        F = casadi::integrator("integrator", "collocation", ode, ode_opt);
+    else if (odeSolver == ODE_SOLVER::CVODES)
+        F = casadi::integrator("integrator", "cvodes", ode, ode_opt);
+    else
+        throw std::runtime_error("ODE solver not implemented..");
+
+    // Prepare the NLP problem
+    std::vector<casadi::MX> U;
+    std::vector<casadi::MX> X;
+    defineMultipleShootingNodes(probSize, uBounds, xBounds, uInit, xInit,
+                                V, vBounds, vInit, U, X, useCyclicObjective);
+
+    // Continuity constraints
+    continuityConstraints(F, probSize, U, X, g, gBounds, useCyclicConstraint);
+
+    // Path constraints
+    followMarkerConstraint(F, probSize, U, X, markersToPair, g, gBounds);
+
+    // Path constraints
+    projectionOnPlaneConstraint(F, probSize, U, X, markerToProject, g, gBounds);
+
+    // Path constraints
+    alignAxesConstraint(F, probSize, U, X, axesToAlign, g, gBounds);
+
+    // Path constraints
+    alignAxesToMarkersConstraint(F, probSize, U, X, alignWithMarkers, g, gBounds);
+
+    // Path constraints
+    alignJcsToMarkersConstraint(F, probSize, U, X, alignWithMarkersReferenceFrame, g, gBounds);
+
+    // Objective functions
+    J = 0;
+    for (unsigned int i=0; i<objectiveFunctions.size(); ++i){
+        objectiveFunctions[i](probSize, X, U, J);
+    }
+
+
+    if (useCyclicConstraint){
+        cyclicObjective(probSize, X, U, g, gBounds, J);
+    }
+}
+
 // Biorbd interface
 biorbd::utils::Vector ForwardDyn(
         biorbd::Model& model,
@@ -63,10 +158,14 @@ void defineMultipleShootingNodes(
         BoundaryConditions &vBounds,
         InitialConditions &vInit,
         std::vector<casadi::MX> &U,
-        std::vector<casadi::MX> &X)
+        std::vector<casadi::MX> &X,
+        bool useCyclicObjective)
 {
     // Total number of NLP variables
     unsigned int NV = ps.nx*(ps.ns+1) + ps.nu*ps.ns;
+//    if (useCyclicObjective){
+//        NV += ps.nx;
+//    }
 
     // Declare variable vector for the NLP
     V = casadi::MX::sym("V",NV);
@@ -103,9 +202,19 @@ void defineMultipleShootingNodes(
     vInit.val.insert(vInit.val.end(), xInit.val.begin(), xInit.val.end());
     offset += ps.nx;
 
+//    if (useCyclicObjective){
+//        // Cyclic variable
+//        X.push_back(V.nz(casadi::Slice(offset,offset+static_cast<int>(ps.nx))));
+//        vBounds.min.insert(vBounds.min.end(), xBounds.end_min.begin(), xBounds.end_min.end());
+//        vBounds.max.insert(vBounds.max.end(), xBounds.end_max.begin(), xBounds.end_max.end());
+//        vInit.val.insert(vInit.val.end(), xInit.val.begin(), xInit.val.end());
+//        offset += ps.nx;
+//    }
+
     // Make sure that the size of the variable vector is consistent with the
     // number of variables that we have referenced
-    casadi_assert(offset==static_cast<int>(NV), "");
+    casadi_assert(offset == static_cast<int>(NV), "");
+
 }
 
 
@@ -401,7 +510,8 @@ void continuityConstraints(
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
-        BoundaryConditions& gBounds)
+        BoundaryConditions& gBounds,
+        bool isCyclic)
 {
     // Loop over shooting nodes
     for(unsigned int k=0; k<ps.ns; ++k){
@@ -415,25 +525,40 @@ void continuityConstraints(
             gBounds.max.push_back(0);
         }
     }
+
+    if (isCyclic){
+        // Save continuity constraints between final integration and first node
+        g.push_back( X[ps.ns] - X[0] );
+        for (unsigned int i=0; i<m.nbQ()*2; ++i){
+            gBounds.min.push_back(0);
+            gBounds.max.push_back(0);
+        }
+    }
 }
 
-void cyclicConstraints(
-        const casadi::Function &dynamics,
+void cyclicObjective(
         const ProblemSize &ps,
-        const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<casadi::MX> &,
         std::vector<casadi::MX> &g,
-        BoundaryConditions& gBounds)
-{
-    // Create an evaluation node for the end point
-    casadi::MXDict I_out = dynamics(casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
+        BoundaryConditions& gBounds,
+        casadi::MX &obj){
+//    g.push_back( X[ps.ns+1] - X[ps.ns] );
+//    for (unsigned int i=0; i<ps.nx; ++i){
+//        gBounds.min.push_back(0);
+//        gBounds.max.push_back(0);
+//    }
+    obj += casadi::MX::dot(X[0] - X[ps.ns], X[0] - X[ps.ns])*10000;
+}
 
-    // Save continuity constraints between final integration and first node
-    g.push_back( I_out.at("xf") - X[0] );
-    for (unsigned int i=0; i<m.nbQ()*2; ++i){
-        gBounds.min.push_back(0);
-        gBounds.max.push_back(0);
-    }
+void regulateStates(
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &X,
+        const std::vector<casadi::MX> &,
+        casadi::MX &obj)
+{
+    for(unsigned int k=0; k<ps.ns+1; ++k)
+        obj += casadi::MX::dot(X[k], X[k])*ps.dt / 1000;
 }
 
 void minimizeControls(
@@ -442,24 +567,22 @@ void minimizeControls(
         const std::vector<casadi::MX> &U,
         casadi::MX &obj)
 {
-    obj = 0;
     for(unsigned int k=0; k<ps.ns; ++k)
         obj += casadi::MX::dot(U[k], U[k])*ps.dt;
 }
 
-
-
-void solveProblemWithIpopt(
+std::vector<double> solveProblemWithIpopt(
         const casadi::MX &V,
         const BoundaryConditions& vBounds,
         const InitialConditions& vInit,
         const casadi::MX &obj,
         const std::vector<casadi::MX> &constraints,
         const BoundaryConditions& constraintsBounds,
-        const ProblemSize& probSize,
-        std::vector<double>& V_opt,
+        const ProblemSize&,
         AnimationCallback &visuCallback)
 {
+    std::cout << "Solving the optimal control problem..." << std::endl;
+
     // NLP
     casadi::MXDict nlp = {{"x", V},
                           {"f", obj},
@@ -488,9 +611,10 @@ void solveProblemWithIpopt(
 
     // Solve the problem
     res = solver(arg);
+    std::cout << "Done!" << std::endl;
 
     // Optimal solution of the NLP
-    V_opt = std::vector<double>(res.at("x"));
+    return std::vector<double>(res.at("x"));
 }
 
 void extractSolution(
@@ -576,3 +700,40 @@ bool dirExists(const char* const path)
     return ( info.st_mode & S_IFDIR ) ? true : false;
 }
 
+void finalizeSolution(
+        const std::vector<double>& V_opt,
+        const ProblemSize& probSize,
+        const std::string& optimizationName){
+    std::vector<Eigen::VectorXd> Q;
+    std::vector<Eigen::VectorXd> Qdot;
+    std::vector<Eigen::VectorXd> Controls;
+    extractSolution(V_opt, probSize, Q, Qdot, Controls);
+
+    // Show the solution
+    std::cout << "Results:" << std::endl;
+    for (unsigned int q=0; q<m.nbQ(); ++q){
+        std::cout << "Q[" << q <<"] = " << Q[q].transpose() << std::endl;
+        std::cout << "Qdot[" << q <<"] = " << Qdot[q].transpose() << std::endl;
+        std::cout << "Tau[" << q <<"] = " << Controls[q+m.nbMuscleTotal()].transpose() << std::endl;
+        std::cout << std::endl;
+    }
+    for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
+        std::cout << "Muscle[" << q <<"] = " << Controls[q].transpose() << std::endl;
+        std::cout << std::endl;
+    }
+
+    const std::string resultsPath("../../Results/");
+    const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
+    const biorbd::utils::Path stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
+
+    createTreePath(resultsPath);
+    std::vector<Eigen::VectorXd> QandQdot;
+    for (auto q : Q){
+        QandQdot.push_back(q);
+    }
+    for (auto qdot : Qdot){
+        QandQdot.push_back(qdot);
+    }
+    writeCasadiResults(controlResultsFileName, Controls, probSize.dt);
+    writeCasadiResults(stateResultsFileName, QandQdot, probSize.dt);
+}

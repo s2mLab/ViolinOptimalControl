@@ -103,6 +103,33 @@ void defineDifferentialVariables(
         casadi::MX &u,
         casadi::MX &x);
 
+
+void prepareMusculoSkeletalNLP(
+        ProblemSize& probSize,
+        ODE_SOLVER odeSolver,
+        const BoundaryConditions& uBounds,
+        const InitialConditions& uInit,
+        const BoundaryConditions& xBounds,
+        const InitialConditions& xInit,
+        const std::vector<IndexPairing> &markersToPair,
+        const std::vector<IndexPairing> &markerToProject,
+        const std::vector<IndexPairing> &axesToAlign,
+        const std::vector<IndexPairing> &alignWithMarkers,
+        const std::vector<IndexPairing> &alignWithMarkersReferenceFrame,
+        bool useCyclicObjective,
+        bool useCyclicConstraint,
+        std::vector<void (*)(const ProblemSize&,
+                             const std::vector<casadi::MX>&,
+                             const std::vector<casadi::MX>&,
+                             casadi::MX&)> objectiveFunctions,
+        casadi::MX& V,
+        BoundaryConditions& vBounds,
+        InitialConditions& vInit,
+        std::vector<casadi::MX>& g,
+        BoundaryConditions& gBounds,
+        casadi::MX& J);
+
+
 void defineMultipleShootingNodes(
         const ProblemSize& ps,
         const BoundaryConditions &uBounds,
@@ -113,7 +140,8 @@ void defineMultipleShootingNodes(
         BoundaryConditions &vBounds,
         InitialConditions &vInit,
         std::vector<casadi::MX> &U,
-        std::vector<casadi::MX> &X);
+        std::vector<casadi::MX> &X,
+        bool useCyclicObjective = false);
 
 ///
 /// This functions constraints the euler angle between a segment's
@@ -211,18 +239,32 @@ void continuityConstraints(const casadi::Function& dynamics,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
         std::vector<casadi::MX> &g,
-        BoundaryConditions& gBounds);
+        BoundaryConditions& gBounds,
+        bool isCyclic = false);
 
 ///
-/// This function ensures the end of the phase is equal to the beginning
+/// \brief cyclicObjective Objective that fit the last node with the first
 ///
-void cyclicConstraints(const casadi::Function& dynamics,
-        const ProblemSize& ps,
-        const std::vector<casadi::MX> &U,
+void cyclicObjective(
+        const ProblemSize &ps,
         const std::vector<casadi::MX> &X,
+        const std::vector<casadi::MX> &U,
         std::vector<casadi::MX> &g,
-        BoundaryConditions& gBounds);
+        BoundaryConditions& gBounds,
+        casadi::MX &obj);
 
+///
+/// \brief regulateStates Regulate function that minimizes all the states/1000
+///
+void regulateStates(
+        const ProblemSize& ps,
+        const std::vector<casadi::MX> &X,
+        const std::vector<casadi::MX> &U,
+        casadi::MX &obj);
+
+///
+/// \brief minimizeControls Objective function that minimizes all the controls
+///
 void minimizeControls(
         const ProblemSize& ps,
         const std::vector<casadi::MX> &X,
@@ -238,17 +280,15 @@ void minimizeControls(
 /// \param constraints The constraint set
 /// \param constraintsBounds The bondaries of the constraint set
 /// \param probSize The problem size
-/// \param V_opt The optimized values (output)
 /// \param animationLevel The level of online animation (0=None, 1=Charts, 2=Model visualization)
 ///
-void solveProblemWithIpopt(const casadi::MX &V,
+std::vector<double> solveProblemWithIpopt(const casadi::MX &V,
         const BoundaryConditions &vBounds,
         const InitialConditions &vInit,
         const casadi::MX &obj,
         const std::vector<casadi::MX> &constraints,
         const BoundaryConditions &constraintsBounds,
         const ProblemSize& probSize,
-        std::vector<double>& V_opt,
         AnimationCallback& visu);
 
 void extractSolution(
@@ -290,5 +330,13 @@ void writeCasadiResults(
         currentTime += dt;
     }
 }
+
+///
+/// \brief finalizeSolution Print the solution on screen and save to a file
+///
+void finalizeSolution(
+        const std::vector<double>& V_opt,
+        const ProblemSize& probSize,
+        const std::string& optimizationName);
 
 #endif

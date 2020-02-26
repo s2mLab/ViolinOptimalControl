@@ -28,14 +28,16 @@ int main(int argc, char *argv[]){
     probSize.dt = probSize.tf/probSize.ns; // length of a control interval
 
     // Chose the ODE solver
-    int odeSolver(ODE_SOLVER::RK);
+    ODE_SOLVER odeSolver(ODE_SOLVER::RK);
 
-    // Chose the objective function
-    void (*objectiveFunction)(
-                const ProblemSize&,
-                const std::vector<casadi::MX>&,
-                const std::vector<casadi::MX>&,
-                casadi::MX&) = minimizeControls;
+    // Chose the objective functions
+    std::vector<void (*)(const ProblemSize&,
+                         const std::vector<casadi::MX>&,
+                         const std::vector<casadi::MX>&,
+                         casadi::MX&)> objectiveFunctions;
+    objectiveFunctions.push_back(minimizeControls);
+    objectiveFunctions.push_back(regulateStates);
+
 
     // Differential variables
     casadi::MX u;
@@ -90,13 +92,14 @@ int main(int argc, char *argv[]){
     };
 
     // If the movement is cyclic
-    bool useCyclicConstraint = true;
+    bool useCyclicObjective = true;
+    bool useCyclicConstraint = false;
 
     // Start at the starting point and finish at the ending point
     std::vector<IndexPairing> markersToPair;
     markersToPair.push_back(IndexPairing(Instant::START, {0, 1}));
     markersToPair.push_back(IndexPairing(Instant::MID, {0, 2}));
-    markersToPair.push_back(IndexPairing(Instant::END, {0, 1}));
+     markersToPair.push_back(IndexPairing(Instant::END, {0, 1}));
 
     // Always point towards the point(3)
     std::vector<IndexPairing> markerToProject;
@@ -120,110 +123,27 @@ int main(int argc, char *argv[]){
 
     // From here, unless one wants to fundamentally change the problem,
     // they should not change anything
-
-    // ODE right hand side
-    casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
-    casadi::MX controls = casadi::MX::sym("p", m.nbQ(), 1);
-    casadi::Function f = casadi::Function( "ForwardDyn",
-                                {states, controls},
-                                {ForwardDyn(m, states, controls)},
-                                {"states", "controls"},
-                                {"statesdot"}).expand();
-    casadi::MXDict ode = {
-        {"x", x},
-        {"p", u},
-        {"ode", f(std::vector<casadi::MX>({x, u}))[0]}
-    };
-    casadi::Dict ode_opt;
-    ode_opt["t0"] = 0;
-    ode_opt["tf"] = probSize.dt;
-    if (odeSolver == ODE_SOLVER::RK || odeSolver == ODE_SOLVER::COLLOCATION)
-        ode_opt["number_of_finite_elements"] = 5;
-    casadi::Function F;
-    if (odeSolver == ODE_SOLVER::RK)
-        F = casadi::integrator("integrator", "rk", ode, ode_opt);
-    else if (odeSolver == ODE_SOLVER::COLLOCATION)
-        F = casadi::integrator("integrator", "collocation", ode, ode_opt);
-    else if (odeSolver == ODE_SOLVER::CVODES)
-        F = casadi::integrator("integrator", "cvodes", ode, ode_opt);
-    else
-        throw std::runtime_error("ODE solver not implemented..");
-
-    // Prepare the NLP problem
     casadi::MX V;
     BoundaryConditions vBounds;
     InitialConditions vInit;
-    std::vector<casadi::MX> U;
-    std::vector<casadi::MX> X;
-    defineMultipleShootingNodes(probSize, uBounds, xBounds, uInit, xInit,
-                                V, vBounds, vInit, U, X);
-
-    // Continuity constraints
     std::vector<casadi::MX> g;
     BoundaryConditions gBounds;
-    continuityConstraints(F, probSize, U, X, g, gBounds);
-
-    // Cyclic constraints
-    if (useCyclicConstraint){
-        cyclicConstraints(F, probSize, U, X, g, gBounds);
-    }
-
-    // Path constraints
-    followMarkerConstraint(F, probSize, U, X, markersToPair, g, gBounds);
-
-    // Path constraints
-    projectionOnPlaneConstraint(F, probSize, U, X, markerToProject, g, gBounds);
-
-    // Path constraints
-    alignAxesConstraint(F, probSize, U, X, axesToAlign, g, gBounds);
-
-    // Path constraints
-    alignAxesToMarkersConstraint(F, probSize, U, X, alignWithMarkers, g, gBounds);
-
-    // Path constraints
-    alignJcsToMarkersConstraint(F, probSize, U, X, alignWithMarkersReferenceFrame, g, gBounds);
-
-
-    // Objective function
     casadi::MX J;
-    objectiveFunction(probSize, X, U, J);
+    prepareMusculoSkeletalNLP(probSize, odeSolver, uBounds, uInit, xBounds, xInit,
+                              markersToPair, markerToProject, axesToAlign, alignWithMarkers, alignWithMarkersReferenceFrame,
+                              useCyclicObjective, useCyclicConstraint, objectiveFunctions,
+                              V, vBounds, vInit, g, gBounds, J);
 
     // Online visualization
     AnimationCallback animCallback(visu, V, g, probSize, 10);
 
     // Optimize
-    std::cout << "Solving the optimal control problem..." << std::endl;
-    std::vector<double> V_opt;
     clock_t start = clock();
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, gBounds, probSize, V_opt, animCallback);
+    std::vector<double> V_opt = solveProblemWithIpopt(V, vBounds, vInit, J, g, gBounds, probSize, animCallback);
     clock_t end=clock();
-    std::cout << "Done!" << std::endl;
 
     // Get the optimal state trajectory
-    std::vector<Eigen::VectorXd> Q;
-    std::vector<Eigen::VectorXd> Qdot;
-    std::vector<Eigen::VectorXd> Tau;
-    extractSolution(V_opt, probSize, Q, Qdot, Tau);
-
-    // Show the solution
-    std::cout << "Results:" << std::endl;
-    for (unsigned int q=0; q<m.nbQ(); ++q){
-        std::cout << "Q[" << q <<"] = " << Q[q].transpose() << std::endl;
-        std::cout << "Qdot[" << q <<"] = " << Qdot[q].transpose() << std::endl;
-        std::cout << "Tau[" << q <<"] = " << Tau[q].transpose() << std::endl;
-        std::cout << std::endl;
-    }
-    createTreePath(resultsPath);
-    writeCasadiResults(controlResultsFileName, Tau, probSize.dt);
-    std::vector<Eigen::VectorXd> QandQdot;
-    for (auto q : Q){
-        QandQdot.push_back(q);
-    }
-    for (auto qdot : Qdot){
-        QandQdot.push_back(qdot);
-    }
-    writeCasadiResults(controlResultsFileName, Tau, probSize.dt);
-    writeCasadiResults(stateResultsFileName, QandQdot, probSize.dt);
+    finalizeSolution(V_opt, probSize, optimizationName);
 
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
