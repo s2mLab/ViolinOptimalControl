@@ -140,8 +140,7 @@ void defineMultipleShootingNodes(
         BoundaryConditions &vBounds,
         InitialConditions &vInit,
         std::vector<casadi::MX> &U,
-        std::vector<casadi::MX> &X,
-        bool useCyclicObjective = false);
+        std::vector<casadi::MX> &X);
 
 ///
 /// This functions constraints the euler angle between a segment's

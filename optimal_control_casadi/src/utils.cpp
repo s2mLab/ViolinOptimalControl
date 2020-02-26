@@ -3,6 +3,50 @@
 
 #include "AnimationCallback.h"
 
+
+// Biorbd interface
+biorbd::utils::Vector ForwardDyn(
+        const casadi::MX& states,
+        const casadi::MX& controls)
+{
+    biorbd::rigidbody::GeneralizedCoordinates Q;
+    biorbd::rigidbody::GeneralizedVelocity QDot;
+    biorbd::rigidbody::GeneralizedAcceleration QDDot(m.nbQ());
+    biorbd::rigidbody::GeneralizedTorque Tau;
+    unsigned int nMus(m.nbMuscleTotal());
+    std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates(nMus);
+    for(unsigned int i = 0; i<nMus; ++i){
+        musclesStates[i] = std::make_shared<biorbd::muscles::StateDynamics>(
+                    biorbd::muscles::StateDynamics());
+    }
+
+    // Get States
+    Q = states(casadi::Slice(0, static_cast<casadi_int>(m.nbQ())));
+    QDot = states(casadi::Slice(static_cast<casadi_int>(m.nbQ()),
+                                static_cast<casadi_int>(m.nbQ()*2)));
+
+    // Get Controls
+    if (nMus > 0){
+        for (unsigned int i = 0; i<nMus; ++i) {
+            musclesStates[i]->setActivation(controls(i, 0));
+        }
+
+        for (unsigned int i=0; i<nMus; ++i){
+            Tau = m.muscularJointTorque(musclesStates, true, &Q, &QDot);
+        }
+    }
+    else {
+        Tau.setZero();
+    }
+    Tau += controls(casadi::Slice(
+                        static_cast<casadi_int>(nMus),
+                        static_cast<casadi_int>(nMus + m.nbQ())), 0);
+
+    // Perform Forward Dynamics
+    RigidBodyDynamics::ForwardDynamics(m, Q, QDot, Tau, QDDot);
+    return vertcat(QDot, QDDot);
+}
+
 void prepareMusculoSkeletalNLP(
         ProblemSize& probSize,
         ODE_SOLVER odeSolver,
@@ -30,10 +74,10 @@ void prepareMusculoSkeletalNLP(
         ){
     // ODE right hand side
     casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
-    casadi::MX controls = casadi::MX::sym("p", m.nbQ(), 1);
+    casadi::MX controls = casadi::MX::sym("p", m.nbMuscleGroups() + m.nbQ(), 1);
     casadi::Function f = casadi::Function( "ForwardDyn",
                                 {states, controls},
-                                {ForwardDyn(m, states, controls)},
+                                {ForwardDyn(states, controls)},
                                 {"states", "controls"},
                                 {"statesdot"}).expand();
 
@@ -66,7 +110,7 @@ void prepareMusculoSkeletalNLP(
     std::vector<casadi::MX> U;
     std::vector<casadi::MX> X;
     defineMultipleShootingNodes(probSize, uBounds, xBounds, uInit, xInit,
-                                V, vBounds, vInit, U, X, useCyclicObjective);
+                                V, vBounds, vInit, U, X);
 
     // Continuity constraints
     continuityConstraints(F, probSize, U, X, g, gBounds, useCyclicConstraint);
@@ -92,30 +136,9 @@ void prepareMusculoSkeletalNLP(
         objectiveFunctions[i](probSize, X, U, J);
     }
 
-
-    if (useCyclicConstraint){
+    if (useCyclicObjective){
         cyclicObjective(probSize, X, U, g, gBounds, J);
     }
-}
-
-// Biorbd interface
-biorbd::utils::Vector ForwardDyn(
-        biorbd::Model& model,
-        const casadi::MX& states,
-        const casadi::MX& controls)
-{
-    biorbd::rigidbody::GeneralizedCoordinates Q;
-    biorbd::rigidbody::GeneralizedVelocity QDot;
-    biorbd::rigidbody::GeneralizedAcceleration QDDot(model.nbQ());
-    biorbd::rigidbody::GeneralizedTorque Tau;
-
-    Q = states(casadi::Slice(0, static_cast<casadi_int>(model.nbQ())));
-    QDot = states(casadi::Slice(static_cast<casadi_int>(model.nbQ()),
-                                static_cast<casadi_int>(model.nbQ()*2)));
-    Tau = controls(casadi::Slice(0, static_cast<casadi_int>(model.nbQ())));
-
-    RigidBodyDynamics::ForwardDynamics(model, Q, QDot, Tau, QDDot);
-    return vertcat(QDot, QDDot);
 }
 
 void defineDifferentialVariables(
@@ -158,14 +181,10 @@ void defineMultipleShootingNodes(
         BoundaryConditions &vBounds,
         InitialConditions &vInit,
         std::vector<casadi::MX> &U,
-        std::vector<casadi::MX> &X,
-        bool useCyclicObjective)
+        std::vector<casadi::MX> &X)
 {
     // Total number of NLP variables
     unsigned int NV = ps.nx*(ps.ns+1) + ps.nu*ps.ns;
-//    if (useCyclicObjective){
-//        NV += ps.nx;
-//    }
 
     // Declare variable vector for the NLP
     V = casadi::MX::sym("V",NV);
@@ -201,15 +220,6 @@ void defineMultipleShootingNodes(
     vBounds.max.insert(vBounds.max.end(), xBounds.end_max.begin(), xBounds.end_max.end());
     vInit.val.insert(vInit.val.end(), xInit.val.begin(), xInit.val.end());
     offset += ps.nx;
-
-//    if (useCyclicObjective){
-//        // Cyclic variable
-//        X.push_back(V.nz(casadi::Slice(offset,offset+static_cast<int>(ps.nx))));
-//        vBounds.min.insert(vBounds.min.end(), xBounds.end_min.begin(), xBounds.end_min.end());
-//        vBounds.max.insert(vBounds.max.end(), xBounds.end_max.begin(), xBounds.end_max.end());
-//        vInit.val.insert(vInit.val.end(), xInit.val.begin(), xInit.val.end());
-//        offset += ps.nx;
-//    }
 
     // Make sure that the size of the variable vector is consistent with the
     // number of variables that we have referenced
