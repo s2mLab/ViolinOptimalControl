@@ -417,6 +417,25 @@ void continuityConstraints(
     }
 }
 
+void cyclicConstraints(
+        const casadi::Function &dynamics,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g,
+        BoundaryConditions& gBounds)
+{
+    // Create an evaluation node for the end point
+    casadi::MXDict I_out = dynamics(casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
+
+    // Save continuity constraints between final integration and first node
+    g.push_back( I_out.at("xf") - X[0] );
+    for (unsigned int i=0; i<m.nbQ()*2; ++i){
+        gBounds.min.push_back(0);
+        gBounds.max.push_back(0);
+    }
+}
+
 void minimizeControls(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &,

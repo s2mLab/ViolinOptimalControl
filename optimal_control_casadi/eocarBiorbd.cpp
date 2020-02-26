@@ -89,6 +89,9 @@ int main(int argc, char *argv[]){
         uInit.val.push_back(0);
     };
 
+    // If the movement is cyclic
+    bool useCyclicConstraint = true;
+
     // Start at the starting point and finish at the ending point
     std::vector<IndexPairing> markersToPair;
     markersToPair.push_back(IndexPairing(Instant::START, {0, 1}));
@@ -159,6 +162,11 @@ int main(int argc, char *argv[]){
     std::vector<casadi::MX> g;
     BoundaryConditions gBounds;
     continuityConstraints(F, probSize, U, X, g, gBounds);
+
+    // Cyclic constraints
+    if (useCyclicConstraint){
+        cyclicConstraints(F, probSize, U, X, g, gBounds);
+    }
 
     // Path constraints
     followMarkerConstraint(F, probSize, U, X, markersToPair, g, gBounds);

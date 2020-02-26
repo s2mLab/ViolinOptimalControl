@@ -213,6 +213,16 @@ void continuityConstraints(const casadi::Function& dynamics,
         std::vector<casadi::MX> &g,
         BoundaryConditions& gBounds);
 
+///
+/// This function ensures the end of the phase is equal to the beginning
+///
+void cyclicConstraints(const casadi::Function& dynamics,
+        const ProblemSize& ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        std::vector<casadi::MX> &g,
+        BoundaryConditions& gBounds);
+
 void minimizeControls(
         const ProblemSize& ps,
         const std::vector<casadi::MX> &X,

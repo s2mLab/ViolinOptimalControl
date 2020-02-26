@@ -181,6 +181,10 @@ int main(int argc, char *argv[]){
         idxLowStringBound = tagViolinCStringBridge;
         idxHighStringBound = tagViolinDStringBridge;
     }
+
+    // If the movement is cyclic
+    bool useCyclicConstraint = true;
+
     // Start at frog and get tip at end
     std::vector<IndexPairing> markersToPair;
     markersToPair.push_back(IndexPairing(Instant::START, {tagBowFrog, stringBridgeIdx}));
@@ -252,6 +256,11 @@ int main(int argc, char *argv[]){
     std::vector<casadi::MX> g;
     BoundaryConditions gBounds;
     continuityConstraints(F, probSize, U, X, g, gBounds);
+
+    // Cyclic constraints
+    if (useCyclicConstraint){
+        cyclicConstraints(F, probSize, U, X, g, gBounds);
+    }
 
     // Path constraints
     followMarkerConstraint(F, probSize, U, X, markersToPair, g, gBounds);
