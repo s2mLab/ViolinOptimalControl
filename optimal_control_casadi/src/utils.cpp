@@ -116,6 +116,10 @@ bool getState(
         const casadi::MXDict& I_end,
         const IndexPairing& alignPolicy,
         casadi::MX& x){
+    if (alignPolicy.t == Instant::MID && ps.ns % 2 != 0){
+        biorbd::utils::Error::raise("To use Instant::MID, you must have a pair number of shooting points");
+    }
+
     if (t == 0 && (alignPolicy.t == Instant::START || alignPolicy.t == Instant::ALL)){
         // If at starting point
         x = X[t];
@@ -124,7 +128,10 @@ bool getState(
         // If at end point
         x = I_end.at("xf");
     }
-    else if (alignPolicy.t == Instant::MID || alignPolicy.t == Instant::ALL){
+    else if (t == ps.ns / 2 && alignPolicy.t == Instant::MID){
+        x = X[t];
+    }
+    else if (alignPolicy.t == Instant::INTERMEDIATES || alignPolicy.t == Instant::ALL){
         // If at mid points
         x = X[t];
     }

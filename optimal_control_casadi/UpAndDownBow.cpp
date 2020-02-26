@@ -184,7 +184,8 @@ int main(int argc, char *argv[]){
     // Start at frog and get tip at end
     std::vector<IndexPairing> markersToPair;
     markersToPair.push_back(IndexPairing(Instant::START, {tagBowFrog, stringBridgeIdx}));
-    markersToPair.push_back(IndexPairing(Instant::END, {tagBowTip, stringBridgeIdx}));
+    markersToPair.push_back(IndexPairing(Instant::MID, {tagBowTip, stringBridgeIdx}));
+    markersToPair.push_back(IndexPairing(Instant::END, {tagBowFrog, stringBridgeIdx}));
 
     // Keep the string targetted by the bow
     std::vector<IndexPairing> markerToProject;

@@ -92,7 +92,8 @@ int main(int argc, char *argv[]){
     // Start at the starting point and finish at the ending point
     std::vector<IndexPairing> markersToPair;
     markersToPair.push_back(IndexPairing(Instant::START, {0, 1}));
-    markersToPair.push_back(IndexPairing(Instant::END, {0, 2}));
+    markersToPair.push_back(IndexPairing(Instant::MID, {0, 2}));
+    markersToPair.push_back(IndexPairing(Instant::END, {0, 1}));
 
     // Always point towards the point(3)
     std::vector<IndexPairing> markerToProject;

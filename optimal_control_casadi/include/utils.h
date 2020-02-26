@@ -69,6 +69,7 @@ struct InitialConditions{
 
 enum Instant{
     START = 0,
+    INTERMEDIATES,
     MID,
     END,
     ALL,
