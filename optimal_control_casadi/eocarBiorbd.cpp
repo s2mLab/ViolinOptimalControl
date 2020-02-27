@@ -31,12 +31,14 @@ int main(int argc, char *argv[]){
     ODE_SOLVER odeSolver(ODE_SOLVER::RK);
 
     // Chose the objective functions
-    std::vector<void (*)(const ProblemSize&,
+    std::vector<std::pair<void (*)(const ProblemSize&,
                          const std::vector<casadi::MX>&,
                          const std::vector<casadi::MX>&,
-                         casadi::MX&)> objectiveFunctions;
-    objectiveFunctions.push_back(minimizeControls);
-    objectiveFunctions.push_back(regulateStates);
+                         int,
+                         casadi::MX&), int>> objectiveFunctions;
+    objectiveFunctions.push_back(std::make_pair(minimizeTorqueControls, 1000));
+    objectiveFunctions.push_back(std::make_pair(minimizeMuscleControls, 1));
+    objectiveFunctions.push_back(std::make_pair(minimizeStates, 1.0/1000));
 
 
     // Differential variables

@@ -8,35 +8,39 @@ import analyses.utils as utils
 
 
 # Options
-model_name = "BrasViolon"  # "eocar" "BrasViolon"
-output_files = "UpAndDowsBowCasadi"  # "eocarBiorbd" "UpAndDowsBowCasadi"
+model_name = "eocar"  # "eocar" "BrasViolon"
+output_files = "eocarBiorbd"  # "eocarBiorbd" "UpAndDowsBowCasadi"
 fun_dyn = utils.dynamics_no_contact
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
 nb_phases = 1
 nb_frame_inter = 500
 force_no_muscle = False
-muscle_plot_mapping = \
-    [[14, 7, 0, 0, 0, 0],  # Trapeze1
-     [15, 7, 1, 0, 0, 0],  # Trapeze2
-     [16, 8, 0, 0, 0, 0],  # Trapeze3
-     [17, 8, 1, 0, 0, 0],  # Trapeze4
-     [10, 5, 2, 1, 0, 1],  # SupraSpin
-     [8,  5, 0, 1, 0, 1],  # InfraSpin
-     [11, 5, 3, 1, 0, 1],  # SubScap
-     [6,  4, 0, 0, 1, 2],  # Pectoral1
-     [0,  0, 0, 0, 1, 2],  # Pectoral2
-     [1,  0, 1, 0, 1, 2],  # Pectoral3
-     [7,  4, 1, 1, 1, 3],  # Deltoid1
-     [9,  5, 1, 1, 1, 3],  # Deltoid2
-     [2,  1, 0, 1, 1, 3],  # Deltoid3
-     [12, 6, 0, 2, 0, 4],  # BicepsLong
-     [13, 6, 1, 2, 0, 4],  # BicepsShort
-     [3,  2, 0, 2, 1, 5],  # TricepsLong
-     [5,  3, 1, 2, 1, 5],  # TricepsMed
-     [4,  3, 0, 2, 1, 5],  # TricepsLat
-     ]
-muscle_plot_names = ["Trapèzes", "Coiffe des rotateurs", "Pectoraux", "Deltoïdes", "Biceps", "Triceps"]
+
+if model_name == "BrasViolon":
+    muscle_plot_mapping = \
+        [[14, 7, 0, 0, 0, 0],  # Trapeze1
+         [15, 7, 1, 0, 0, 0],  # Trapeze2
+         [16, 8, 0, 0, 0, 0],  # Trapeze3
+         [17, 8, 1, 0, 0, 0],  # Trapeze4
+         [10, 5, 2, 1, 0, 1],  # SupraSpin
+         [8,  5, 0, 1, 0, 1],  # InfraSpin
+         [11, 5, 3, 1, 0, 1],  # SubScap
+         [6,  4, 0, 0, 1, 2],  # Pectoral1
+         [0,  0, 0, 0, 1, 2],  # Pectoral2
+         [1,  0, 1, 0, 1, 2],  # Pectoral3
+         [7,  4, 1, 1, 1, 3],  # Deltoid1
+         [9,  5, 1, 1, 1, 3],  # Deltoid2
+         [2,  1, 0, 1, 1, 3],  # Deltoid3
+         [12, 6, 0, 2, 0, 4],  # BicepsLong
+         [13, 6, 1, 2, 0, 4],  # BicepsShort
+         [3,  2, 0, 2, 1, 5],  # TricepsLong
+         [5,  3, 1, 2, 1, 5],  # TricepsMed
+         [4,  3, 0, 2, 1, 5],  # TricepsLat
+         ]
+    muscle_plot_names = ["Trapèzes", "Coiffe des rotateurs", "Pectoraux", "Deltoïdes", "Biceps", "Triceps"]
+else:
+    muscle_plot_mapping = None
 
 # Load the model
 m = biorbd.Model(f"../models/{model_name}.bioMod")
@@ -100,7 +104,7 @@ if m.nbMuscleTotal() > 0:
             for j in range(m.muscleGroup(i).nbMuscles()):
                 plt.subplot(3, 6, cmp + 1)
                 utils.plot_piecewise_constant(t_final, all_u[cmp, :])
-                plt.title(m.muscleGroup(i).muscle(j).name().getString())
+                plt.title(m.muscleGroup(i).muscle(j).name().to_string())
                 plt.ylim((0, 1))
                 cmp += 1
     else:

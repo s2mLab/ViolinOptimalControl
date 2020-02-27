@@ -118,10 +118,11 @@ void prepareMusculoSkeletalNLP(
         const std::vector<IndexPairing> &alignWithMarkersReferenceFrame,
         bool useCyclicObjective,
         bool useCyclicConstraint,
-        std::vector<void (*)(const ProblemSize&,
+        std::vector<std::pair<void (*)(const ProblemSize&,
                              const std::vector<casadi::MX>&,
                              const std::vector<casadi::MX>&,
-                             casadi::MX&)> objectiveFunctions,
+                             int,
+                             casadi::MX&), int>> objectiveFunctions,
         casadi::MX& V,
         BoundaryConditions& vBounds,
         InitialConditions& vInit,
@@ -247,27 +248,46 @@ void continuityConstraints(const casadi::Function& dynamics,
 void cyclicObjective(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &X,
-        const std::vector<casadi::MX> &U,
-        std::vector<casadi::MX> &g,
-        BoundaryConditions& gBounds,
         casadi::MX &obj);
 
 ///
 /// \brief regulateStates Regulate function that minimizes all the states/1000
 ///
-void regulateStates(
+void minimizeStates(
         const ProblemSize& ps,
         const std::vector<casadi::MX> &X,
         const std::vector<casadi::MX> &U,
+        int weight,
+        casadi::MX &obj);
+
+///
+/// \brief minimizeTorqueControls Objective function that minimizes all the torques
+///
+void minimizeTorqueControls(
+        const ProblemSize& ps,
+        const std::vector<casadi::MX> &X,
+        const std::vector<casadi::MX> &U,
+        int weight,
+        casadi::MX &obj);
+
+///
+/// \brief minimizeControls Objective function that minimizes all the muscles
+///
+void minimizeMuscleControls(
+        const ProblemSize& ps,
+        const std::vector<casadi::MX> &X,
+        const std::vector<casadi::MX> &U,
+        int weight,
         casadi::MX &obj);
 
 ///
 /// \brief minimizeControls Objective function that minimizes all the controls
 ///
-void minimizeControls(
+void minimizeAllControls(
         const ProblemSize& ps,
         const std::vector<casadi::MX> &X,
         const std::vector<casadi::MX> &U,
+        int weight,
         casadi::MX &obj);
 
 ///

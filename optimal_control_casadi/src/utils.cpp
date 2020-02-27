@@ -30,10 +30,7 @@ biorbd::utils::Vector ForwardDyn(
         for (unsigned int i = 0; i<nMus; ++i) {
             musclesStates[i]->setActivation(controls(i, 0));
         }
-
-        for (unsigned int i=0; i<nMus; ++i){
-            Tau = m.muscularJointTorque(musclesStates, true, &Q, &QDot);
-        }
+        Tau = m.muscularJointTorque(musclesStates, true, &Q, &QDot);
     }
     else {
         Tau.setZero();
@@ -61,10 +58,11 @@ void prepareMusculoSkeletalNLP(
         const std::vector<IndexPairing> &alignWithMarkersReferenceFrame,
         bool useCyclicObjective,
         bool useCyclicConstraint,
-        std::vector<void (*)(const ProblemSize&,
+        std::vector<std::pair<void (*)(const ProblemSize&,
                              const std::vector<casadi::MX>&,
                              const std::vector<casadi::MX>&,
-                             casadi::MX&)> objectiveFunctions,
+                             int,
+                             casadi::MX&), int>> objectiveFunctions,
         casadi::MX& V,
         BoundaryConditions& vBounds,
         InitialConditions& vInit,
@@ -74,7 +72,7 @@ void prepareMusculoSkeletalNLP(
         ){
     // ODE right hand side
     casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
-    casadi::MX controls = casadi::MX::sym("p", m.nbMuscleGroups() + m.nbQ(), 1);
+    casadi::MX controls = casadi::MX::sym("p", m.nbMuscleTotal() + m.nbQ(), 1);
     casadi::Function f = casadi::Function( "ForwardDyn",
                                 {states, controls},
                                 {ForwardDyn(states, controls)},
@@ -133,11 +131,11 @@ void prepareMusculoSkeletalNLP(
     // Objective functions
     J = 0;
     for (unsigned int i=0; i<objectiveFunctions.size(); ++i){
-        objectiveFunctions[i](probSize, X, U, J);
+        objectiveFunctions[i].first(probSize, X, U, objectiveFunctions[i].second, J);
     }
 
     if (useCyclicObjective){
-        cyclicObjective(probSize, X, U, g, gBounds, J);
+        cyclicObjective(probSize, X, J);
     }
 }
 
@@ -549,36 +547,60 @@ void continuityConstraints(
 void cyclicObjective(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &X,
-        const std::vector<casadi::MX> &,
-        std::vector<casadi::MX> &g,
-        BoundaryConditions& gBounds,
         casadi::MX &obj){
-//    g.push_back( X[ps.ns+1] - X[ps.ns] );
-//    for (unsigned int i=0; i<ps.nx; ++i){
-//        gBounds.min.push_back(0);
-//        gBounds.max.push_back(0);
-//    }
     obj += casadi::MX::dot(X[0] - X[ps.ns], X[0] - X[ps.ns])*10000;
 }
 
-void regulateStates(
+void minimizeStates(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &X,
         const std::vector<casadi::MX> &,
+        int weight,
         casadi::MX &obj)
 {
     for(unsigned int k=0; k<ps.ns+1; ++k)
-        obj += casadi::MX::dot(X[k], X[k])*ps.dt / 1000;
+        obj += casadi::MX::dot(X[k], X[k])*ps.dt * weight;
 }
 
-void minimizeControls(
+void minimizeMuscleControls(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &,
         const std::vector<casadi::MX> &U,
+        int weight,
         casadi::MX &obj)
 {
     for(unsigned int k=0; k<ps.ns; ++k)
-        obj += casadi::MX::dot(U[k], U[k])*ps.dt;
+        obj += casadi::MX::dot(
+                    U[k](casadi::Slice(static_cast<casadi_int>(m.nbMuscleTotal()),
+                                       static_cast<casadi_int>(0)), 0),
+                    U[k](casadi::Slice(static_cast<casadi_int>(m.nbMuscleTotal()),
+                                       static_cast<casadi_int>(0)), 0))*ps.dt * weight;
+}
+
+void minimizeTorqueControls(
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &,
+        const std::vector<casadi::MX> &U,
+        int weight,
+        casadi::MX &obj)
+{
+    for(unsigned int k=0; k<ps.ns; ++k)
+        obj += casadi::MX::dot(
+                    U[k](casadi::Slice(static_cast<casadi_int>(m.nbMuscleTotal()),
+                                       static_cast<casadi_int>(m.nbMuscleTotal() + m.nbQ())), 0),
+                    U[k](casadi::Slice(static_cast<casadi_int>(m.nbMuscleTotal()),
+                                       static_cast<casadi_int>(m.nbMuscleTotal() + m.nbQ())), 0))*ps.dt*weight;
+}
+
+void minimizeAllControls(
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &,
+        const std::vector<casadi::MX> &U,
+        int weight,
+        casadi::MX &obj)
+{
+    for(unsigned int k=0; k<ps.ns; ++k)
+        obj += casadi::MX::dot(U[k], U[k])*ps.dt*weight;
 }
 
 std::vector<double> solveProblemWithIpopt(
