@@ -70,7 +70,7 @@ int main(int argc, char *argv[]){
                          casadi::MX&), int>> objectiveFunctions;
     objectiveFunctions.push_back(std::make_pair(minimizeTorqueControls, 1000));
     objectiveFunctions.push_back(std::make_pair(minimizeMuscleControls, 1));
-    objectiveFunctions.push_back(std::make_pair(minimizeStates, 1.0/1000));
+    objectiveFunctions.push_back(std::make_pair(minimizeStates, 1.0/10));
 
     // Bounds and initial guess for the state
     std::vector<biorbd::utils::Range> ranges;
