@@ -8,14 +8,15 @@ import analyses.utils as utils
 
 
 # Options
-model_name = "eocar"  # "eocar" "BrasViolon"
-output_files = "eocarBiorbd"  # "eocarBiorbd" "UpAndDowsBowCasadi"
+model_name = "BrasViolon"  # "eocar" "BrasViolon"
+output_files = "UpAndDowsBowCasadi"  # "eocarBiorbd" "UpAndDowsBowCasadi"
 fun_dyn = utils.dynamics_no_contact
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
 nb_phases = 1
 nb_frame_inter = 500
 force_no_muscle = False
+objective_weight = [1/10, 1, 1000]
 
 if model_name == "BrasViolon":
     muscle_plot_mapping = \
@@ -69,9 +70,12 @@ t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_i
 qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
 
-
-print(f"Objective function = {np.sum(all_u[:, :-1]**2 * (t[1] - t[0]))}")
 # Show data
+cost = np.sum(all_q**2 * (t[1] - t[0]))*objective_weight[0] + \
+       np.sum(all_u[:m.nbMuscleTotal(), :-1]**2 * (t[1] - t[0]))*objective_weight[1] + \
+       np.sum(all_u[m.nbMuscleTotal():, :-1]**2 * (t[1] - t[0]))*objective_weight[2]
+print(f"Objective function = {cost}")
+
 plt.figure("States and torques res")
 for i in range(m.nbQ()):
     plt.subplot(m.nbQ(), 3, 1+(3*i))

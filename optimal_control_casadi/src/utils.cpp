@@ -61,8 +61,8 @@ void prepareMusculoSkeletalNLP(
         std::vector<std::pair<void (*)(const ProblemSize&,
                              const std::vector<casadi::MX>&,
                              const std::vector<casadi::MX>&,
-                             int,
-                             casadi::MX&), int>> objectiveFunctions,
+                             double,
+                             casadi::MX&), double>> objectiveFunctions,
         casadi::MX& V,
         BoundaryConditions& vBounds,
         InitialConditions& vInit,
@@ -555,7 +555,7 @@ void minimizeStates(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &X,
         const std::vector<casadi::MX> &,
-        int weight,
+        double weight,
         casadi::MX &obj)
 {
     for(unsigned int k=0; k<ps.ns+1; ++k)
@@ -566,22 +566,22 @@ void minimizeMuscleControls(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &,
         const std::vector<casadi::MX> &U,
-        int weight,
+        double weight,
         casadi::MX &obj)
 {
     for(unsigned int k=0; k<ps.ns; ++k)
         obj += casadi::MX::dot(
-                    U[k](casadi::Slice(static_cast<casadi_int>(m.nbMuscleTotal()),
-                                       static_cast<casadi_int>(0)), 0),
-                    U[k](casadi::Slice(static_cast<casadi_int>(m.nbMuscleTotal()),
-                                       static_cast<casadi_int>(0)), 0))*ps.dt * weight;
+                    U[k](casadi::Slice(static_cast<casadi_int>(0),
+                                       static_cast<casadi_int>(m.nbMuscleTotal())), 0),
+                    U[k](casadi::Slice(static_cast<casadi_int>(0),
+                                       static_cast<casadi_int>(m.nbMuscleTotal())), 0))*ps.dt * weight;
 }
 
 void minimizeTorqueControls(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &,
         const std::vector<casadi::MX> &U,
-        int weight,
+        double weight,
         casadi::MX &obj)
 {
     for(unsigned int k=0; k<ps.ns; ++k)

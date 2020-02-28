@@ -121,8 +121,8 @@ void prepareMusculoSkeletalNLP(
         std::vector<std::pair<void (*)(const ProblemSize&,
                              const std::vector<casadi::MX>&,
                              const std::vector<casadi::MX>&,
-                             int,
-                             casadi::MX&), int>> objectiveFunctions,
+                             double,
+                             casadi::MX&), double>> objectiveFunctions,
         casadi::MX& V,
         BoundaryConditions& vBounds,
         InitialConditions& vInit,
@@ -257,7 +257,7 @@ void minimizeStates(
         const ProblemSize& ps,
         const std::vector<casadi::MX> &X,
         const std::vector<casadi::MX> &U,
-        int weight,
+        double weight,
         casadi::MX &obj);
 
 ///
@@ -267,7 +267,7 @@ void minimizeTorqueControls(
         const ProblemSize& ps,
         const std::vector<casadi::MX> &X,
         const std::vector<casadi::MX> &U,
-        int weight,
+        double weight,
         casadi::MX &obj);
 
 ///
@@ -277,7 +277,7 @@ void minimizeMuscleControls(
         const ProblemSize& ps,
         const std::vector<casadi::MX> &X,
         const std::vector<casadi::MX> &U,
-        int weight,
+        double weight,
         casadi::MX &obj);
 
 ///
