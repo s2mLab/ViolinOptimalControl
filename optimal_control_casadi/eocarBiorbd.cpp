@@ -24,7 +24,7 @@ int main(int argc, char *argv[]){
 
     ProblemSize probSize;
     probSize.tf = 2.0;
-    probSize.ns = 30;
+    probSize.ns = 50;
     probSize.dt = probSize.tf/probSize.ns; // length of a control interval
 
     // Chose the ODE solver
@@ -36,15 +36,9 @@ int main(int argc, char *argv[]){
                          const std::vector<casadi::MX>&,
                          double,
                          casadi::MX&), double>> objectiveFunctions;
-    objectiveFunctions.push_back(std::make_pair(minimizeTorqueControls, 1000));
-    objectiveFunctions.push_back(std::make_pair(minimizeMuscleControls, 1));
-    objectiveFunctions.push_back(std::make_pair(minimizeStates, 1.0/1000));
-
-
-    // Differential variables
-    casadi::MX u;
-    casadi::MX x;
-    defineDifferentialVariables(probSize, u, x);
+    objectiveFunctions.push_back(std::make_pair(minimizeTorqueControls, 10));
+    objectiveFunctions.push_back(std::make_pair(minimizeMuscleControls, 10));
+    objectiveFunctions.push_back(std::make_pair(minimizeStates, 1./100));
 
     // Bounds and initial guess for the state
     std::vector<biorbd::utils::Range> ranges;
@@ -65,16 +59,21 @@ int main(int argc, char *argv[]){
         xBounds.max.push_back(ranges[i].max());
         xBounds.end_max.push_back(ranges[i].max());
 
-        xInit.val.push_back(0);
+        if (i == 0){
+            xInit.val.push_back(1.5);
+        } else {
+            xInit.val.push_back(0);
+        }
     };
+    double velLim(15);
     for (unsigned int i=0; i<m.nbQdot(); ++i) {
-        xBounds.starting_min.push_back(0);
-        xBounds.min.push_back(-100);
-        xBounds.end_min.push_back(0);
+        xBounds.starting_min.push_back(-velLim);
+        xBounds.min.push_back(-velLim);
+        xBounds.end_min.push_back(-velLim);
 
-        xBounds.starting_max.push_back(0);
-        xBounds.max.push_back(100);
-        xBounds.end_max.push_back(0);
+        xBounds.starting_max.push_back(velLim);
+        xBounds.max.push_back(velLim);
+        xBounds.end_max.push_back(velLim);
 
         xInit.val.push_back(0);
     };
@@ -94,14 +93,14 @@ int main(int argc, char *argv[]){
     };
 
     // If the movement is cyclic
-    bool useCyclicObjective = true;
+    bool useCyclicObjective = false;
     bool useCyclicConstraint = false;
 
     // Start at the starting point and finish at the ending point
     std::vector<IndexPairing> markersToPair;
     markersToPair.push_back(IndexPairing(Instant::START, {0, 1}));
     markersToPair.push_back(IndexPairing(Instant::MID, {0, 2}));
-     markersToPair.push_back(IndexPairing(Instant::END, {0, 1}));
+    markersToPair.push_back(IndexPairing(Instant::END, {0, 1}));
 
     // Always point towards the point(3)
     std::vector<IndexPairing> markerToProject;
@@ -149,7 +148,7 @@ int main(int argc, char *argv[]){
 
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
-    std::cout<<"Execution time: "<<time_exec<<std::endl;
+//    std::cout << "Execution time = " << time_exec<<std::endl;
 
     while(animCallback.isActive()){}
     return 0;

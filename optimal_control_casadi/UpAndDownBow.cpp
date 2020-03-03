@@ -29,17 +29,17 @@ static unsigned int tagViolinCStringBridge(43);
 
 // The following values for initialization were determined using the "find_initial_pose.py" script
 const std::vector<double> initQFrogOnGString =
-{-0.07018473, -0.0598567, 1.1212999, 0.90238053, 1.4856272, -0.09812186, 0.1498479, -0.48374356, -0.41007239};
+{-0.26963739, -0.37332812,  0.55297438,  1.16757958,  1.5453081, 0.08781926,  0.66038247, -0.58420915, -0.6424003};
 const std::vector<double> initQTipOnGString =
-{0.07919993, -0.80789739, 0.96181894, 0.649565, 0.24537634, -0.16297839, 0.0659226, 0.14617512, 0.49722962};
+{-0.01828739, -1.31128207,  0.19282409,  0.60925735,  0.70654631, -0.07557834,  0.17204947,  0.11369929,  0.26267182};
 const std::vector<double> initQFrogOnDString =
-{0.02328389, 0.03568661, 0.99308077, 0.93208313, 1.48380368, -0.05939737, 0.26778731, -0.50387155, -0.43094647};
+{-0.12599098, -0.45205593,  0.5822579 ,  1.11068584,  1.45957662, 0.11948427,  0.50336002, -0.40407875, -0.456703117};
 const std::vector<double> initQTipOnDString =
-{0.08445998, -0.66837886, 0.91480044, 0.66766976, 0.25110097, -0.07526545, 0.09689908, -0.00561614, 0.62755419};
+{0.03788864, -0.70345511,  0.23451146,  0.9479002 ,  0.11111476, 0.41349365,  0.24701369,  0.2606112 ,  0.48426223};
 const std::vector<double> initQFrogOnAString =
-{-0.0853157, -0.03099135, 1.04751851, 0.93222374, 1.50707542, -0.12888636, 0.04174079, -0.57032577, -0.31175627};
+{-0.15691089, -0.52162508,  0.59001626,  1.10637291,  1.47285539, 0.03932967,  0.31431404, -0.39598565, -0.44465406};
 const std::vector<double> initQTipOnAString =
-{-0.06506266, -0.44904332, 0.97090727, 1.00055219, 0.17983593, -0.3363436, -0.03281452, 0.04678383, 0.64465767};
+{0.03051712, -0.69048243,  0.36951694,  0.88094724,  0.15574657, 0.29978535,  0.20718762,  0.14710871,  0.55469901};
 const std::vector<double> initQFrogOnEString =
 {-0.32244523, -0.45567388,  0.69477217,  1.14551489,  1.40942749, -0.10300415,  0.14266607, -0.23330034, -0.25421303};
 const std::vector<double> initQTipOnEString =
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]){
                          const std::vector<casadi::MX>&,
                          double,
                          casadi::MX&), double>> objectiveFunctions;
-    objectiveFunctions.push_back(std::make_pair(minimizeTorqueControls, 1000));
+    objectiveFunctions.push_back(std::make_pair(minimizeTorqueControls, 100));
     objectiveFunctions.push_back(std::make_pair(minimizeMuscleControls, 1));
     objectiveFunctions.push_back(std::make_pair(minimizeStates, 1.0/10));
 
@@ -122,13 +122,13 @@ int main(int argc, char *argv[]){
         xInit.val.push_back(initQFrog[i]);
     };
     for (unsigned int i=0; i<m.nbQdot(); ++i) {
-        xBounds.starting_min.push_back(-100);
+        xBounds.starting_min.push_back(0);
         xBounds.min.push_back(-100);
-        xBounds.end_min.push_back(-100);
+        xBounds.end_min.push_back(0);
 
-        xBounds.starting_max.push_back(100);
+        xBounds.starting_max.push_back(0);
         xBounds.max.push_back(100);
-        xBounds.end_max.push_back(100);
+        xBounds.end_max.push_back(0);
 
         xInit.val.push_back(initTau(i));
     };
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]){
     }
 
     // If the movement is cyclic
-    bool useCyclicObjective = true;
+    bool useCyclicObjective = false;
     bool useCyclicConstraint = false;
 
     // Start at frog and get tip at end
@@ -233,7 +233,7 @@ int main(int argc, char *argv[]){
 
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
-    std::cout<<"Execution time: "<<time_exec<<std::endl;
+//    std::cout << "Execution time = " << time_exec<<std::endl;
 
     while(animCallback.isActive()){}
     return 0;

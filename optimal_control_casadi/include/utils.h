@@ -103,6 +103,12 @@ void defineDifferentialVariables(
         casadi::MX &u,
         casadi::MX &x);
 
+casadi::MX rungeKutta4(
+        const casadi::Function &f,
+        const ProblemSize& ps,
+        const casadi::MX &U,
+        const casadi::MX &X,
+        unsigned int nStep);
 
 void prepareMusculoSkeletalNLP(
         ProblemSize& probSize,
@@ -234,7 +240,8 @@ void followMarkerConstraint(
 ///
 /// This function ensures the end of a node to be equal to the next node
 ///
-void continuityConstraints(const casadi::Function& dynamics,
+void continuityConstraints(
+        const casadi::Function& dynamics,
         const ProblemSize& ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
@@ -301,7 +308,8 @@ void minimizeAllControls(
 /// \param probSize The problem size
 /// \param animationLevel The level of online animation (0=None, 1=Charts, 2=Model visualization)
 ///
-std::vector<double> solveProblemWithIpopt(const casadi::MX &V,
+std::vector<double> solveProblemWithIpopt(
+        const casadi::MX &V,
         const BoundaryConditions &vBounds,
         const InitialConditions &vInit,
         const casadi::MX &obj,

@@ -6,16 +6,16 @@ external_forces	0
 
 // DEFINITION DU SEGMENTS
 
-// Thorax
-    segment Thorax
+// Seg1
+    segment Seg1
         translations	xyz
         rotations	xyz
-        ranges  -10 10
-                -10 10
-                -10 10
-                -2*pi 2*pi
+        ranges  -0.70 2.30
+                -1 1
+                -1 1
+                -pi pi
                 -pi/2 pi/2
-                -2*pi 2*pi
+                -pi pi
 		mass 1
 		inertia 
 		  1 0 0 
@@ -26,9 +26,9 @@ external_forces	0
 		mesh  0 1 0
 	endsegment
 	
-// Marker on thorax
+// Marker on Seg1
     marker m0
-        parent Thorax
+        parent Seg1
         position 0 0 0
     endmarker
 
@@ -53,27 +53,41 @@ external_forces	0
     endmarker
     
     
-// Arm > Thorax
+// Arm > Seg1
 musclegroup OnlyMuscleGroup
-	OriginParent		Thorax
+	OriginParent		Seg1
 	InsertionParent		ground
 endmusclegroup 	
 
-	muscle	Pectoral2
-		Type 				Thelen
+	muscle	mus1
+		Type 				IdealizedActuator
 		musclegroup 		OnlyMuscleGroup
-		OriginPosition		0.02 0.01 0
-		InsertionPosition	1.5 0.05 0
-		optimalLength		1.145 //0.132
-		maximalForce		515.41
-		tendonSlackLength 	0.085
-		pennationAngle		0.43633
-		PCSA				3.7
-		maxVelocity 		10
+		OriginPosition		0.10 0 0
+		InsertionPosition	2.5 0 0
+		optimalLength		0.5
+		maximalForce		1000
+		tendonSlackLength 	0.25
+		pennationAngle		0
+		PCSA				5
+		maxVelocity 		20
 	endmuscle
+		
+	muscle	mus2
+		Type 				IdealizedActuator
+		musclegroup 		OnlyMuscleGroup
+		OriginPosition		-0.10 0 0
+		InsertionPosition	0.5 0 0
+		optimalLength		0.5
+		maximalForce		1000
+		tendonSlackLength 	0.25
+		pennationAngle		0
+		PCSA				5
+		maxVelocity 		20
+	endmuscle
+
 	/*
 	    viapoint via1
-		      parent 		Thorax
+		      parent 		Seg1
 		      muscle 		Pectoral2
 		      musclegroup 	OnlyMuscleGroup
 		      position 		0.05 0.05 0
@@ -89,7 +103,7 @@ endmusclegroup
 	endmuscle
 	
 	viapoint via1
-		  parent 		Thorax
+		  parent 		Seg1
 		  muscle 		Pectoral3
 		  musclegroup 	OnlyMuscleGroup
 		  position 		0 -0.07 0

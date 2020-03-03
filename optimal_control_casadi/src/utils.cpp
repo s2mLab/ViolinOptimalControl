@@ -44,6 +44,24 @@ biorbd::utils::Vector ForwardDyn(
     return vertcat(QDot, QDDot);
 }
 
+casadi::MX rungeKutta4(
+        const casadi::Function &f,
+        const ProblemSize& ps,
+        const casadi::MX &U,
+        const casadi::MX &X,
+        unsigned int nStep){
+    casadi::MX out(casadi::MX::zeros(ps.nx, 1));
+
+    for (unsigned int i=0; i<nStep; ++i){ // loop over control intervals
+        casadi::MX k1 = f(casadi::MXDict{{"states", X               }, {"controls", U}}).at("statesdot");
+        casadi::MX k2 = f(casadi::MXDict{{"states", X + ps.dt/2 * k1}, {"controls", U}}).at("statesdot");
+        casadi::MX k3 = f(casadi::MXDict{{"states", X + ps.dt/2 * k2}, {"controls", U}}).at("statesdot");
+        casadi::MX k4 = f(casadi::MXDict{{"states", X + ps.dt   * k3}, {"controls", U}}).at("statesdot");
+        out += ps.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
+    }
+    return out;
+}
+
 void prepareMusculoSkeletalNLP(
         ProblemSize& probSize,
         ODE_SOLVER odeSolver,
@@ -70,6 +88,17 @@ void prepareMusculoSkeletalNLP(
         BoundaryConditions& gBounds,
         casadi::MX& J
         ){
+    // Differential variables
+    casadi::MX u;
+    casadi::MX x;
+    defineDifferentialVariables(probSize, u, x);
+
+    // Prepare the NLP problem
+    std::vector<casadi::MX> U;
+    std::vector<casadi::MX> X;
+    defineMultipleShootingNodes(probSize, uBounds, xBounds, uInit, xInit,
+                                V, vBounds, vInit, U, X);
+
     // ODE right hand side
     casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
     casadi::MX controls = casadi::MX::sym("p", m.nbMuscleTotal() + m.nbQ(), 1);
@@ -77,12 +106,7 @@ void prepareMusculoSkeletalNLP(
                                 {states, controls},
                                 {ForwardDyn(states, controls)},
                                 {"states", "controls"},
-                                {"statesdot"}).expand();
-
-    // Differential variables
-    casadi::MX u;
-    casadi::MX x;
-    defineDifferentialVariables(probSize, u, x);
+                                {"statesdot"}).expand(); //.map(probSize.ns, "thread", 10);
 
     casadi::MXDict ode = {
         {"x", x},
@@ -95,20 +119,16 @@ void prepareMusculoSkeletalNLP(
     if (odeSolver == ODE_SOLVER::RK || odeSolver == ODE_SOLVER::COLLOCATION)
         ode_opt["number_of_finite_elements"] = 5;
     casadi::Function F;
-    if (odeSolver == ODE_SOLVER::RK)
+    if (odeSolver == ODE_SOLVER::RK){
         F = casadi::integrator("integrator", "rk", ode, ode_opt);
+//        F = casadi::Function("RK4", {states, controls}, {rungeKutta4(f, probSize, controls, states, 5)}, {"x0", "p"}, {"xf"});
+    }
     else if (odeSolver == ODE_SOLVER::COLLOCATION)
         F = casadi::integrator("integrator", "collocation", ode, ode_opt);
     else if (odeSolver == ODE_SOLVER::CVODES)
         F = casadi::integrator("integrator", "cvodes", ode, ode_opt);
     else
         throw std::runtime_error("ODE solver not implemented..");
-
-    // Prepare the NLP problem
-    std::vector<casadi::MX> U;
-    std::vector<casadi::MX> X;
-    defineMultipleShootingNodes(probSize, uBounds, xBounds, uInit, xInit,
-                                V, vBounds, vInit, U, X);
 
     // Continuity constraints
     continuityConstraints(F, probSize, U, X, g, gBounds, useCyclicConstraint);
@@ -225,7 +245,6 @@ void defineMultipleShootingNodes(
 
 }
 
-
 bool getState(
         unsigned int t,
         const ProblemSize &ps,
@@ -305,19 +324,26 @@ void alignJcsToMarkersConstraint(
             biorbd::utils::String axisToRecalculate(
                         getAxisInString(static_cast<AXIS>(alignPolicy.idx(7))));
 
-            biorbd::utils::Rotation r_markers(
-                        biorbd::utils::Rotation::fromMarkers(
+            biorbd::utils::Matrix r_markers(
+                        biorbd::utils::Rotation::fromMarkersNonNormalized(
                             {axis1Beg, axis1End}, {axis2Beg, axis2End}, {axis1name, axis2name},
                             axisToRecalculate));
 
             // Get the angle between the two reference frames
-            casadi::MX angles = biorbd::utils::Rotation::toEulerAngles(r_seg.transpose() * r_markers, "zyx");
-            g.push_back( angles );
-            for (unsigned int i=0; i<angles.rows(); ++i){
-                gBounds.min.push_back(0);
-                gBounds.max.push_back(0);
+            biorbd::utils::Matrix r_set_T(r_seg.transpose());
+            for (unsigned int i=0; i<2; ++i){
+                g.push_back(casadi::MX::cross(r_set_T.block<3, 1>(0, i), r_markers.block<3, 1>(0, i)));
+                for (unsigned int j=0; j<3; ++j){
+                    gBounds.min.push_back(0);
+                    gBounds.max.push_back(0);
+                }
             }
-
+//            casadi::MX angles = biorbd::utils::Rotation::toEulerAngles(r_seg.transpose() * r_markers, "zyx");
+//            g.push_back( angles );
+//            for (unsigned int i=0; i<angles.rows(); ++i){
+//                gBounds.min.push_back(0);
+//                gBounds.max.push_back(0);
+//            }
         }
     }
 }
@@ -373,7 +399,7 @@ void alignAxesToMarkersConstraint(
                         - m.marker(q, markersIdx1));
 
             // Return the answers
-            g.push_back( 1.0 - axes[0].dot(axes[1]) );
+            g.push_back( 1.0 - casadi::MX::dot(axes[0], axes[1]) );
             gBounds.min.push_back(0);
             gBounds.max.push_back(0);
         }
@@ -426,7 +452,7 @@ void alignAxesConstraint(
             }
 
             // The axes are align if they are colinear
-            g.push_back( 1.0 - axes[0].dot(axes[1]) );
+            g.push_back( 1.0 - casadi::MX::dot(axes[0], axes[1]) );
             gBounds.min.push_back(0);
             gBounds.max.push_back(0);
         }
@@ -548,7 +574,7 @@ void cyclicObjective(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &X,
         casadi::MX &obj){
-    obj += casadi::MX::dot(X[0] - X[ps.ns], X[0] - X[ps.ns])*10000;
+    obj += casadi::MX::dot(X[0] - X[ps.ns], X[0] - X[ps.ns])*1000;
 }
 
 void minimizeStates(
@@ -628,7 +654,9 @@ std::vector<double> solveProblemWithIpopt(
 
     opts["ipopt.tol"] = 1e-6;
     opts["ipopt.max_iter"] = 1000;
-//    opts["ipopt.hessian_approximation"] = "limited-memory";
+    opts["ipopt.hessian_approximation"] = "exact"; // "exact", "limited-memory"
+    opts["ipopt.limited_memory_max_history"] = 50;
+    opts["ipopt.linear_solver"] = "ma57"; // "ma57", "ma86", "mumps"
 
     // Create an NLP solver and buffers
     casadi::Function solver = nlpsol("nlpsol", "ipopt", nlp, opts);
@@ -643,7 +671,6 @@ std::vector<double> solveProblemWithIpopt(
 
     // Solve the problem
     res = solver(arg);
-    std::cout << "Done!" << std::endl;
 
     // Optimal solution of the NLP
     return std::vector<double>(res.at("x"));
@@ -741,18 +768,18 @@ void finalizeSolution(
     std::vector<Eigen::VectorXd> Controls;
     extractSolution(V_opt, probSize, Q, Qdot, Controls);
 
-    // Show the solution
-    std::cout << "Results:" << std::endl;
-    for (unsigned int q=0; q<m.nbQ(); ++q){
-        std::cout << "Q[" << q <<"] = " << Q[q].transpose() << std::endl;
-        std::cout << "Qdot[" << q <<"] = " << Qdot[q].transpose() << std::endl;
-        std::cout << "Tau[" << q <<"] = " << Controls[q+m.nbMuscleTotal()].transpose() << std::endl;
-        std::cout << std::endl;
-    }
-    for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
-        std::cout << "Muscle[" << q <<"] = " << Controls[q].transpose() << std::endl;
-        std::cout << std::endl;
-    }
+//    // Show the solution
+//    std::cout << "Results:" << std::endl;
+//    for (unsigned int q=0; q<m.nbQ(); ++q){
+//        std::cout << "Q[" << q <<"] = " << Q[q].transpose() << std::endl;
+//        std::cout << "Qdot[" << q <<"] = " << Qdot[q].transpose() << std::endl;
+//        std::cout << "Tau[" << q <<"] = " << Controls[q+m.nbMuscleTotal()].transpose() << std::endl;
+//        std::cout << std::endl;
+//    }
+//    for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
+//        std::cout << "Muscle[" << q <<"] = " << Controls[q].transpose() << std::endl;
+//        std::cout << std::endl;
+//    }
 
     const std::string resultsPath("../../Results/");
     const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
