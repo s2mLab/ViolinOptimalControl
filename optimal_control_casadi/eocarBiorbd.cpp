@@ -116,9 +116,12 @@ int main(int argc, char *argv[]){
 
     // Always have the segment aligned with a certain system of axes
     std::vector<IndexPairing> alignWithMarkersReferenceFrame;
-    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
-            {0, AXIS::X, 1, 2, AXIS::Y, 1, 3, AXIS::X}));
+//    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
+//            {0, AXIS::X, 1, 2, AXIS::Y, 1, 3, AXIS::X}));
 
+    // Always point toward a specific IMU
+    std::vector<IndexPairing> alignWithCustomRT;
+    alignWithCustomRT.push_back(IndexPairing(Instant::ALL,{0, 0}));
 
 
 
@@ -130,15 +133,15 @@ int main(int argc, char *argv[]){
     std::vector<casadi::MX> g;
     BoundaryConditions gBounds;
     casadi::MX J;
+    casadi::Function dynamics;
     prepareMusculoSkeletalNLP(probSize, odeSolver, uBounds, uInit, xBounds, xInit,
-                              markersToPair, markerToProject, axesToAlign, alignWithMarkers, alignWithMarkersReferenceFrame,
+                              markersToPair, markerToProject, axesToAlign,
+                              alignWithMarkers, alignWithMarkersReferenceFrame, alignWithCustomRT,
                               useCyclicObjective, useCyclicConstraint, objectiveFunctions,
-                              V, vBounds, vInit, g, gBounds, J);
-
-    // Online visualization
-    AnimationCallback animCallback(visu, V, g, probSize, 10);
+                              V, vBounds, vInit, g, gBounds, J, dynamics);
 
     // Optimize
+    AnimationCallback animCallback(visu, V, g, probSize, 10, dynamics);
     clock_t start = clock();
     std::vector<double> V_opt = solveProblemWithIpopt(V, vBounds, vInit, J, g, gBounds, probSize, animCallback);
     clock_t end=clock();

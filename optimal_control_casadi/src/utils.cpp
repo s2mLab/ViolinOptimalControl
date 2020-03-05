@@ -3,6 +3,28 @@
 
 #include "AnimationCallback.h"
 
+casadi::MX sandbox(
+        const casadi::MX& states,
+        const IndexPairing& alignPolicy){
+//    // Usage
+//    casadi::MX qsym = casadi::MX::sym("q", m.nbQ(), 1);
+//    casadi::Function f(casadi::Function(
+//                           "sandbox",
+//                           {qsym},
+//                           {sandbox(qsym, alignPolicy)}));
+//    std::cout << f(casadi::DMDict{{"i0", casadi::DM::zeros(m.nbQ(), 1)}}) << std::endl;
+
+    // Get States
+    biorbd::rigidbody::GeneralizedCoordinates q = states(
+                casadi::Slice(0, static_cast<casadi_int>(m.nbQ())));
+
+
+    // Get the system of axes of the segment to align
+    unsigned int segmentIdx(alignPolicy.idx(0));
+    biorbd::utils::Rotation r_seg(
+                m.globalJCS(q, segmentIdx).rot());
+    return r_seg;
+}
 
 // Biorbd interface
 biorbd::utils::Vector ForwardDyn(
@@ -12,7 +34,7 @@ biorbd::utils::Vector ForwardDyn(
     biorbd::rigidbody::GeneralizedCoordinates Q;
     biorbd::rigidbody::GeneralizedVelocity QDot;
     biorbd::rigidbody::GeneralizedAcceleration QDDot(m.nbQ());
-    biorbd::rigidbody::GeneralizedTorque Tau;
+    biorbd::rigidbody::GeneralizedTorque Tau(m.nbQ());
     unsigned int nMus(m.nbMuscleTotal());
     std::vector<std::shared_ptr<biorbd::muscles::StateDynamics>> musclesStates(nMus);
     for(unsigned int i = 0; i<nMus; ++i){
@@ -74,6 +96,7 @@ void prepareMusculoSkeletalNLP(
         const std::vector<IndexPairing> &axesToAlign,
         const std::vector<IndexPairing> &alignWithMarkers,
         const std::vector<IndexPairing> &alignWithMarkersReferenceFrame,
+        const std::vector<IndexPairing> &alignWithCustomRT,
         bool useCyclicObjective,
         bool useCyclicConstraint,
         std::vector<std::pair<void (*)(const ProblemSize&,
@@ -86,7 +109,8 @@ void prepareMusculoSkeletalNLP(
         InitialConditions& vInit,
         std::vector<casadi::MX>& g,
         BoundaryConditions& gBounds,
-        casadi::MX& J
+        casadi::MX& J,
+        casadi::Function& dynamics
         ){
     // Differential variables
     casadi::MX u;
@@ -102,7 +126,7 @@ void prepareMusculoSkeletalNLP(
     // ODE right hand side
     casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
     casadi::MX controls = casadi::MX::sym("p", m.nbMuscleTotal() + m.nbQ(), 1);
-    casadi::Function f = casadi::Function( "ForwardDyn",
+    dynamics = casadi::Function( "ForwardDyn",
                                 {states, controls},
                                 {ForwardDyn(states, controls)},
                                 {"states", "controls"},
@@ -111,7 +135,7 @@ void prepareMusculoSkeletalNLP(
     casadi::MXDict ode = {
         {"x", x},
         {"p", u},
-        {"ode", f(std::vector<casadi::MX>({x, u}))[0]}
+        {"ode", dynamics(std::vector<casadi::MX>({x, u}))[0]}
     };
     casadi::Dict ode_opt;
     ode_opt["t0"] = 0;
@@ -147,6 +171,9 @@ void prepareMusculoSkeletalNLP(
 
     // Path constraints
     alignJcsToMarkersConstraint(F, probSize, U, X, alignWithMarkersReferenceFrame, g, gBounds);
+
+    // Path constraints
+    alignWithCustomRTConstraint(F, probSize, U, X, alignWithCustomRT, g, gBounds);
 
     // Objective functions
     J = 0;
@@ -277,6 +304,49 @@ bool getState(
     return true;
 }
 
+void alignWithCustomRTConstraint(
+        const casadi::Function &dynamics,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &alignWithImu,
+        std::vector<casadi::MX> &g,
+        BoundaryConditions &gBounds){
+    // Compute the state at final in case one pairing needs it
+    casadi::MXDict I_end = dynamics(
+                casadi::MXDict{{"x0", X[ps.ns-1]}, {"p", U[ps.ns-1]}});
+
+    for (unsigned int p=0; p<alignWithImu.size(); ++p){
+        const IndexPairing& alignPolicy(alignWithImu[p]);
+        for (unsigned int t=0; t<ps.ns+1; ++t){
+            casadi::MX x;
+            if (!getState(t, ps, X, I_end, alignPolicy, x)){
+                continue;
+            }
+
+            // Get the states
+            const casadi::MX& q = x(casadi::Slice(0, static_cast<casadi_int>(m.nbQ())), 0);
+
+            // Get the system of axes of the segment to align
+            unsigned int segmentIdx(alignPolicy.idx(0));
+            biorbd::utils::Rotation r_seg(
+                        m.globalJCS(q, segmentIdx).rot());
+
+            // Get the system of axes of the imu
+            unsigned int rtIdx(alignPolicy.idx(1));
+            biorbd::utils::Rotation r_rt(
+                        m.RT(q, rtIdx).rot());
+
+            casadi::MX angles = biorbd::utils::Rotation::toEulerAngles(r_seg.transpose() * r_rt, "zyx");
+            g.push_back( angles );
+            for (unsigned int i=0; i<angles.rows(); ++i){
+                gBounds.min.push_back(0);
+                gBounds.max.push_back(0);
+            }
+        }
+    }
+}
+
 void alignJcsToMarkersConstraint(
         const casadi::Function &dynamics,
         const ProblemSize &ps,
@@ -298,7 +368,7 @@ void alignJcsToMarkersConstraint(
                 continue;
             }
 
-            // Get the angle between the two reference frames
+            // Get the states
             const casadi::MX& q = x(casadi::Slice(0, static_cast<casadi_int>(m.nbQ())), 0);
 
             // Get the system of axes of the segment to align
@@ -325,25 +395,16 @@ void alignJcsToMarkersConstraint(
                         getAxisInString(static_cast<AXIS>(alignPolicy.idx(7))));
 
             biorbd::utils::Matrix r_markers(
-                        biorbd::utils::Rotation::fromMarkersNonNormalized(
+                        biorbd::utils::Rotation::fromMarkers(
                             {axis1Beg, axis1End}, {axis2Beg, axis2End}, {axis1name, axis2name},
                             axisToRecalculate));
 
-            // Get the angle between the two reference frames
-            biorbd::utils::Matrix r_set_T(r_seg.transpose());
-            for (unsigned int i=0; i<2; ++i){
-                g.push_back(casadi::MX::cross(r_set_T.block<3, 1>(0, i), r_markers.block<3, 1>(0, i)));
-                for (unsigned int j=0; j<3; ++j){
-                    gBounds.min.push_back(0);
-                    gBounds.max.push_back(0);
-                }
+            casadi::MX angles = biorbd::utils::Rotation::toEulerAngles(r_seg.transpose() * r_markers, "zyx");
+            g.push_back( angles );
+            for (unsigned int i=0; i<angles.rows(); ++i){
+                gBounds.min.push_back(0);
+                gBounds.max.push_back(0);
             }
-//            casadi::MX angles = biorbd::utils::Rotation::toEulerAngles(r_seg.transpose() * r_markers, "zyx");
-//            g.push_back( angles );
-//            for (unsigned int i=0; i<angles.rows(); ++i){
-//                gBounds.min.push_back(0);
-//                gBounds.max.push_back(0);
-//            }
         }
     }
 }

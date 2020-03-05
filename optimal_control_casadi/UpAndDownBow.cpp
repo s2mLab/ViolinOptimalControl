@@ -26,6 +26,10 @@ static unsigned int tagViolinDStringNeck(39);
 static unsigned int tagViolinGStringBridge(40);
 static unsigned int tagViolinGStringNeck(41);
 static unsigned int tagViolinCStringBridge(43);
+static unsigned int idxCustomRTGString(0);
+static unsigned int idxCustomRTDString(1);
+static unsigned int idxCustomRTAString(2);
+static unsigned int idxCustomRTEString(3);
 
 // The following values for initialization were determined using the "find_initial_pose.py" script
 const std::vector<double> initQFrogOnGString =
@@ -152,29 +156,34 @@ int main(int argc, char *argv[]){
     unsigned int stringNeckIdx;
     unsigned int idxLowStringBound;
     unsigned int idxHighStringBound;
+    unsigned int idxCustomRT;
     if (stringPlayed == ViolinStringNames::E){
         stringBridgeIdx = tagViolinEStringBridge;
         stringNeckIdx = tagViolinEStringNeck;
         idxLowStringBound = tagViolinAStringBridge;
         idxHighStringBound = tagViolinBStringBridge;
+        idxCustomRT = idxCustomRTEString;
     }
     else if (stringPlayed == ViolinStringNames::A){
         stringBridgeIdx = tagViolinAStringBridge;
         stringNeckIdx = tagViolinAStringNeck;
         idxLowStringBound = tagViolinDStringBridge;
         idxHighStringBound = tagViolinEStringBridge;
+        idxCustomRT = idxCustomRTAString;
     }
     else if (stringPlayed == ViolinStringNames::D){
         stringBridgeIdx = tagViolinDStringBridge;
         stringNeckIdx = tagViolinDStringNeck;
         idxLowStringBound = tagViolinGStringBridge;
         idxHighStringBound = tagViolinAStringBridge;
+        idxCustomRT = idxCustomRTDString;
     }
     else if (stringPlayed == ViolinStringNames::G){
         stringBridgeIdx = tagViolinGStringBridge;
         stringNeckIdx = tagViolinGStringNeck;
         idxLowStringBound = tagViolinCStringBridge;
         idxHighStringBound = tagViolinDStringBridge;
+        idxCustomRT = idxCustomRTGString;
     }
 
     // If the movement is cyclic
@@ -194,9 +203,9 @@ int main(int argc, char *argv[]){
 
     // Stay on one string and have a good direction of the bow
     std::vector<IndexPairing> alignWithMarkersReferenceFrame;
-    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
-            {idxSegmentBow, AXIS::X, stringNeckIdx, stringBridgeIdx,
-             AXIS::Y, idxLowStringBound, idxHighStringBound, AXIS::Y}));
+//    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
+//            {idxSegmentBow, AXIS::X, stringNeckIdx, stringBridgeIdx,
+//             AXIS::Y, idxLowStringBound, idxHighStringBound, AXIS::Y}));
 
     // No need to aligning with markers
     std::vector<IndexPairing> alignWithMarkers;
@@ -204,6 +213,9 @@ int main(int argc, char *argv[]){
     // No need to aligning two segments
     std::vector<IndexPairing> axesToAlign;
 
+    // Always point toward a specific IMU
+    std::vector<IndexPairing> alignWithCustomRT;
+    alignWithCustomRT.push_back(IndexPairing(Instant::ALL, {idxSegmentBow, idxCustomRT}));
 
 
 
@@ -215,15 +227,15 @@ int main(int argc, char *argv[]){
     std::vector<casadi::MX> g;
     BoundaryConditions gBounds;
     casadi::MX J;
+    casadi::Function dynamics;
     prepareMusculoSkeletalNLP(probSize, odeSolver, uBounds, uInit, xBounds, xInit,
-                              markersToPair, markerToProject, axesToAlign, alignWithMarkers, alignWithMarkersReferenceFrame,
+                              markersToPair, markerToProject, axesToAlign,
+                              alignWithMarkers, alignWithMarkersReferenceFrame, alignWithCustomRT,
                               useCyclicObjective, useCyclicConstraint, objectiveFunctions,
-                              V, vBounds, vInit, g, gBounds, J);
-
-    // Online visualization
-    AnimationCallback animCallback(visu, V, g, probSize, 10);
+                              V, vBounds, vInit, g, gBounds, J, dynamics);
 
     // Optimize
+    AnimationCallback animCallback(visu, V, g, probSize, 10, dynamics);
     clock_t start = clock();
     std::vector<double> V_opt = solveProblemWithIpopt(V, vBounds, vInit, J, g, gBounds, probSize, animCallback);
     clock_t end=clock();

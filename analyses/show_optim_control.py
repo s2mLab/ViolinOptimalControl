@@ -16,7 +16,7 @@ nb_intervals = 30
 nb_phases = 1
 nb_frame_inter = 500
 force_no_muscle = False
-objective_weight = [1/10, 1, 1000]
+objective_weight = [1/10, 1, 100]
 
 if model_name == "BrasViolon":
     muscle_plot_mapping = \

@@ -35,7 +35,7 @@ external_forces	0
 // Ground
     segment ground
     endsegment
-    
+        
 // Markers on ground
     marker m1
         parent ground
@@ -44,7 +44,7 @@ external_forces	0
     
     marker m2
         parent ground
-        position 2 0 0
+        position 2 0 0 
     endmarker
     
     marker m3
@@ -52,7 +52,39 @@ external_forces	0
         position 1 1 0
     endmarker
     
+    marker m4
+        parent ground
+        position 0.083238669648491 0.053184172706568 -0.015581002813276
+    endmarker
     
+    marker m5
+        parent ground
+        position 1.664773392969821 1.063683454131362 -0.311620056265520
+    endmarker
+    
+    marker m6
+        parent ground
+        position 0.243800418830962 0.624462406495247 0.224962349409880
+    endmarker
+    
+    
+    customRT m1
+        fromMarkers
+        parent ground
+        originMarkerName m4
+        firstAxis x
+        firstAxisMarkerNames m4 m5
+        secondAxis y
+        secondAxisMarkerNames m4 m6
+        recalculate secondAxis
+    endcustomRT
+    
+    imu m2
+        parent ground
+        RT pi/6 pi/7 pi/8 xyz 0 0 0
+    endimu
+    
+    	/*
 // Arm > Seg1
 musclegroup OnlyMuscleGroup
 	OriginParent		Seg1

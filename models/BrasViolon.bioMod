@@ -525,6 +525,50 @@ external_forces	0
     endmarker
 
 
+    customRT bowOnGString
+        fromMarkers
+        parent Violon
+        originMarkerName GstringNeck
+        firstAxis x
+        firstAxisMarkerNames GstringNeck GstringBridge
+        secondAxis y
+        secondAxisMarkerNames CstringVirtual DstringNeck
+        recalculate secondAxis
+    endcustomRT
+
+    customRT bowOnDString
+        fromMarkers
+        parent Violon
+        originMarkerName DstringNeck
+        firstAxis x
+        firstAxisMarkerNames DstringNeck DstringBridge
+        secondAxis y
+        secondAxisMarkerNames AstringNeck GstringNeck
+        recalculate secondAxis
+    endcustomRT
+    
+    customRT bowOnAString
+        fromMarkers
+        parent Violon
+        originMarkerName AstringNeck
+        firstAxis x
+        firstAxisMarkerNames AstringNeck AstringBridge
+        secondAxis y
+        secondAxisMarkerNames DstringNeck EstringNeck
+        recalculate secondAxis
+    endcustomRT
+    
+    customRT bowOnEString
+        fromMarkers
+        parent Violon
+        originMarkerName EstringNeck
+        firstAxis x
+        firstAxisMarkerNames EstringNeck EstringBridge
+        secondAxis y
+        secondAxisMarkerNames AstringNeck BstringVirtual
+        recalculate secondAxis
+    endcustomRT
+    /*
 // DEFINITION DES MUSCLES
 
 // Arm > Thorax
@@ -1034,4 +1078,4 @@ endmusclegroup
 		maxVelocity 		10
 	endmuscle
 
-
+*/

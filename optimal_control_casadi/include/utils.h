@@ -94,7 +94,6 @@ struct IndexPairing{
 };
 
 biorbd::utils::Vector ForwardDyn(
-        biorbd::Model& model,
         const casadi::MX& states,
         const casadi::MX& controls);
 
@@ -122,6 +121,7 @@ void prepareMusculoSkeletalNLP(
         const std::vector<IndexPairing> &axesToAlign,
         const std::vector<IndexPairing> &alignWithMarkers,
         const std::vector<IndexPairing> &alignWithMarkersReferenceFrame,
+        const std::vector<IndexPairing> &alignWithCustomRT,
         bool useCyclicObjective,
         bool useCyclicConstraint,
         std::vector<std::pair<void (*)(const ProblemSize&,
@@ -134,7 +134,8 @@ void prepareMusculoSkeletalNLP(
         InitialConditions& vInit,
         std::vector<casadi::MX>& g,
         BoundaryConditions& gBounds,
-        casadi::MX& J);
+        casadi::MX& J,
+        casadi::Function& dynamics);
 
 
 void defineMultipleShootingNodes(
@@ -148,6 +149,20 @@ void defineMultipleShootingNodes(
         InitialConditions &vInit,
         std::vector<casadi::MX> &U,
         std::vector<casadi::MX> &X);
+
+///
+/// This functions constraints a segment to align with a specific IMU
+/// alignWithImu is
+/// 1) The index of the segment to align
+/// 2) The index of the IMU to be aligned with
+///
+void alignWithCustomRTConstraint(const casadi::Function &dynamics,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &alignWithImu,
+        std::vector<casadi::MX> &g,
+        BoundaryConditions &gBounds);
 
 ///
 /// This functions constraints the euler angle between a segment's
