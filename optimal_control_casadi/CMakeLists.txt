@@ -31,6 +31,7 @@ set(source_files
     eocarBiorbd.cpp
     eocarBiorbdKinConstraint.cpp
     UpAndDownBow.cpp
+    testeocar3.cpp
 )
 
 # library files
