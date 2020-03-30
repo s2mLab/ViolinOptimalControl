@@ -9,13 +9,13 @@ external_forces	0
 // Seg1
     segment Seg1
         translations	xyz
-        rotations	xyz
+        rotations	x //yz
         ranges  -0.70 2.30
                 -1 1
                 -1 1
                 -pi pi
-                -pi/2 pi/2
-                -pi pi
+                //-pi/2 pi/2
+                //-pi pi
 	mass 1
 	inertia 
 	  1 0 0 
