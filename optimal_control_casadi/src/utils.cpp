@@ -646,7 +646,7 @@ void minimizeStates(
         casadi::MX &obj)
 {
     for(unsigned int k=0; k<ps.ns+1; ++k)
-        obj += casadi::MX::dot(X[k], X[k])*ps.dt * weight;
+        obj += casadi::MX::dot(X[k], X[k])*ps.dt * ps.dt* weight;
 }
 
 void minimizeMuscleControls(
@@ -661,7 +661,7 @@ void minimizeMuscleControls(
                     U[k](casadi::Slice(static_cast<casadi_int>(0),
                                        static_cast<casadi_int>(m.nbMuscleTotal())), 0),
                     U[k](casadi::Slice(static_cast<casadi_int>(0),
-                                       static_cast<casadi_int>(m.nbMuscleTotal())), 0))*ps.dt * weight;
+                                       static_cast<casadi_int>(m.nbMuscleTotal())), 0))*ps.dt * ps.dt * weight;
 }
 
 void minimizeTorqueControls(
@@ -676,7 +676,7 @@ void minimizeTorqueControls(
                     U[k](casadi::Slice(static_cast<casadi_int>(m.nbMuscleTotal()),
                                        static_cast<casadi_int>(m.nbMuscleTotal() + m.nbQ())), 0),
                     U[k](casadi::Slice(static_cast<casadi_int>(m.nbMuscleTotal()),
-                                       static_cast<casadi_int>(m.nbMuscleTotal() + m.nbQ())), 0))*ps.dt*weight;
+                                       static_cast<casadi_int>(m.nbMuscleTotal() + m.nbQ())), 0))*ps.dt* ps.dt *weight;
 }
 
 void minimizeAllControls(

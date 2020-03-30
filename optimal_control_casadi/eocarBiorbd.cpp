@@ -67,13 +67,13 @@ int main(int argc, char *argv[]){
     };
     double velLim(15);
     for (unsigned int i=0; i<m.nbQdot(); ++i) {
-        xBounds.starting_min.push_back(-velLim);
+        xBounds.starting_min.push_back(0);
         xBounds.min.push_back(-velLim);
-        xBounds.end_min.push_back(-velLim);
+        xBounds.end_min.push_back(0);
 
-        xBounds.starting_max.push_back(velLim);
+        xBounds.starting_max.push_back(0);
         xBounds.max.push_back(velLim);
-        xBounds.end_max.push_back(velLim);
+        xBounds.end_max.push_back(0);
 
         xInit.val.push_back(0);
     };
@@ -108,11 +108,11 @@ int main(int argc, char *argv[]){
 
     // Always point upward
     std::vector<IndexPairing> axesToAlign;
-//    axesToAlign.push_back(IndexPairing(Instant::MID, {0, AXIS::X, 1, AXIS::MINUS_Y}));
+//    axesToAlign.push_back(IndexPairing(Instant::INTERMEDIATES, {0, AXIS::X, 1, AXIS::MINUS_Y}));
 
     // Always point in line with a given vector described by markers
     std::vector<IndexPairing> alignWithMarkers;
-//    alignWithMarkers.push_back(IndexPairing(Instant::MID, {0, AXIS::X, 2, 3}));
+//    alignWithMarkers.push_back(IndexPairing(Instant::INTERMEDIATES, {0, AXIS::X, 2, 3}));
 
     // Always have the segment aligned with a certain system of axes
     std::vector<IndexPairing> alignWithMarkersReferenceFrame;
