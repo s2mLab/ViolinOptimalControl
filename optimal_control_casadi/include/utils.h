@@ -69,6 +69,7 @@ struct InitialConditions{
 
 enum Instant{
     START = 0,
+    INTERMEDIATES,
     MID,
     END,
     ALL,
@@ -92,29 +93,7 @@ struct IndexPairing{
     std::vector<unsigned int> toPair;
 };
 
-enum PLANE{
-    XY,
-    YZ,
-    XZ
-};
-
-enum ViolinStringNames{
-    E,
-    A,
-    D,
-    G,
-    NO_STRING
-};
-
-enum ODE_SOLVER{
-    COLLOCATION,
-    RK,
-    CVODES
-};
-
-
 biorbd::utils::Vector ForwardDyn(
-        biorbd::Model& model,
         const casadi::MX& states,
         const casadi::MX& controls);
 
@@ -122,6 +101,42 @@ void defineDifferentialVariables(
         ProblemSize &ps,
         casadi::MX &u,
         casadi::MX &x);
+
+casadi::MX rungeKutta4(
+        const casadi::Function &f,
+        const ProblemSize& ps,
+        const casadi::MX &U,
+        const casadi::MX &X,
+        unsigned int nStep);
+
+void prepareMusculoSkeletalNLP(
+        ProblemSize& probSize,
+        ODE_SOLVER odeSolver,
+        const BoundaryConditions& uBounds,
+        const InitialConditions& uInit,
+        const BoundaryConditions& xBounds,
+        const InitialConditions& xInit,
+        const std::vector<IndexPairing> &markersToPair,
+        const std::vector<IndexPairing> &markerToProject,
+        const std::vector<IndexPairing> &axesToAlign,
+        const std::vector<IndexPairing> &alignWithMarkers,
+        const std::vector<IndexPairing> &alignWithMarkersReferenceFrame,
+        const std::vector<IndexPairing> &alignWithCustomRT,
+        bool useCyclicObjective,
+        bool useCyclicConstraint,
+        std::vector<std::pair<void (*)(const ProblemSize&,
+                             const std::vector<casadi::MX>&,
+                             const std::vector<casadi::MX>&,
+                             double,
+                             casadi::MX&), double>> objectiveFunctions,
+        casadi::MX& V,
+        BoundaryConditions& vBounds,
+        InitialConditions& vInit,
+        std::vector<casadi::MX>& g,
+        BoundaryConditions& gBounds,
+        casadi::MX& J,
+        casadi::Function& dynamics);
+
 
 void defineMultipleShootingNodes(
         const ProblemSize& ps,
@@ -134,6 +149,20 @@ void defineMultipleShootingNodes(
         InitialConditions &vInit,
         std::vector<casadi::MX> &U,
         std::vector<casadi::MX> &X);
+
+///
+/// This functions constraints a segment to align with a specific IMU
+/// alignWithImu is
+/// 1) The index of the segment to align
+/// 2) The index of the IMU to be aligned with
+///
+void alignWithCustomRTConstraint(const casadi::Function &dynamics,
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &U,
+        const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &alignWithImu,
+        std::vector<casadi::MX> &g,
+        BoundaryConditions &gBounds);
 
 ///
 /// This functions constraints the euler angle between a segment's
@@ -150,13 +179,13 @@ void defineMultipleShootingNodes(
 /// 8) Which axis (X, Y, Z) to recalculate to
 /// ensures orthonormal system of axis
 ///
-void alignJcsToMarkersConstraint(
-        const casadi::Function &dynamics,
+void alignJcsToMarkersConstraint(const casadi::Function &dynamics,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &segmentsToAlign,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &segmentsToAlign);
+        BoundaryConditions &gBounds);
 
 ///
 /// This functions constraints the dot product of a segment's axis and a
@@ -167,13 +196,13 @@ void alignJcsToMarkersConstraint(
 /// 3) The index of the marker that describes the beginning of the vector to align
 /// 4) The index of the marker that describes the ending of the vector to align
 ///
-void alignAxesToMarkersConstraint(
-        const casadi::Function &dynamics,
+void alignAxesToMarkersConstraint(const casadi::Function &dynamics,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &segmentsToAlign,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &segmentsToAlign);
+        BoundaryConditions &gBounds);
 
 ///
 /// This function constraints the dot product of two segments' axis to be 0.
@@ -188,8 +217,9 @@ void alignAxesConstraint(
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &segmentsToAlign,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &segmentsToAlign);
+        BoundaryConditions& gBounds);
 
 ///
 /// This function constraints the projection of a point in the reference frame of
@@ -199,14 +229,13 @@ void alignAxesConstraint(
 /// 2) the index of the marker
 /// 3) the plane to project on
 ///
-void projectionOnPlaneConstraint(
-        const casadi::Function &dynamics,
+void projectionOnPlaneConstraint(const casadi::Function &dynamics,
         const ProblemSize &ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &projectionPolicy,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &projectionPolicy
-        );
+        BoundaryConditions& gBounds);
 
 ///
 /// This function constraints the difference of the position of two markers to be 0.
@@ -219,8 +248,9 @@ void followMarkerConstraint(
         const ProblemSize& ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
+        const std::vector<IndexPairing> &markerIdx,
         std::vector<casadi::MX> &g,
-        const std::vector<IndexPairing> &markerIdx);
+        BoundaryConditions& gBounds);
 
 ///
 /// This function ensures the end of a node to be equal to the next node
@@ -230,12 +260,56 @@ void continuityConstraints(
         const ProblemSize& ps,
         const std::vector<casadi::MX> &U,
         const std::vector<casadi::MX> &X,
-        std::vector<casadi::MX> &g);
+        std::vector<casadi::MX> &g,
+        BoundaryConditions& gBounds,
+        bool isCyclic = false);
 
-void minimizeControls(
+///
+/// \brief cyclicObjective Objective that fit the last node with the first
+///
+void cyclicObjective(
+        const ProblemSize &ps,
+        const std::vector<casadi::MX> &X,
+        casadi::MX &obj);
+
+///
+/// \brief regulateStates Regulate function that minimizes all the states/1000
+///
+void minimizeStates(
         const ProblemSize& ps,
         const std::vector<casadi::MX> &X,
         const std::vector<casadi::MX> &U,
+        double weight,
+        casadi::MX &obj);
+
+///
+/// \brief minimizeTorqueControls Objective function that minimizes all the torques
+///
+void minimizeTorqueControls(
+        const ProblemSize& ps,
+        const std::vector<casadi::MX> &X,
+        const std::vector<casadi::MX> &U,
+        double weight,
+        casadi::MX &obj);
+
+///
+/// \brief minimizeControls Objective function that minimizes all the muscles
+///
+void minimizeMuscleControls(
+        const ProblemSize& ps,
+        const std::vector<casadi::MX> &X,
+        const std::vector<casadi::MX> &U,
+        double weight,
+        casadi::MX &obj);
+
+///
+/// \brief minimizeControls Objective function that minimizes all the controls
+///
+void minimizeAllControls(
+        const ProblemSize& ps,
+        const std::vector<casadi::MX> &X,
+        const std::vector<casadi::MX> &U,
+        int weight,
         casadi::MX &obj);
 
 ///
@@ -245,18 +319,18 @@ void minimizeControls(
 /// \param vInit The initial guesses for V
 /// \param obj The objective function
 /// \param constraints The constraint set
+/// \param constraintsBounds The bondaries of the constraint set
 /// \param probSize The problem size
-/// \param V_opt The optimized values (output)
 /// \param animationLevel The level of online animation (0=None, 1=Charts, 2=Model visualization)
 ///
-void solveProblemWithIpopt(
+std::vector<double> solveProblemWithIpopt(
         const casadi::MX &V,
         const BoundaryConditions &vBounds,
         const InitialConditions &vInit,
         const casadi::MX &obj,
         const std::vector<casadi::MX> &constraints,
+        const BoundaryConditions &constraintsBounds,
         const ProblemSize& probSize,
-        std::vector<double>& V_opt,
         AnimationCallback& visu);
 
 void extractSolution(
@@ -265,6 +339,13 @@ void extractSolution(
         std::vector<Eigen::VectorXd> &Q,
         std::vector<Eigen::VectorXd> &Qdot,
         std::vector<Eigen::VectorXd> &u);
+
+void extractSolution(
+        const std::vector<double>& V_opt,
+        const ProblemSize& ps,
+        std::vector<biorbd::utils::Vector> &Q,
+        std::vector<biorbd::utils::Vector> &Qdot,
+        std::vector<biorbd::utils::Vector> &u);
 
 void createTreePath(const std::string& path);
 bool dirExists(const char* const path);
@@ -292,9 +373,12 @@ void writeCasadiResults(
     }
 }
 
-
-
-
-
+///
+/// \brief finalizeSolution Print the solution on screen and save to a file
+///
+void finalizeSolution(
+        const std::vector<double>& V_opt,
+        const ProblemSize& probSize,
+        const std::string& optimizationName);
 
 #endif

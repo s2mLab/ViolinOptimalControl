@@ -113,10 +113,10 @@ external_forces	0
 		parent	Scapula
 		RTinMatrix	0
 		RT -0.2 0.3 -0.1 zyx -0.0162235668937676 -0.0465334917069568 -0.00199722357227
-		rotations xzy
+		rotations xyz
 		ranges  -pi/2 0.1
-		        -pi/4 pi
 		        -pi/2 pi/2
+		        -pi/4 pi
 		mass 2.537
 		inertia
 			0.040215	0.000000	0.000000
@@ -524,7 +524,51 @@ external_forces	0
         position 0.0190 -0.28 -0.039
     endmarker
 
-/*
+
+    customRT bowOnGString
+        fromMarkers
+        parent Violon
+        originMarkerName GstringNeck
+        firstAxis x
+        firstAxisMarkerNames GstringNeck GstringBridge
+        secondAxis y
+        secondAxisMarkerNames CstringVirtual DstringNeck
+        recalculate secondAxis
+    endcustomRT
+
+    customRT bowOnDString
+        fromMarkers
+        parent Violon
+        originMarkerName DstringNeck
+        firstAxis x
+        firstAxisMarkerNames DstringNeck DstringBridge
+        secondAxis y
+        secondAxisMarkerNames AstringNeck GstringNeck
+        recalculate secondAxis
+    endcustomRT
+    
+    customRT bowOnAString
+        fromMarkers
+        parent Violon
+        originMarkerName AstringNeck
+        firstAxis x
+        firstAxisMarkerNames AstringNeck AstringBridge
+        secondAxis y
+        secondAxisMarkerNames DstringNeck EstringNeck
+        recalculate secondAxis
+    endcustomRT
+    
+    customRT bowOnEString
+        fromMarkers
+        parent Violon
+        originMarkerName EstringNeck
+        firstAxis x
+        firstAxisMarkerNames EstringNeck EstringBridge
+        secondAxis y
+        secondAxisMarkerNames AstringNeck BstringVirtual
+        recalculate secondAxis
+    endcustomRT
+    /*
 // DEFINITION DES MUSCLES
 
 // Arm > Thorax
@@ -534,7 +578,7 @@ musclegroup Arm2Thorax
 endmusclegroup 	
 
 	muscle	Pectoral2
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Arm2Thorax
 		OriginPosition		0.014 -0.047 0.009
@@ -561,7 +605,7 @@ endmusclegroup
 		endviapoint
 		
 	muscle	Pectoral3
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Arm2Thorax
 		OriginPosition		0.0138111 -0.047615 0.00816258
@@ -595,7 +639,7 @@ musclegroup Scapula2Arm
 endmusclegroup 	
 		
 	muscle	Deltoid3
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Scapula2Arm
 		OriginPosition		-0.0752687 -0.00105942 -0.0527559
@@ -623,7 +667,7 @@ musclegroup Scapula2LowerArm1
 endmusclegroup 
 
 	muscle	TricepsLong
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Scapula2LowerArm1
 		OriginPosition		-0.0443929 -0.0563498 -0.0134528
@@ -658,7 +702,7 @@ endmusclegroup
 
 
 	muscle	TricepsLat
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Arm2LowerArm1
 		OriginPosition		-0.00651919 -0.137632 0.00465811
@@ -679,7 +723,7 @@ endmusclegroup
 		endviapoint	
 	
 	muscle	TricepsMed
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Arm2LowerArm1
 		OriginPosition		-0.00912031 -0.149048 -0.00986038
@@ -714,7 +758,7 @@ musclegroup Arm2Clavicle
 endmusclegroup 	
 
 	muscle	Pectoral1
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Arm2Clavicle
 		OriginPosition		0.0127226 -0.0456125 0.00848908
@@ -728,7 +772,7 @@ endmusclegroup
 	endmuscle
 	
 	muscle	Deltoid1
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Arm2Clavicle
 		OriginPosition		0.00975155 -0.129328 0.00636682
@@ -757,7 +801,7 @@ musclegroup Arm2Scapula
 endmusclegroup 	
 
     	muscle	InfraSpin
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Arm2Scapula
 		OriginPosition		-0.0116528 -0.00158952 0.027548
@@ -778,7 +822,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	Deltoid2
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Arm2Scapula
 		OriginPosition		-0.005 -0.159 0.005
@@ -806,7 +850,7 @@ endmusclegroup
 		endviapoint
 	
 	muscle	SupraSpin
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Arm2Scapula
 		OriginPosition		-0.000749943 0.0165142 0.0278686
@@ -820,7 +864,7 @@ endmusclegroup
 	endmuscle
 	
 	muscle	SubScap
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Arm2Scapula
 		OriginPosition		0.0183277 0.00736809 -0.0157919
@@ -848,7 +892,7 @@ musclegroup Scapula2LowerArm2
 endmusclegroup 	
 
 	muscle	BicepsLong
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Scapula2LowerArm2
 		OriginPosition		-0.0353942 -0.0266676 -0.0147901
@@ -912,7 +956,7 @@ endmusclegroup
 
 
 	muscle	BicepsShort
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Scapula2LowerArm2
 		OriginPosition		0.0143708 -0.0445517 -0.0297503
@@ -958,7 +1002,7 @@ musclegroup Spine2Scapula
 endmusclegroup 	
 
 	muscle	Trapeze1
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Spine2Scapula
 		OriginPosition		-0.075  0.035 0.005
@@ -979,7 +1023,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	Trapeze2
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Spine2Scapula
 		OriginPosition		-0.087 0.011 0.006
@@ -1007,7 +1051,7 @@ endmusclegroup
 
 
 	muscle	Trapeze3
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Clavicle2Spine
 		OriginPosition		-0.027 0.027 0.111
@@ -1021,7 +1065,7 @@ endmusclegroup
 	endmuscle
 
 	muscle	Trapeze4
-		Type 				IdealizedActuator
+		Type 				Thelen
 		statetype			buchanan
 		musclegroup 		Clavicle2Spine
 		OriginPosition		-0.055 0.079 0.005
@@ -1033,5 +1077,5 @@ endmusclegroup
 		PCSA				1.8
 		maxVelocity 		10
 	endmuscle
-*/
 
+*/

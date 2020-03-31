@@ -45,7 +45,8 @@ public:
             const casadi::MX &V,
             const std::vector<casadi::MX> &constraints,
             const ProblemSize& probSize,
-            size_t time);
+            size_t time,
+            const casadi::Function& dynamics);
 
     casadi_int get_n_in() override;
     casadi_int get_n_out() override;
@@ -59,6 +60,15 @@ public:
     Visualization visu() const;
 
 protected:
+    void _rungeKutta4(
+            casadi::DM Qinit,
+            casadi::DM QDotinit,
+            casadi::DM Tau,
+            const casadi::DM& muscleActivations,
+            std::vector<casadi::DM>& QOut,
+            std::vector<casadi::DM>& QDotOut) const;
+    const casadi::Function& _dynamicsFunc;
+
     void QtWindowThread();
     unsigned int _sparsityX;
     unsigned int _sparsityG;
@@ -73,6 +83,7 @@ protected:
     QMainWindow * _window;
     std::chrono::milliseconds refreshTime;
     std::thread * refresh_thread;
+    unsigned int _nbElementsRK4;
     bool _isActive = true;
     bool _isReady = false;
 };

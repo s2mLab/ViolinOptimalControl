@@ -26,28 +26,29 @@ static unsigned int tagViolinDStringNeck(39);
 static unsigned int tagViolinGStringBridge(40);
 static unsigned int tagViolinGStringNeck(41);
 static unsigned int tagViolinCStringBridge(43);
+static unsigned int idxCustomRTGString(0);
+static unsigned int idxCustomRTDString(1);
+static unsigned int idxCustomRTAString(2);
+static unsigned int idxCustomRTEString(3);
 
 // The following values for initialization were determined using the "find_initial_pose.py" script
 const std::vector<double> initQFrogOnGString =
-{-0.07018473, -0.0598567, 1.1212999, 0.90238053, 1.4856272, -0.09812186, 0.1498479, -0.48374356, -0.41007239};
+{-0.26963739, -0.37332812,  0.55297438,  1.16757958,  1.5453081, 0.08781926,  0.66038247, -0.58420915, -0.6424003};
 const std::vector<double> initQTipOnGString =
-{0.07919993, -0.80789739, 0.96181894, 0.649565, 0.24537634, -0.16297839, 0.0659226, 0.14617512, 0.49722962};
+{-0.01828739, -1.31128207,  0.19282409,  0.60925735,  0.70654631, -0.07557834,  0.17204947,  0.11369929,  0.26267182};
 const std::vector<double> initQFrogOnDString =
-{0.02328389, 0.03568661, 0.99308077, 0.93208313, 1.48380368, -0.05939737, 0.26778731, -0.50387155, -0.43094647};
+{-0.12599098, -0.45205593,  0.5822579 ,  1.11068584,  1.45957662, 0.11948427,  0.50336002, -0.40407875, -0.456703117};
 const std::vector<double> initQTipOnDString =
-{0.08445998, -0.66837886, 0.91480044, 0.66766976, 0.25110097, -0.07526545, 0.09689908, -0.00561614, 0.62755419};
+{0.03788864, -0.70345511,  0.23451146,  0.9479002 ,  0.11111476, 0.41349365,  0.24701369,  0.2606112 ,  0.48426223};
 const std::vector<double> initQFrogOnAString =
-{-0.0853157, -0.03099135, 1.04751851, 0.93222374, 1.50707542, -0.12888636, 0.04174079, -0.57032577, -0.31175627};
+{-0.15691089, -0.52162508,  0.59001626,  1.10637291,  1.47285539, 0.03932967,  0.31431404, -0.39598565, -0.44465406};
 const std::vector<double> initQTipOnAString =
-{-0.06506266, -0.44904332, 0.97090727, 1.00055219, 0.17983593, -0.3363436, -0.03281452, 0.04678383, 0.64465767};
+{0.03051712, -0.69048243,  0.36951694,  0.88094724,  0.15574657, 0.29978535,  0.20718762,  0.14710871,  0.55469901};
 const std::vector<double> initQFrogOnEString =
-{-0.19923285, 0.08890963, 0.99469991, 0.97362544, 1.48863482, -0.09960671, 0.01607784, -0.44009434, -0.36712403};
+{-0.32244523, -0.45567388,  0.69477217,  1.14551489,  1.40942749, -0.10300415,  0.14266607, -0.23330034, -0.25421303};
 const std::vector<double> initQTipOnEString =
-{0.03328374, -0.27888401, 0.7623438, 0.59379268, 0.16563931, 0.2443971, 0.1824652, 0.1587049, 0.52812319};
+{ 0.08773515, -0.56553214,  0.64993785,  1.0591878 , -0.18567152, 0.24296588,  0.15829188,  0.21021353,  0.71442364};
 
-const std::string resultsPath("../../Results/");
-const biorbd::utils::Path controlResultsFileName(resultsPath + "Controls" + optimizationName + ".txt");
-const biorbd::utils::Path stateResultsFileName(resultsPath + "States" + optimizationName + ".txt");
 
 
 int main(int argc, char *argv[]){
@@ -63,19 +64,17 @@ int main(int argc, char *argv[]){
     probSize.dt = probSize.tf/probSize.ns; // length of a control interval
 
     // Chose the ODE solver
-    int odeSolver(ODE_SOLVER::RK);
+    ODE_SOLVER odeSolver(ODE_SOLVER::RK);
 
-    // Chose the objective function
-    void (*objectiveFunction)(
-                const ProblemSize&,
-                const std::vector<casadi::MX>&,
-                const std::vector<casadi::MX>&,
-                casadi::MX&) = minimizeControls;
-
-    // Differential variables
-    casadi::MX u;
-    casadi::MX x;
-    defineDifferentialVariables(probSize, u, x);
+    // Chose the objective functions
+    std::vector<std::pair<void (*)(const ProblemSize&,
+                         const std::vector<casadi::MX>&,
+                         const std::vector<casadi::MX>&,
+                         double,
+                         casadi::MX&), double>> objectiveFunctions;
+    objectiveFunctions.push_back(std::make_pair(minimizeTorqueControls, 100));
+    objectiveFunctions.push_back(std::make_pair(minimizeMuscleControls, 1));
+    objectiveFunctions.push_back(std::make_pair(minimizeStates, 1.0/10));
 
     // Bounds and initial guess for the state
     std::vector<biorbd::utils::Range> ranges;
@@ -127,13 +126,13 @@ int main(int argc, char *argv[]){
         xInit.val.push_back(initQFrog[i]);
     };
     for (unsigned int i=0; i<m.nbQdot(); ++i) {
-        xBounds.starting_min.push_back(-100);
+        xBounds.starting_min.push_back(0);
         xBounds.min.push_back(-100);
-        xBounds.end_min.push_back(-100);
+        xBounds.end_min.push_back(0);
 
-        xBounds.starting_max.push_back(100);
+        xBounds.starting_max.push_back(0);
         xBounds.max.push_back(100);
-        xBounds.end_max.push_back(100);
+        xBounds.end_max.push_back(0);
 
         xInit.val.push_back(initTau(i));
     };
@@ -157,43 +156,54 @@ int main(int argc, char *argv[]){
     unsigned int stringNeckIdx;
     unsigned int idxLowStringBound;
     unsigned int idxHighStringBound;
+    unsigned int idxCustomRT;
     if (stringPlayed == ViolinStringNames::E){
         stringBridgeIdx = tagViolinEStringBridge;
         stringNeckIdx = tagViolinEStringNeck;
         idxLowStringBound = tagViolinAStringBridge;
         idxHighStringBound = tagViolinBStringBridge;
+        idxCustomRT = idxCustomRTEString;
     }
     else if (stringPlayed == ViolinStringNames::A){
         stringBridgeIdx = tagViolinAStringBridge;
         stringNeckIdx = tagViolinAStringNeck;
         idxLowStringBound = tagViolinDStringBridge;
         idxHighStringBound = tagViolinEStringBridge;
+        idxCustomRT = idxCustomRTAString;
     }
     else if (stringPlayed == ViolinStringNames::D){
         stringBridgeIdx = tagViolinDStringBridge;
         stringNeckIdx = tagViolinDStringNeck;
         idxLowStringBound = tagViolinGStringBridge;
         idxHighStringBound = tagViolinAStringBridge;
+        idxCustomRT = idxCustomRTDString;
     }
     else if (stringPlayed == ViolinStringNames::G){
         stringBridgeIdx = tagViolinGStringBridge;
         stringNeckIdx = tagViolinGStringNeck;
         idxLowStringBound = tagViolinCStringBridge;
         idxHighStringBound = tagViolinDStringBridge;
+        idxCustomRT = idxCustomRTGString;
     }
-    // Get to frog and tip at beggining and end
+
+    // If the movement is cyclic
+    bool useCyclicObjective = false;
+    bool useCyclicConstraint = false;
+
+    // Start at frog and get tip at end
     std::vector<IndexPairing> markersToPair;
     markersToPair.push_back(IndexPairing(Instant::START, {tagBowFrog, stringBridgeIdx}));
-    markersToPair.push_back(IndexPairing(Instant::END, {tagBowTip, stringBridgeIdx}));
+    markersToPair.push_back(IndexPairing(Instant::MID, {tagBowTip, stringBridgeIdx}));
+    markersToPair.push_back(IndexPairing(Instant::END, {tagBowFrog, stringBridgeIdx}));
 
-    // Keep the bow on the string
+    // Keep the string targetted by the bow
     std::vector<IndexPairing> markerToProject;
-//    markerToProject.push_back(
-//                IndexPairing (Instant::ALL, {idxSegmentBow, stringBridgeIdx, PLANE::XZ}));
+    markerToProject.push_back(
+                IndexPairing (Instant::ALL, {idxSegmentBow, stringBridgeIdx, PLANE::XZ}));
 
-    // Have the bow to lie on the string
+    // Stay on one string and have a good direction of the bow
     std::vector<IndexPairing> alignWithMarkersReferenceFrame;
-//    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::START,
+//    alignWithMarkersReferenceFrame.push_back(IndexPairing(Instant::ALL,
 //            {idxSegmentBow, AXIS::X, stringNeckIdx, stringBridgeIdx,
 //             AXIS::Y, idxLowStringBound, idxHighStringBound, AXIS::Y}));
 
@@ -203,117 +213,39 @@ int main(int argc, char *argv[]){
     // No need to aligning two segments
     std::vector<IndexPairing> axesToAlign;
 
+    // Always point toward a specific IMU
+    std::vector<IndexPairing> alignWithCustomRT;
+    alignWithCustomRT.push_back(IndexPairing(Instant::ALL, {idxSegmentBow, idxCustomRT}));
 
 
 
     // From here, unless one wants to fundamentally change the problem,
     // they should not change anything
-
-    // ODE right hand side
-    casadi::MX states = casadi::MX::sym("x", m.nbQ()*2, 1);
-    casadi::MX controls = casadi::MX::sym("p", m.nbQ(), 1);
-    casadi::Function f = casadi::Function( "ForwardDyn",
-                                {states, controls},
-                                {ForwardDyn(m, states, controls)},
-                                {"states", "controls"},
-                                {"statesdot"}).expand();
-
-    casadi::MXDict ode = {
-        {"x", x},
-        {"p", u},
-        {"ode", f(std::vector<casadi::MX>({x, u}))[0]}
-    };
-    casadi::Dict ode_opt;
-    ode_opt["t0"] = 0;
-    ode_opt["tf"] = probSize.dt;
-    if (odeSolver == ODE_SOLVER::RK || odeSolver == ODE_SOLVER::COLLOCATION)
-        ode_opt["number_of_finite_elements"] = 5;
-    casadi::Function F;
-    if (odeSolver == ODE_SOLVER::RK)
-        F = casadi::integrator("integrator", "rk", ode, ode_opt);
-    else if (odeSolver == ODE_SOLVER::COLLOCATION)
-        F = casadi::integrator("integrator", "collocation", ode, ode_opt);
-    else if (odeSolver == ODE_SOLVER::CVODES)
-        F = casadi::integrator("integrator", "cvodes", ode, ode_opt);
-    else
-        throw std::runtime_error("ODE solver not implemented..");
-
-    // Prepare the NLP problem
     casadi::MX V;
     BoundaryConditions vBounds;
     InitialConditions vInit;
-    std::vector<casadi::MX> U;
-    std::vector<casadi::MX> X;
-    defineMultipleShootingNodes(probSize, uBounds, xBounds, uInit, xInit,
-                                V, vBounds, vInit, U, X);
-
-    // Continuity constraints
     std::vector<casadi::MX> g;
-    continuityConstraints(F, probSize, U, X, g);
-
-    // Path constraints
-    followMarkerConstraint(F, probSize, U, X, g, markersToPair);
-
-    // Path constraints
-    projectionOnPlaneConstraint(F, probSize, U, X, g, markerToProject);
-
-    // Path constraints
-    alignAxesConstraint(F, probSize, U, X, g, axesToAlign);
-
-    // Path constraints
-    alignAxesToMarkersConstraint(F, probSize, U, X, g, alignWithMarkers);
-
-    // Path constraints
-    alignJcsToMarkersConstraint(F, probSize, U, X, g, alignWithMarkersReferenceFrame);
-
-    // Objective function
+    BoundaryConditions gBounds;
     casadi::MX J;
-    objectiveFunction(probSize, X, U, J);
-
-    // Online visualization
-    AnimationCallback animCallback(visu, V, g, probSize, 10);
+    casadi::Function dynamics;
+    prepareMusculoSkeletalNLP(probSize, odeSolver, uBounds, uInit, xBounds, xInit,
+                              markersToPair, markerToProject, axesToAlign,
+                              alignWithMarkers, alignWithMarkersReferenceFrame, alignWithCustomRT,
+                              useCyclicObjective, useCyclicConstraint, objectiveFunctions,
+                              V, vBounds, vInit, g, gBounds, J, dynamics);
 
     // Optimize
-    std::cout << "Solving the optimal control problem..." << std::endl;
+    AnimationCallback animCallback(visu, V, g, probSize, 10, dynamics);
     clock_t start = clock();
-    std::vector<double> V_opt;
-    solveProblemWithIpopt(V, vBounds, vInit, J, g, probSize, V_opt, animCallback);
+    std::vector<double> V_opt = solveProblemWithIpopt(V, vBounds, vInit, J, g, gBounds, probSize, animCallback);
     clock_t end=clock();
-    std::cout << "Done!" << std::endl;
 
     // Get the optimal state trajectory
-    std::vector<Eigen::VectorXd> Q;
-    std::vector<Eigen::VectorXd> Qdot;
-    std::vector<Eigen::VectorXd> Controls;
-    extractSolution(V_opt, probSize, Q, Qdot, Controls);
-
-    // Show the solution
-    std::cout << "Results:" << std::endl;
-    for (unsigned int q=0; q<m.nbQ(); ++q){
-        std::cout << "Q[" << q <<"] = " << Q[q].transpose() << std::endl;
-        std::cout << "Qdot[" << q <<"] = " << Qdot[q].transpose() << std::endl;
-        std::cout << "Tau[" << q <<"] = " << Controls[q+m.nbMuscleTotal()].transpose() << std::endl;
-        std::cout << std::endl;
-    }
-    for (unsigned int q=0; q<m.nbMuscleTotal(); ++q){
-        std::cout << "Muscle[" << q <<"] = " << Controls[q].transpose() << std::endl;
-        std::cout << std::endl;
-    }
-    createTreePath(resultsPath);
-    writeCasadiResults(controlResultsFileName, Controls, probSize.dt);
-    std::vector<Eigen::VectorXd> QandQdot;
-    for (auto q : Q){
-        QandQdot.push_back(q);
-    }
-    for (auto qdot : Qdot){
-        QandQdot.push_back(qdot);
-    }
-    writeCasadiResults(controlResultsFileName, Controls, probSize.dt);
-    writeCasadiResults(stateResultsFileName, QandQdot, probSize.dt);
+    finalizeSolution(V_opt, probSize, optimizationName);
 
     // ---------- FINALIZE  ------------ //
     double time_exec(double(end - start)/CLOCKS_PER_SEC);
-    std::cout<<"Execution time: "<<time_exec<<std::endl;
+//    std::cout << "Execution time = " << time_exec<<std::endl;
 
     while(animCallback.isActive()){}
     return 0;

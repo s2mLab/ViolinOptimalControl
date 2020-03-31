@@ -10,8 +10,10 @@ AnimationCallback::AnimationCallback(
         Visualization &visu,
         const casadi::MX &V,
         const std::vector<casadi::MX> &constraints,
-        const ProblemSize &probSize,
-        size_t refreshTime) :
+        const ProblemSize& probSize,
+        size_t refreshTime,
+        const casadi::Function &dynamics) :
+    _dynamicsFunc(dynamics),
     _visu(visu),
     refreshTime(std::chrono::milliseconds{refreshTime})
 {
@@ -82,16 +84,42 @@ std::vector<casadi::DM> AnimationCallback::eval(
         std::vector<Eigen::VectorXd> Control;
         extractSolution(std::vector<double>(arg[0]), _ps, Q, Qdot, Control);
 
-        for (unsigned int q=0; q<m.nbQ(); ++q){
-            for (int t=0; t<static_cast<int>(_ps.ns)+1; ++t){
-                _QSerie[q]->replace(t, _ps.dt*static_cast<double>(t), Q[q][t]);
+        for (int t=0; t<static_cast<int>(_ps.ns); ++t){
+            casadi::DM QInit(m.nbQ(), 1);
+            casadi::DM QDotInit(m.nbQ(), 1);
+            for (unsigned int i=0; i<m.nbQ(); ++i){
+                QInit(i) = Q[i][t];
+                QDotInit(i) = Qdot[i][t];
             }
-        }
+            casadi::DM muscleActivations(m.nbMuscleTotal(), 1);
+            for (unsigned int i=0; i<m.nbMuscleTotal(); ++i){
+                muscleActivations(i) = Control[i][t];
+            }
+            casadi::DM Tau(m.nbQ(), 1);
+            for (unsigned int i=0; i<m.nbQ(); ++i){
+                Tau(i) = Control[i][t];
+            }
 
-        for (unsigned int q=0; q<m.nbQdot(); ++q){
-            for (int t=0; t<static_cast<int>(_ps.ns)+1; ++t){
-                _QdotSerie[q]->replace(t, _ps.dt*static_cast<double>(t), Qdot[q][t]);
+            std::vector<casadi::DM> QInt;
+            std::vector<casadi::DM> QDotInt;
+            _rungeKutta4(QInit, QDotInit,
+                         muscleActivations, Tau,
+                         QInt, QDotInt);
+
+            for (int t2=0; t2<static_cast<int>(_nbElementsRK4+1); ++t2){
+                for (unsigned int q=0; q<m.nbQ(); ++q){
+                    _QSerie[q]->replace(t*_nbElementsRK4+t2,
+                                        _ps.dt*static_cast<double>(t)+ _ps.dt/static_cast<double>(_nbElementsRK4)*static_cast<double>(t2),
+                                        static_cast<double>(QInt[t2](q)));
+                }
+
+                for (unsigned int q=0; q<m.nbQ(); ++q){
+                    _QdotSerie[q]->replace(t*_nbElementsRK4+t2,
+                                        _ps.dt*static_cast<double>(t)+ _ps.dt/static_cast<double>(_nbElementsRK4)*static_cast<double>(t2),
+                                        static_cast<double>(QDotInt[t2](q)));
+                }
             }
+
         }
 
         for (unsigned int q=0; q<m.nbGeneralizedTorque(); ++q){
@@ -121,12 +149,41 @@ Visualization AnimationCallback::visu() const
     return _visu;
 }
 
+void AnimationCallback::_rungeKutta4(
+        casadi::DM QInit,
+        casadi::DM QDotInit,
+        casadi::DM Tau,
+        const casadi::DM& muscleActivations,
+        std::vector<casadi::DM>& QOut,
+        std::vector<casadi::DM>& QDotOut) const {
+
+    QOut.clear();
+    QDotOut.clear();
+    QOut.push_back(QInit);
+    QDotOut.push_back(QDotInit);
+
+    ProblemSize ps(_ps);
+    ps.dt = ps.dt/static_cast<double>(_nbElementsRK4);
+    casadi::DM X(vertcat(QInit, QDotInit));
+    for (unsigned int i=0; i<_nbElementsRK4; ++i){
+        casadi::DM U(vertcat(muscleActivations, Tau));
+        casadi::DM k1 = _dynamicsFunc(casadi::DMDict{{"states", X               }, {"controls", U}}).at("statesdot");
+        casadi::DM k2 = _dynamicsFunc(casadi::DMDict{{"states", X + ps.dt/2 * k1}, {"controls", U}}).at("statesdot");
+        casadi::DM k3 = _dynamicsFunc(casadi::DMDict{{"states", X + ps.dt/2 * k2}, {"controls", U}}).at("statesdot");
+        casadi::DM k4 = _dynamicsFunc(casadi::DMDict{{"states", X + ps.dt   * k3}, {"controls", U}}).at("statesdot");
+        X += ps.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
+        QOut.push_back(X(casadi::Slice(0, static_cast<casadi_int>(m.nbQ())), 0));
+        QDotOut.push_back(X(casadi::Slice(static_cast<casadi_int>(m.nbQ()), static_cast<casadi_int>(m.nbQ()*2)), 0));
+    }
+}
+
 void AnimationCallback::QtWindowThread(){
     if (_visu.level == Visualization::LEVEL::NONE){
         _isActive = false;
         return;
     }
 
+    _nbElementsRK4 = 10;
     _isActive = true;
     _app = new QApplication(_visu.argc, _visu.argv);
     _window = new QMainWindow();
@@ -149,7 +206,7 @@ void AnimationCallback::QtWindowThread(){
     QVBoxLayout * qLayout = new QVBoxLayout();
     for (unsigned int i=0; i<m.nbQ(); ++i){
         _QSerie.push_back(new QtCharts::QLineSeries());
-        for (unsigned int j=0; j<_ps.ns+1; ++j){
+        for (unsigned int j=0; j<(_ps.ns*_nbElementsRK4)+1; ++j){
             _QSerie[i]->append(0, 0);
         }
         QtCharts::QChart *chart = new QtCharts::QChart();
@@ -169,7 +226,7 @@ void AnimationCallback::QtWindowThread(){
     QVBoxLayout * qdotLayout = new QVBoxLayout();
     for (unsigned int i=0; i<m.nbQdot(); ++i){
         _QdotSerie.push_back(new QtCharts::QLineSeries());
-        for (unsigned int j=0; j<_ps.ns+1; ++j){
+        for (unsigned int j=0; j<(_ps.ns*_nbElementsRK4)+1; ++j){
             _QdotSerie[i]->append(0, 0);
         }
         QtCharts::QChart *chart = new QtCharts::QChart();

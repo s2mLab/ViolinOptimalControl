@@ -8,35 +8,40 @@ import analyses.utils as utils
 
 
 # Options
-model_name = "eocar"  # "eocar" "BrasViolon"
-output_files = "eocarBiorbdConstraintCasadi"  # "eocarBiorbdConstraintCasadi" "UpAndDowsBowCasadi"
+model_name = "BrasViolon"  # "eocar" "BrasViolon"
+output_files = "UpAndDowsBowCasadi"  # "eocarBiorbd" "UpAndDowsBowCasadi"
 fun_dyn = utils.dynamics_no_contact
 runge_kutta_algo = 'rk45'
 nb_intervals = 30
 nb_phases = 1
 nb_frame_inter = 500
 force_no_muscle = False
-muscle_plot_mapping = \
-    [[14, 7, 0, 0, 0, 0],  # Trapeze1
-     [15, 7, 1, 0, 0, 0],  # Trapeze2
-     [16, 8, 0, 0, 0, 0],  # Trapeze3
-     [17, 8, 1, 0, 0, 0],  # Trapeze4
-     [10, 5, 2, 1, 0, 1],  # SupraSpin
-     [8,  5, 0, 1, 0, 1],  # InfraSpin
-     [11, 5, 3, 1, 0, 1],  # SubScap
-     [6,  4, 0, 0, 1, 2],  # Pectoral1
-     [0,  0, 0, 0, 1, 2],  # Pectoral2
-     [1,  0, 1, 0, 1, 2],  # Pectoral3
-     [7,  4, 1, 1, 1, 3],  # Deltoid1
-     [9,  5, 1, 1, 1, 3],  # Deltoid2
-     [2,  1, 0, 1, 1, 3],  # Deltoid3
-     [12, 6, 0, 2, 0, 4],  # BicepsLong
-     [13, 6, 1, 2, 0, 4],  # BicepsShort
-     [3,  2, 0, 2, 1, 5],  # TricepsLong
-     [5,  3, 1, 2, 1, 5],  # TricepsMed
-     [4,  3, 0, 2, 1, 5],  # TricepsLat
-     ]
-muscle_plot_names = ["Trapèzes", "Coiffe des rotateurs", "Pectoraux", "Deltoïdes", "Biceps", "Triceps"]
+objective_weight = [1/10, 1, 100]
+
+if model_name == "BrasViolon":
+    muscle_plot_mapping = \
+        [[14, 7, 0, 0, 0, 0],  # Trapeze1
+         [15, 7, 1, 0, 0, 0],  # Trapeze2
+         [16, 8, 0, 0, 0, 0],  # Trapeze3
+         [17, 8, 1, 0, 0, 0],  # Trapeze4
+         [10, 5, 2, 1, 0, 1],  # SupraSpin
+         [8,  5, 0, 1, 0, 1],  # InfraSpin
+         [11, 5, 3, 1, 0, 1],  # SubScap
+         [6,  4, 0, 0, 1, 2],  # Pectoral1
+         [0,  0, 0, 0, 1, 2],  # Pectoral2
+         [1,  0, 1, 0, 1, 2],  # Pectoral3
+         [7,  4, 1, 1, 1, 3],  # Deltoid1
+         [9,  5, 1, 1, 1, 3],  # Deltoid2
+         [2,  1, 0, 1, 1, 3],  # Deltoid3
+         [12, 6, 0, 2, 0, 4],  # BicepsLong
+         [13, 6, 1, 2, 0, 4],  # BicepsShort
+         [3,  2, 0, 2, 1, 5],  # TricepsLong
+         [5,  3, 1, 2, 1, 5],  # TricepsMed
+         [4,  3, 0, 2, 1, 5],  # TricepsLat
+         ]
+    muscle_plot_names = ["Trapèzes", "Coiffe des rotateurs", "Pectoraux", "Deltoïdes", "Biceps", "Triceps"]
+else:
+    muscle_plot_mapping = None
 
 # Load the model
 m = biorbd.Model(f"../models/{model_name}.bioMod")
@@ -57,7 +62,7 @@ t_final = utils.organize_time(f"../Results/Parameters{output_files}.txt", t, nb_
 
 # Integrate
 t_integrate, q_integrate = utils.integrate_states_from_controls(
-    m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=False, algo=runge_kutta_algo
+    m, t_final, all_q, all_qdot, all_u, fun_dyn, verbose=False, use_previous_as_init=True, algo=runge_kutta_algo
 )
 
 # Interpolate
@@ -65,9 +70,12 @@ t_interp, q_interp = utils.interpolate_integration(nb_frames=nb_frame_inter, t_i
 qdot_interp = q_interp[:, m.nbQ():]
 q_interp = q_interp[:, :m.nbQ()]
 
-
-print(f"Objective function = {np.sum(all_u[:, :-1]**2 * (t[1] - t[0]))}")
 # Show data
+cost = np.sum(all_q**2 * (t[1] - t[0]))*objective_weight[0] + \
+       np.sum(all_u[:m.nbMuscleTotal(), :-1]**2 * (t[1] - t[0]))*objective_weight[1] + \
+       np.sum(all_u[m.nbMuscleTotal():, :-1]**2 * (t[1] - t[0]))*objective_weight[2]
+print(f"Objective function = {cost}")
+
 plt.figure("States and torques res")
 for i in range(m.nbQ()):
     plt.subplot(m.nbQ(), 3, 1+(3*i))
@@ -100,7 +108,7 @@ if m.nbMuscleTotal() > 0:
             for j in range(m.muscleGroup(i).nbMuscles()):
                 plt.subplot(3, 6, cmp + 1)
                 utils.plot_piecewise_constant(t_final, all_u[cmp, :])
-                plt.title(m.muscleGroup(i).muscle(j).name().getString())
+                plt.title(m.muscleGroup(i).muscle(j).name().to_string())
                 plt.ylim((0, 1))
                 cmp += 1
     else:
