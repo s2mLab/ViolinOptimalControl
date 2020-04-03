@@ -78,6 +78,11 @@ casadi::Sparsity AnimationCallback::get_sparsity_in(casadi_int i){
 std::vector<casadi::DM> AnimationCallback::eval(
         const std::vector<casadi::DM> &arg) const {
 
+    if (!_isReady){
+        return {0};
+    }
+
+    _isReady = false;
     if (_visu.level != Visualization::LEVEL::NONE && _window->isVisible()){
         std::vector<Eigen::VectorXd> Q;
         std::vector<Eigen::VectorXd> Qdot;
@@ -119,7 +124,6 @@ std::vector<casadi::DM> AnimationCallback::eval(
                                         static_cast<double>(QDotInt[t2](q)));
                 }
             }
-
         }
 
         for (unsigned int q=0; q<m.nbGeneralizedTorque(); ++q){
@@ -134,8 +138,8 @@ std::vector<casadi::DM> AnimationCallback::eval(
                 _MuscleSerie[q]->replace(t*2+1, _ps.dt*static_cast<double>(t+1), Control[q][t]);
             }
         }
-
     }
+    _isReady = true;
     return {0};
 }
 
@@ -165,8 +169,9 @@ void AnimationCallback::_rungeKutta4(
     ProblemSize ps(_ps);
     ps.dt = ps.dt/static_cast<double>(_nbElementsRK4);
     casadi::DM X(vertcat(QInit, QDotInit));
+    casadi::DM U(vertcat(muscleActivations, Tau));
     for (unsigned int i=0; i<_nbElementsRK4; ++i){
-        casadi::DM U(vertcat(muscleActivations, Tau));
+        _app->processEvents();
         casadi::DM k1 = _dynamicsFunc(casadi::DMDict{{"states", X               }, {"controls", U}}).at("statesdot");
         casadi::DM k2 = _dynamicsFunc(casadi::DMDict{{"states", X + ps.dt/2 * k1}, {"controls", U}}).at("statesdot");
         casadi::DM k3 = _dynamicsFunc(casadi::DMDict{{"states", X + ps.dt/2 * k2}, {"controls", U}}).at("statesdot");
@@ -183,7 +188,8 @@ void AnimationCallback::QtWindowThread(){
         return;
     }
 
-    _nbElementsRK4 = 10;
+    _isReady = true;
+    _nbElementsRK4 = 5;
     _isActive = true;
     _app = new QApplication(_visu.argc, _visu.argv);
     _window = new QMainWindow();
