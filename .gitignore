@@ -114,4 +114,4 @@ venv.bak/
 *.DS_Store
 *.png
 BiorbdViz
-
+*biorbd_optim
