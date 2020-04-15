@@ -1,5 +1,4 @@
 import biorbd
-import enum
 import numpy as np
 
 from biorbd_optim import OptimalControlProgram
@@ -9,15 +8,24 @@ from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
 
 
-# --- Reminder --- #
-
 class ViolinString:
+    """
+    Contains initial values and references from useful marketers and segments.
+    """
+
+    # --- Reminders --- #
     bow_segment = 8
     violin_segment = 6
     marker_frog = 6
     marker_tip = 8
+    # --------- #
 
     def __init__(self, letter, bow_side):
+        """
+        Contains some references and values specific to the string and the side of the bow.
+        :param letter: violin string letter
+        :param bow_side: side of the bow, "frog" or "tip".
+        """
         if letter not in ["E", "A", "D", "G"]:
             raise RuntimeError(letter + " is not a valid string, it must be E, A, D or G. Do you know violin ?")
         if bow_side not in ["frog", "tip"]:
@@ -26,6 +34,9 @@ class ViolinString:
         self.bow_side = bow_side
 
     def initial_position(self):
+        """
+        :return: List of initial positions according to the string and the side of the bow.
+        """
         return  {
             "E_frog": [-0.32244523, -0.45567388, 0.69477217, 1.14551489, 1.40942749, -0.10300415, 0.14266607, -0.23330034, -0.25421303],
             "E_tip": [0.08773515, -0.56553214, 0.64993785, 1.0591878, -0.18567152, 0.24296588, 0.15829188, 0.21021353, 0.71442364],
@@ -35,9 +46,13 @@ class ViolinString:
             "D_tip": [0.03788864, -0.70345511, 0.23451146, 0.9479002, 0.11111476, 0.41349365, 0.24701369, 0.2606112, 0.48426223],
             "G_frog": [-0.26963739, -0.37332812, 0.55297438, 1.16757958, 1.5453081, 0.08781926, 0.66038247, -0.58420915, -0.6424003],
             "G_tip": [-0.01828739, -1.31128207, 0.19282409, 0.60925735, 0.70654631, -0.07557834, 0.17204947, 0.11369929, 0.26267182],
-            }[self.string + "_" +self.bow_side]
+            }[self.string + "_" + self.bow_side]
 
+    @property
     def bridge_marker(self):
+        """
+        :return: Marker number on the bridge, associate to the string.
+        """
         return {
             "E": 34,
             "A": 36,
@@ -46,6 +61,9 @@ class ViolinString:
             }[self.string]
 
     def neck_marker(self):
+        """
+        :return: Marker number on the neck, associate to the string.
+        """
         return {
             "E": 35,
             "A": 37,
@@ -54,6 +72,9 @@ class ViolinString:
             }[self.string]
 
     def rt(self):
+        """
+        :return: RT number according to the string.
+        """
         return {
             "E": 3,
             "A": 2,
@@ -62,11 +83,13 @@ class ViolinString:
         }[self.string]
 
 
-
-
-    # ------------- #
-
 def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_optim=False):
+    """
+    Mix .bioMod and users data to call OptimalControlProgram constructor.
+    :param biorbd_model_path: path to the .bioMod file.
+    :param show_online_optim: bool which active live plot function.
+    :return: OptimalControlProgram object.
+    """
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -74,7 +97,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Problem parameters
-    number_shooting_points = 30
+    number_shooting_points = 31
     final_time = 0.5
 
     # Choose the string of the violin
@@ -93,9 +116,10 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
     problem_type = ProblemType.torque_driven
 
     # Constraints
-    constraints = ((Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (ViolinString.marker_frog, violon_string.bridge_marker())),
-                   (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (ViolinString.marker_tip, violon_string.bridge_marker())),
-                   (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (ViolinString.marker_frog, violon_string.bridge_marker())),)
+    constraints = ((Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (ViolinString.marker_frog, violon_string.bridge_marker)),
+                   (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.MID, (ViolinString.marker_tip, violon_string.bridge_marker)),
+                   (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (ViolinString.marker_frog, violon_string.bridge_marker)),
+                )
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
@@ -139,10 +163,13 @@ if __name__ == "__main__":
 
     x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
     x = ocp.nlp[0]["dof_mapping"].expand(x)
+
+    np.save("up_and_down", x.T)
+
     try:
         from BiorbdViz import BiorbdViz
 
-        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"], show_meshes=True)
+        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"], show_meshes=False)
         b.load_movement(x.T)
         b.exec()
     except ModuleNotFoundError:
