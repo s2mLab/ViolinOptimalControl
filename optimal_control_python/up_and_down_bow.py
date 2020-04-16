@@ -110,9 +110,8 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
     final_time = 0.5
 
     # Choose the string of the violin
-    string_name = "E"
-    inital_bow_side = "frog"
-    violon_string = ViolinString(string_name, inital_bow_side)
+    violon_string = Violin("E")
+    inital_bow_side = Bow("frog")
 
     # Add objective functions
     objective_functions = (
@@ -125,28 +124,17 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
 
     # Constraints
     constraints = (
-        (
-            Constraint.Type.MARKERS_TO_PAIR,
-            Constraint.Instant.START,
-            (ViolinString.marker_frog, violon_string.bridge_marker),
-        ),
-        (
-            Constraint.Type.MARKERS_TO_PAIR,
-            Constraint.Instant.MID,
-            (ViolinString.marker_tip, violon_string.bridge_marker),
-        ),
-        (
-            Constraint.Type.MARKERS_TO_PAIR,
-            Constraint.Instant.END,
-            (ViolinString.marker_frog, violon_string.bridge_marker),
-        ),
+        # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (Bow.frog_marker, violon_string.bridge_marker),),
+        # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.MID, (Bow.tip_marker, violon_string.bridge_marker),),
+        # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (Bow.frog_marker, violon_string.bridge_marker),),
+        (Constraint.Type.ALIGN_WITH_CUSTOM_RT, Constraint.Instant.ALL, (Bow.segment_idx, violon_string.rt_on_string),),
     )
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
 
     # Initial guess
-    X_init = InitialConditions(violon_string.initial_position() + [0] * biorbd_model.nbQdot())
+    X_init = InitialConditions(violon_string.initial_position()[inital_bow_side.side] + [0] * biorbd_model.nbQdot())
 
     # Define control path constraint
     U_bounds = Bounds(
