@@ -47,7 +47,7 @@ bound_min = []
 bound_max = []
 for i in range(m.nbSegment()):
     seg = m.segment(i)
-    for r in seg.ranges():
+    for r in seg.QRanges():
         bound_min.append(r.min())
         bound_max.append(r.max())
 bounds = (bound_min, bound_max)
