@@ -8,30 +8,44 @@ from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
 
 
-class ViolinString:
+class Bow:
     """
-    Contains initial values and references from useful marketers and segments.
+    Contains references from useful markers.
     """
 
-    # --- Reminders --- #
-    bow_segment = 8
-    violin_segment = 6
-    marker_frog = 6
-    marker_tip = 8
-    # --------- #
+    segment_idx = 8
+    frog_marker = 16
+    tip_marker = 18
 
-    def __init__(self, letter, bow_side):
+    def __init__(self, bow_side):
         """
-        Contains some references and values specific to the string and the side of the bow.
-        :param letter: violin string letter
-        :param bow_side: side of the bow, "frog" or "tip".
+        Contains the side of the bow.
         """
-        if letter not in ["E", "A", "D", "G"]:
-            raise RuntimeError(letter + " is not a valid string, it must be E, A, D or G. Do you know violin ?")
         if bow_side not in ["frog", "tip"]:
             raise RuntimeError(bow_side + " is not a valid side of bow, it must be frog or tip.")
-        self.string = letter
         self.bow_side = bow_side
+
+    @property
+    def side(self):
+        return self.bow_side
+
+
+class Violin:
+    """
+    Contains initial values and references from useful markers and segments.
+    """
+
+    segment_idx = 16
+
+    def __init__(self, string):
+        """
+        Contains some references and values specific to the string.
+        :param string: violin string letter
+        :param bow_side: side of the bow, "frog" or "tip".
+        """
+        if string not in ["E", "A", "D", "G"]:
+            raise RuntimeError(string + " is not a valid string, it must be E, A, D or G. Do you know violin ?")
+        self.string = string
 
     def initial_position(self):
         """
