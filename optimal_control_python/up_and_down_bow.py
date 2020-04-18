@@ -8,6 +8,7 @@ from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
 from utils import Bow, Violin
 
+
 def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_optim=False):
     """
     Mix .bioMod and users data to call OptimalControlProgram constructor.
@@ -44,10 +45,16 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
         # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.MID, (Bow.tip_marker, violon_string.bridge_marker),),
         # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (Bow.frog_marker, violon_string.bridge_marker),),
         (Constraint.Type.ALIGN_WITH_CUSTOM_RT, Constraint.Instant.ALL, (Bow.segment_idx, violon_string.rt_on_string),),
+        # TODO: add constraint about velocity in a marker of bow (start and end instant)
     )
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
+    for i in range(biorbd_model.nbQ(), biorbd_model.nbQdot()):
+        X_bounds.first_node_min[k] = 0
+        X_bounds.first_node_max[k] = 0
+        X_bounds.last_node_min[k] = 0
+        X_bounds.last_node_max[k] = 0
 
     # Initial guess
     X_init = InitialConditions(violon_string.initial_position()[inital_bow_side.side] + [0] * biorbd_model.nbQdot())
