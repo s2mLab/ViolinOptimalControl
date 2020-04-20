@@ -7,9 +7,10 @@ from biorbd_optim.constraints import Constraint
 from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
 from utils import Bow, Violin
+from biorbd_optim.plot import ShowResult
 
 
-def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_optim=False):
+def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_optim=True):
     """
     Mix .bioMod and users data to call OptimalControlProgram constructor.
     :param biorbd_model_path: path to the .bioMod file.
@@ -41,9 +42,9 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
 
     # Constraints
     constraints = (
-        # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (Bow.frog_marker, violon_string.bridge_marker),),
-        # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.MID, (Bow.tip_marker, violon_string.bridge_marker),),
-        # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (Bow.frog_marker, violon_string.bridge_marker),),
+        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (Bow.frog_marker, violon_string.bridge_marker),),
+        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.MID, (Bow.tip_marker, violon_string.bridge_marker),),
+        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (Bow.frog_marker, violon_string.bridge_marker),),
         (Constraint.Type.ALIGN_WITH_CUSTOM_RT, Constraint.Instant.ALL, (Bow.segment_idx, violon_string.rt_on_string),),
         # TODO: add constraint about velocity in a marker of bow (start and end instant)
     )
@@ -91,19 +92,8 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = ocp.nlp[0]["dof_mapping"].expand(x)
-
-    np.save("up_and_down", x.T)
-
-    try:
-        from BiorbdViz import BiorbdViz
-
-        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"], show_meshes=False)
-        b.load_movement(x.T)
-        b.exec()
-    except ModuleNotFoundError:
-        print("Install BiorbdViz if you want to have a live view of the optimization")
-        from matplotlib import pyplot as plt
-
-        plt.show()
+    # --- Show results --- #
+    result = ShowResult(ocp, sol)
+    result.save_npy("up_and_down")
+    result.keep_matplotlib()
+    result.show_biorbd_viz(show_meshes=False)
