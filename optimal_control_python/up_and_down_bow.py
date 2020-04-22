@@ -1,5 +1,4 @@
 import biorbd
-import numpy as np
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.objective_functions import ObjectiveFunction
@@ -33,8 +32,8 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
 
     # Add objective functions
     objective_functions = (
-        (ObjectiveFunction.minimize_torque, {"weight": 100}),
-        (ObjectiveFunction.minimize_muscle, {"weight": 1}),
+        {"type": ObjectiveFunction.minimize_torque, "weight": 100},
+        {"type": ObjectiveFunction.minimize_muscle, "weight": 1},
     )
 
     # Dynamics
@@ -42,10 +41,30 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
 
     # Constraints
     constraints = (
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (Bow.frog_marker, violon_string.bridge_marker),),
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.MID, (Bow.tip_marker, violon_string.bridge_marker),),
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (Bow.frog_marker, violon_string.bridge_marker),),
-        (Constraint.Type.ALIGN_WITH_CUSTOM_RT, Constraint.Instant.ALL, (Bow.segment_idx, violon_string.rt_on_string),),
+        {
+            "type": Constraint.Type.MARKERS_TO_PAIR,
+            "instant": Constraint.Instant.START,
+            "first_marker": Bow.frog_marker,
+            "second_marker": violon_string.bridge_marker,
+        },
+        {
+            "type": Constraint.Type.MARKERS_TO_PAIR,
+            "instant": Constraint.Instant.MID,
+            "first_marker": Bow.tip_marker,
+            "second_marker": violon_string.bridge_marker,
+        },
+        {
+            "type": Constraint.Type.MARKERS_TO_PAIR,
+            "instant": Constraint.Instant.END,
+            "first_marker": Bow.frog_marker,
+            "second_marker": violon_string.bridge_marker,
+        },
+        {
+            "type": Constraint.Type.ALIGN_WITH_CUSTOM_RT,
+            "instant": Constraint.Instant.ALL,
+            "segment": Bow.segment_idx,
+            "rt": violon_string.rt_on_string,
+        },
         # TODO: add constraint about velocity in a marker of bow (start and end instant)
     )
 
