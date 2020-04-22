@@ -42,19 +42,19 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
     # Constraints
     constraints = (
         {
-            "type": Constraint.Type.MARKERS_TO_PAIR,
+            "type": Constraint.Type.MARKERS_TO_MATCH,
             "instant": Constraint.Instant.START,
             "first_marker": Bow.frog_marker,
             "second_marker": violon_string.bridge_marker,
         },
         {
-            "type": Constraint.Type.MARKERS_TO_PAIR,
+            "type": Constraint.Type.MARKERS_TO_MATCH,
             "instant": Constraint.Instant.MID,
             "first_marker": Bow.tip_marker,
             "second_marker": violon_string.bridge_marker,
         },
         {
-            "type": Constraint.Type.MARKERS_TO_PAIR,
+            "type": Constraint.Type.MARKERS_TO_MATCH,
             "instant": Constraint.Instant.END,
             "first_marker": Bow.frog_marker,
             "second_marker": violon_string.bridge_marker,
