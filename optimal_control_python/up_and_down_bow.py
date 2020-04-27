@@ -1,12 +1,19 @@
 import biorbd
 
-from biorbd_optim import OptimalControlProgram
-from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.constraints import Constraint
-from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
+from biorbd_optim import (
+    Instant,
+    Axe,
+    OptimalControlProgram,
+    ProblemType,
+    Objective,
+    Constraint,
+    Bounds,
+    QAndQDotBounds,
+    InitialConditions,
+    ShowResult,
+)
+
 from utils import Bow, Violin
-from biorbd_optim.plot import ShowResult
 
 
 def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_optim=True):
@@ -23,17 +30,16 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Problem parameters
-    number_shooting_points = 31
+    number_shooting_points = 30
     final_time = 0.5
 
     # Choose the string of the violin
-    violon_string = Violin("E")
+    violon_string = Violin("G")
     inital_bow_side = Bow("frog")
 
     # Add objective functions
     objective_functions = (
-        {"type": ObjectiveFunction.minimize_torque, "weight": 100},
-        {"type": ObjectiveFunction.minimize_muscle, "weight": 1},
+        {"type": Objective.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1},
     )
 
     # Dynamics
@@ -42,28 +48,35 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
     # Constraints
     constraints = (
         {
-            "type": Constraint.Type.MARKERS_TO_MATCH,
-            "instant": Constraint.Instant.START,
-            "first_marker": Bow.frog_marker,
-            "second_marker": violon_string.bridge_marker,
+            "type": Constraint.ALIGN_MARKERS,
+            "instant": Instant.START,
+            "first_marker_idx": Bow.frog_marker,
+            "second_marker_idx": violon_string.bridge_marker,
         },
         {
-            "type": Constraint.Type.MARKERS_TO_MATCH,
-            "instant": Constraint.Instant.MID,
-            "first_marker": Bow.tip_marker,
-            "second_marker": violon_string.bridge_marker,
+            "type": Constraint.ALIGN_MARKERS,
+            "instant": Instant.MID,
+            "first_marker_idx": Bow.tip_marker,
+            "second_marker_idx": violon_string.bridge_marker,
         },
         {
-            "type": Constraint.Type.MARKERS_TO_MATCH,
-            "instant": Constraint.Instant.END,
-            "first_marker": Bow.frog_marker,
-            "second_marker": violon_string.bridge_marker,
+            "type": Constraint.ALIGN_MARKERS,
+            "instant": Instant.END,
+            "first_marker_idx": Bow.frog_marker,
+            "second_marker_idx": violon_string.bridge_marker,
         },
         {
-            "type": Constraint.Type.ALIGN_WITH_CUSTOM_RT,
-            "instant": Constraint.Instant.ALL,
-            "segment": Bow.segment_idx,
-            "rt": violon_string.rt_on_string,
+            "type": Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT,
+            "instant": Instant.ALL,
+            "segment_idx": Bow.segment_idx,
+            "rt_idx": violon_string.rt_on_string,
+        },
+        {
+            "type": Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS,
+            "instant": Instant.ALL,
+            "marker_idx": violon_string.bridge_marker,
+            "segment_idx": Bow.segment_idx,
+            "axis": (Axe.Y)
         },
         # TODO: add constraint about velocity in a marker of bow (start and end instant)
     )
@@ -113,6 +126,5 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.save_npy("up_and_down")
-    result.keep_matplotlib()
-    result.show_biorbd_viz(show_meshes=False)
+    result.graphs()
+    OptimalControlProgram.save(ocp, sol, "tata")
