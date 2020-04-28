@@ -127,4 +127,4 @@ if __name__ == "__main__":
     # --- Show results --- #
     result = ShowResult(ocp, sol)
     result.graphs()
-    OptimalControlProgram.save(ocp, sol, "tata")
+    OptimalControlProgram.save(ocp, sol, "up_and_down_5_constraints")
