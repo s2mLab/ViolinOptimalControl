@@ -244,6 +244,7 @@ external_forces	0
 			0.000000	0.000000	0.00117637
 		com	0 -0.335 0
 		meshfile Geometry/Bow.obj
+		externalforceindex 0
 	endsegment
     
     marker Bouton               //15
@@ -472,6 +473,7 @@ external_forces	0
 			0.000000	0.000000	0.00117637
 		com	-0.003 -0.325 -0.055
 		meshfile Geometry/Violin.obj
+		externalforceindex 1
 	endsegment
 
     marker EstringBridge        // 34
