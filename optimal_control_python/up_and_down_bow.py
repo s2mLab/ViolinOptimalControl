@@ -1,4 +1,5 @@
 import biorbd
+import time
 
 from biorbd_optim import (
     Instant,
@@ -43,7 +44,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
     )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = ProblemType.torque_driven_with_external_forces
 
     # Constraints
     constraints = (
@@ -81,6 +82,9 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
         # TODO: add constraint about velocity in a marker of bow (start and end instant)
     )
 
+    # External forces
+    forces_and_moments = ((Bow.moments_and_forces, Violin.moments_and_forces),)
+
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
     for i in range(biorbd_model.nbQ(), biorbd_model.nbQdot()):
@@ -114,17 +118,21 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
         X_bounds,
         U_bounds,
         constraints,
+        forces_and_moments,
         show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_nlp(show_online_optim=True)
+    ocp = prepare_nlp(show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.graphs()
-    OptimalControlProgram.save(ocp, sol, "up_and_down_5_constraints")
+    # result.graphs()
+
+    t = time.localtime(time.time())
+    date = f"{t.tm_year}_{t.tm_mon}_{t.tm_mday}"
+    OptimalControlProgram.save(ocp, sol, f"results/{date}_up_and_down_5_constraints")
