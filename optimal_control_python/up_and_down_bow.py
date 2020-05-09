@@ -1,5 +1,7 @@
-import biorbd
 import time
+
+import biorbd
+import numpy as np
 
 from biorbd_optim import (
     Instant,
@@ -44,7 +46,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
     )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven_with_external_forces
+    problem_type = ProblemType.torque_driven
 
     # Constraints
     constraints = (
@@ -83,11 +85,13 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
     )
 
     # External forces
-    forces_and_moments = ((Bow.moments_and_forces, Violin.moments_and_forces),)
+    external_forces = [np.repeat(
+        np.concatenate((Bow.moments_and_forces[:, :, np.newaxis], Violin.moments_and_forces[:, :, np.newaxis]), axis=1),
+        number_shooting_points, axis=2)]
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-    for i in range(biorbd_model.nbQ(), biorbd_model.nbQdot()):
+    for k in range(biorbd_model.nbQ(), biorbd_model.nbQdot()):
         X_bounds.first_node_min[k] = 0
         X_bounds.first_node_max[k] = 0
         X_bounds.last_node_min[k] = 0
@@ -112,13 +116,13 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
         problem_type,
         number_shooting_points,
         final_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
-        constraints,
-        forces_and_moments,
+        objective_functions=objective_functions,
+        constraints=constraints,
+        external_forces=external_forces,
         show_online_optim=show_online_optim,
     )
 

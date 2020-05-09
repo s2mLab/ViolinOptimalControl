@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Bow:
     """
     Contains references from useful markers.
@@ -8,7 +9,7 @@ class Bow:
     segment_idx = 8
     frog_marker = 16
     tip_marker = 18
-    moments_and_forces = np.array([1.22804464, 0.27474116, 0.41696262, 0.81878732, -1.73909451, -1.26559678])
+    moments_and_forces = np.array([[1.22804464, 0.27474116, 0.41696262, 0.81878732, -1.73909451, -1.26559678]]).T
 
     def __init__(self, bow_side):
         """
@@ -29,7 +30,7 @@ class Violin:
     """
 
     segment_idx = 16
-    moments_and_forces = np.array([0.03311026, 0.07769532, -0.07199638, -2.33093768, 0.83466082, -0.17124082])
+    moments_and_forces = np.array([[0.03311026, 0.07769532, -0.07199638, -2.33093768, 0.83466082, -0.17124082]]).T
 
     def __init__(self, string):
         """
