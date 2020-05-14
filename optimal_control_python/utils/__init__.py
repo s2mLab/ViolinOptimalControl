@@ -7,6 +7,7 @@ class Bow:
     """
 
     segment_idx = 8
+    contact_marker =
     frog_marker = 16
     tip_marker = 18
     moments_and_forces = np.array([[1.22804464, 0.27474116, 0.41696262, 0.81878732, -1.73909451, -1.26559678]]).T
@@ -29,7 +30,7 @@ class Violin:
     Contains initial values and references from useful markers and segments.
     """
 
-    segment_idx = 16
+    segment_idx = 17
     moments_and_forces = np.array([[0.03311026, 0.07769532, -0.07199638, -2.33093768, 0.83466082, -0.17124082]]).T
 
     def __init__(self, string):
@@ -70,14 +71,14 @@ class Violin:
         """
         :return: Marker number on the bridge, associate to the string.
         """
-        return {"E": 34, "A": 36, "D": 38, "G": 40,}[self.string]
+        return {"E": 35, "A": 37, "D": 39, "G": 41,}[self.string]
 
     @property
     def neck_marker(self):
         """
         :return: Marker number on the neck of the violin, associate to the string.
         """
-        return {"E": 35, "A": 37, "D": 39, "G": 41,}[self.string]
+        return {"E": 36, "A": 38, "D": 40, "G": 42,}[self.string]
 
     @property
     def rt_on_string(self):
