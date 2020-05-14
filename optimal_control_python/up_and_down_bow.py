@@ -81,15 +81,24 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
             "segment_idx": Bow.segment_idx,
             "axis": (Axe.Y)
         },
+        {
+            "type": Constraint.ALIGN_MARKERS,
+            "instant": Instant.ALL,
+            "first_marker_idx": Bow.contact_marker,
+            "second_marker_idx": violon_string.bridge_marker,
+        },
         # TODO: add constraint about velocity in a marker of bow (start and end instant)
     )
 
     # External forces
-    external_forces = [np.repeat(
+    external_forces =
+
+    [np.repeat(
         np.concatenate((Bow.moments_and_forces[:, :, np.newaxis], Violin.moments_and_forces[:, :, np.newaxis]), axis=1),
         number_shooting_points, axis=2)]
 
-    # Path constraint
+
+# Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
     for k in range(biorbd_model.nbQ(), biorbd_model.nbQdot()):
         X_bounds.first_node_min[k] = 0
