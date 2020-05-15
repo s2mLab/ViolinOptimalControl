@@ -91,11 +91,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
     )
 
     # External forces
-    external_forces =
-
-    [np.repeat(
-        np.concatenate((Bow.moments_and_forces[:, :, np.newaxis], Violin.moments_and_forces[:, :, np.newaxis]), axis=1),
-        number_shooting_points, axis=2)]
+    external_forces = [np.repeat(violon_string.external_force[:, np.newaxis], number_shooting_points, axis=1)]
 
 
 # Path constraint
