@@ -556,7 +556,7 @@ external_forces	0
         firstAxis x
         firstAxisMarkerNames DstringNeck DstringBridge
         secondAxis y
-        secondAxisMarkerNames AstringNeck GstringNeck
+        secondAxisMarkerNames GstringNeck AstringNeck
         recalculate secondAxis
     endcustomRT
     
