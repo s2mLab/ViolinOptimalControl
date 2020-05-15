@@ -10,7 +10,6 @@ class Bow:
      contact_marker = 19
     frog_marker = 16
     tip_marker = 18
-    moments_and_forces = np.array([[1.22804464, 0.27474116, 0.41696262, 0.81878732, -1.73909451, -1.26559678]]).T
 
     def __init__(self, bow_side):
         """
@@ -31,7 +30,6 @@ class Violin:
     """
 
     segment_idx = 17
-    moments_and_forces = np.array([[0.03311026, 0.07769532, -0.07199638, -2.33093768, 0.83466082, -0.17124082]]).T
 
     def __init__(self, string):
         """
@@ -78,11 +76,18 @@ class Violin:
         """
         :return: Marker number on the neck of the violin, associate to the string.
         """
-        return {"E": 36, "A": 38, "D": 40, "G": 42,}[self.string]
+        return {"E": 36, "A": 38, "D": 40, "G": 42, }[self.string]
 
     @property
     def rt_on_string(self):
         """
         :return: RT number according to the string.
         """
-        return {"E": 3, "A": 2, "D": 1, "G": 0,}[self.string]
+        return {"E": 3, "A": 2, "D": 1, "G": 0, }[self.string]
+
+    @property
+    def external_force(self):
+        return {"E": np.array([0., 0., 0., 0.40989355, 1.84413989, 0.65660896]),
+                "A": np.array([0., 0., 0., 0.30881124, 1.65124622, 1.08536701]),
+                "D": np.array([0., 0., 0., 0.16081784, 1.30189937, 1.50970052]),
+                "G": np.array([0., 0., 0., 0.05865013, 1.05013794, 1.7011086])}[self.string]
