@@ -133,15 +133,15 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
 
 
 if __name__ == "__main__":
-    ocp = prepare_nlp(show_online_optim=False)
+    ocp = prepare_nlp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    # result.graphs()
-
     t = time.localtime(time.time())
     date = f"{t.tm_year}_{t.tm_mon}_{t.tm_mday}"
     OptimalControlProgram.save(ocp, sol, f"results/{date}_up_and_down_5_constraints")
+
+    # --- Show results --- #
+    result = ShowResult(ocp, sol)
+    # result.graphs()

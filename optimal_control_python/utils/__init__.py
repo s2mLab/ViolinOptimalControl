@@ -7,7 +7,7 @@ class Bow:
     """
 
     segment_idx = 8
-     contact_marker = 19
+    contact_marker = 19
     frog_marker = 16
     tip_marker = 18
 
