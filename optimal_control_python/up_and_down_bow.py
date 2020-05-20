@@ -19,7 +19,7 @@ from biorbd_optim import (
 from utils import Bow, Violin
 
 
-def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_optim=True):
+def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
     """
     Mix .bioMod and users data to call OptimalControlProgram constructor.
     :param biorbd_model_path: path to the .bioMod file.
@@ -42,11 +42,11 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
 
     # Add objective functions
     objective_functions = (
-        {"type": Objective.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1},
+        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
     )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = ProblemType.muscle_activations_and_torque_driven
 
     # Constraints
     constraints = (
@@ -121,27 +121,26 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod", show_online_opt
         problem_type,
         number_shooting_points,
         final_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
+        objective_functions,
         constraints,
         external_forces=external_forces,
-        show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_nlp(show_online_optim=True)
+    ocp = prepare_nlp()
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True)
 
     t = time.localtime(time.time())
     date = f"{t.tm_year}_{t.tm_mon}_{t.tm_mday}"
-    OptimalControlProgram.save(ocp, sol, f"results/{date}_up_and_down_5_constraints")
+    OptimalControlProgram.save(ocp, sol, f"results/{date}_up_and_down_numpy", to_numpy=True)
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    # result.graphs()
+    result.graphs()
