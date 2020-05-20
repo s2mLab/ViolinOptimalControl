@@ -581,7 +581,7 @@ external_forces	0
         secondAxisMarkerNames AstringNeck BstringVirtual
         recalculate secondAxis
     endcustomRT
-    /*
+
 // DEFINITION DES MUSCLES
 
 // Arm > Thorax
@@ -1090,5 +1090,3 @@ endmusclegroup
 		PCSA				1.8
 		maxVelocity 		10
 	endmuscle
-
-*/
