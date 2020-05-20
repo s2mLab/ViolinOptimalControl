@@ -1,5 +1,18 @@
-from biorbd_optim import OptimalControlProgram, ShowResult
+import time
+import pickle
 
-ocp, sol = OptimalControlProgram.load(biorbd_model_path="../models/BrasViolon.bioMod", name="results/2020_5_7_up_and_down_5_constraints.bo")
-result = ShowResult(ocp, sol)
-result.animate(show_meshes=False)
+from BiorbdViz import BiorbdViz
+
+file_path = 0
+
+if not isinstance(file_path, str):
+    t = time.localtime(time.time())
+    file_path = f"results/{t.tm_year}_{t.tm_mon}_{t.tm_mday}_up_and_down_numpy.bo"
+
+with open(file_path, "rb") as file:
+    data = pickle.load(file)
+
+data_interpolate, _ = data["data"]
+b = BiorbdViz("../models/BrasViolon.bioMod")
+b.load_movement(data_interpolate["q"].T)
+b.exec()
