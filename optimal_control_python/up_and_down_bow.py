@@ -5,6 +5,7 @@ import numpy as np
 
 from biorbd_optim import (
     Instant,
+    InterpolationType,
     Axe,
     OptimalControlProgram,
     ProblemType,
@@ -42,12 +43,11 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
 
     # Add objective functions
     objective_functions = (
-        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
+        {"type": Objective.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1},
     )
 
     # Dynamics
     problem_type = ProblemType.muscle_activations_and_torque_driven
-
     # Constraints
     constraints = (
         {
@@ -103,7 +103,14 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
         X_bounds.last_node_max[k] = 0
 
     # Initial guess
-    X_init = InitialConditions(violon_string.initial_position()[inital_bow_side.side] + [0] * biorbd_model.nbQdot())
+    # X_init = InitialConditions(violon_string.initial_position()[inital_bow_side.side] + [0] * biorbd_model.nbQdot())
+    # U_init = InitialConditions(
+    #     [torque_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal()
+    # )
+
+    X_init = InitialConditions(violon_string.x_init, InterpolationType.EACH_FRAME)
+    U_init = InitialConditions(violon_string.u_init, InterpolationType.EACH_FRAME)
+
 
     # Define control path constraint
     U_bounds = Bounds(
@@ -111,9 +118,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
         [torque_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
     )
 
-    U_init = InitialConditions(
-        [torque_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal()
-    )
+
     # ------------- #
 
     return OptimalControlProgram(
@@ -127,7 +132,8 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
         U_bounds,
         objective_functions,
         constraints,
-        external_forces=external_forces,
+        # external_forces=external_forces,
+        nb_threads=2,
     )
 
 
@@ -135,11 +141,11 @@ if __name__ == "__main__":
     ocp = prepare_nlp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(show_online_optim=True, options_ipopt={"tol": 1e-4, "max_iter": 5000})
 
     t = time.localtime(time.time())
     date = f"{t.tm_year}_{t.tm_mon}_{t.tm_mday}"
-    OptimalControlProgram.save(ocp, sol, f"results/{date}_up_and_down_numpy", to_numpy=True)
+    OptimalControlProgram.save(ocp, sol, f"results/{date}_up_and_down_numpy", to_numpy=True )
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
