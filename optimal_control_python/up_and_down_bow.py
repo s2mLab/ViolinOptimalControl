@@ -132,8 +132,8 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
         U_bounds,
         objective_functions,
         constraints,
-        # external_forces=external_forces,
-        nb_threads=2,
+        external_forces=external_forces,
+        nb_threads=3,
     )
 
 
@@ -141,11 +141,13 @@ if __name__ == "__main__":
     ocp = prepare_nlp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True, options_ipopt={"tol": 1e-4, "max_iter": 5000})
+    sol = ocp.solve(show_online_optim=True, options_ipopt={"tol": 1e-4, "max_iter": 1})
 
     t = time.localtime(time.time())
     date = f"{t.tm_year}_{t.tm_mon}_{t.tm_mday}"
-    OptimalControlProgram.save(ocp, sol, f"results/{date}_up_and_down_numpy", to_numpy=True )
+    OptimalControlProgram.save(ocp, sol, f"results/{date}_upDown")
+    OptimalControlProgram.save(ocp, sol, f"results/{date}_upDown", to_numpy=True )
+    OptimalControlProgram.save(ocp, sol, f"results/{date}_upDown_interpolate", to_numpy=True, interpolate_nb_frames=100)
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
