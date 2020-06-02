@@ -43,7 +43,9 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
 
     # Add objective functions
     objective_functions = (
-        {"type": Objective.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1},
+        {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 100},
+        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
+        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "controls_idx": [0, 1, 2, 3], "weight": 2000},
     )
 
     # Dynamics
@@ -79,7 +81,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
             "instant": Instant.ALL,
             "marker_idx": violon_string.bridge_marker,
             "segment_idx": Bow.segment_idx,
-            "axis": (Axe.Y)
+            "axis": (Axe.Y),
         },
         {
             "type": Constraint.ALIGN_MARKERS,
@@ -93,8 +95,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
     # External forces
     external_forces = [np.repeat(violon_string.external_force[:, np.newaxis], number_shooting_points, axis=1)]
 
-
-# Path constraint
+    # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
     for k in range(biorbd_model.nbQ(), biorbd_model.nbQdot()):
         X_bounds.first_node_min[k] = 0
@@ -111,13 +112,11 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
     X_init = InitialConditions(violon_string.x_init, InterpolationType.EACH_FRAME)
     U_init = InitialConditions(violon_string.u_init, InterpolationType.EACH_FRAME)
 
-
     # Define control path constraint
     U_bounds = Bounds(
         [torque_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
         [torque_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
     )
-
 
     # ------------- #
 
@@ -133,7 +132,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
         objective_functions,
         constraints,
         external_forces=external_forces,
-        nb_threads=3,
+        nb_threads=4,
     )
 
 
@@ -141,13 +140,20 @@ if __name__ == "__main__":
     ocp = prepare_nlp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True, options_ipopt={"tol": 1e-4, "max_iter": 1})
+    tic = time.time()
+    sol, sol_iterations = ocp.solve(
+        show_online_optim=True,
+        return_iterations=True,
+        options_ipopt={"tol": 1e-4, "max_iter": 2000, "ipopt.bound_push": 1e-10, "ipopt.bound_frac": 1e-10},
+    )
+    toc = time.time() - tic
+    print(f"Time to solve : {toc}sec")
 
     t = time.localtime(time.time())
     date = f"{t.tm_year}_{t.tm_mon}_{t.tm_mday}"
-    OptimalControlProgram.save(ocp, sol, f"results/{date}_upDown")
-    OptimalControlProgram.save(ocp, sol, f"results/{date}_upDown", to_numpy=True )
-    OptimalControlProgram.save(ocp, sol, f"results/{date}_upDown_interpolate", to_numpy=True, interpolate_nb_frames=100)
+    OptimalControlProgram.save(ocp, sol, f"results/{date}_upDown.bo")
+    OptimalControlProgram.save_get_data(ocp, sol, f"results/{date}_upDown.bob", sol_iterations=sol_iterations)
+    OptimalControlProgram.save_get_data(ocp, sol, f"results/{date}_upDown_interpolate.bob", interpolate_nb_frames=100)
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
