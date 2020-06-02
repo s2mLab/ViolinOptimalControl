@@ -104,13 +104,20 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
         X_bounds.last_node_max[k] = 0
 
     # Initial guess
-    # X_init = InitialConditions(violon_string.initial_position()[inital_bow_side.side] + [0] * biorbd_model.nbQdot())
-    # U_init = InitialConditions(
-    #     [torque_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal()
-    # )
 
-    X_init = InitialConditions(violon_string.x_init, InterpolationType.EACH_FRAME)
-    U_init = InitialConditions(violon_string.u_init, InterpolationType.EACH_FRAME)
+    optimal_initial_values = True
+    if optimal_initial_values:
+        X_init = InitialConditions(violon_string.x_init, InterpolationType.EACH_FRAME)
+        U_init = InitialConditions(violon_string.u_init, InterpolationType.EACH_FRAME)
+    else:
+        X_init = InitialConditions(
+            violon_string.initial_position()[inital_bow_side.side] + [0] * biorbd_model.nbQdot(),
+            InterpolationType.CONSTANT,
+        )
+        U_init = InitialConditions(
+            [torque_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal(),
+            InterpolationType.CONSTANT,
+        )
 
     # Define control path constraint
     U_bounds = Bounds(
