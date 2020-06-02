@@ -15,7 +15,7 @@ state_init = (0.5, 0, 0.5)
 n_frames = 300
 
 # Load model for biorbd
-model = biorbd.s2mMusculoSkeletalModel("../models/conv-arm26.bioMod")
+model = biorbd.Model("../models/conv-arm26.bioMod")
 muscle = model.muscleGroup(0).muscle(0)
 
 
