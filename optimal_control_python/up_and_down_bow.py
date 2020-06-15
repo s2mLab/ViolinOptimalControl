@@ -2,12 +2,14 @@ import time
 
 import biorbd
 import numpy as np
+from casadi import MX, vertcat
 
 from biorbd_optim import (
     Instant,
     InterpolationType,
     Axe,
     OptimalControlProgram,
+    Dynamics,
     ProblemType,
     Objective,
     Constraint,
@@ -18,6 +20,21 @@ from biorbd_optim import (
 )
 
 from utils import Bow, Violin
+
+
+def custom_dynamic(states, controls, parameters, nlp):
+    Dynamics.apply_parameters(parameters, nlp)
+    q, qdot, tau = Dynamics.dispatch_q_qdot_tau_data(states, controls, nlp)
+
+    qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+    dxdt = MX(nlp["nx"], nlp["ns"])
+    for i, f_ext in enumerate(nlp["external_forces"]):
+        qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau, f_ext).to_mx()
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
+        dxdt[:, i] = vertcat(qdot_reduced, qddot_reduced)
+
+    # todo add 2 parameters for muscles
+    return dxdt
 
 
 def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
@@ -49,7 +66,9 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
     )
 
     # Dynamics
-    problem_type = ProblemType.muscle_activations_and_torque_driven
+    problem_type = {"type": ProblemType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN, "dynamic": custom_dynamic}
+
+
     # Constraints
     constraints = (
         {
