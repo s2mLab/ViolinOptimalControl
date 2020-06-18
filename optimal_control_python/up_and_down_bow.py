@@ -141,7 +141,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
     )
 
     # Dynamics
-    problem_type = {"type": ProblemType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN, "dynamic": custom_dynamic}
+    problem_type = {"type": ProblemType.CUSTOM, "configure": xia_model_configuration, "dynamic": xia_model_dynamic}
 
 
     # Constraints
