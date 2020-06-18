@@ -183,6 +183,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
             "first_marker_idx": Bow.contact_marker,
             "second_marker_idx": violon_string.bridge_marker,
         },
+        {"type": Constraint.CUSTOM, "function": xia_model_fibers_constraint, "instant": Instant.ALL,},
         # TODO: add constraint about velocity in a marker of bow (start and end instant)
     )
 
