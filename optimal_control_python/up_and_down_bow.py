@@ -22,9 +22,41 @@ from biorbd_optim import (
 from utils import Bow, Violin, Muscles
 
 
-def custom_dynamic(states, controls, parameters, nlp):
+def xia_model_dynamic(states, controls, parameters, nlp):
     Dynamics.apply_parameters(parameters, nlp)
-    q, qdot, tau = Dynamics.dispatch_q_qdot_tau_data(states, controls, nlp)
+    nbq = nlp["model"].nbQ()
+    nbqdot = nlp["model"].nbQdot()
+    nb_q_and_qdot = nbq + nbqdot
+
+    q = states[:nbq]
+    qdot = states[nbq:nb_q_and_qdot]
+    activate = states[nb_q_and_qdot : nb_q_and_qdot + nlp["nbMuscle"]]
+    fatigue = states[nb_q_and_qdot + nlp["nbMuscle"] : nb_q_and_qdot + 2 * nlp["nbMuscle"]]
+    resting = states[nb_q_and_qdot + 2 * nlp["nbMuscle"] :]
+
+    muscles_states = biorbd.VecBiorbdMuscleState(nlp["nbMuscle"])
+
+    residual_tau = controls[: nlp["nbTau"]]
+    excitement = controls[nlp["nbTau"] :]
+
+    for k in range(nlp["nbMuscle"]):
+        resting[k] += fatigue[k] * Muscles.R
+        fatigue[k] -= fatigue[k] * Muscles.R
+
+        fatigue[k] += activate[k] * Muscles.F
+        activate[k] -= activate[k] * Muscles.F
+
+        resting[k] += activate[k]  # catch not use fiber
+
+        muscles_states[k].setActivation(activate[k])
+        muscles_states[k].setActivation(excitement[k])
+
+        # todo fix force max
+
+
+    activate_dot = nlp["model"].activationDot(muscles_states).to_mx()
+    muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
+    tau = muscles_tau + residual_tau
 
     qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
     dxdt = MX(nlp["nx"], nlp["ns"])
