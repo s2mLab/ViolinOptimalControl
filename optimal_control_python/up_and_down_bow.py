@@ -19,7 +19,7 @@ from biorbd_optim import (
     ShowResult,
 )
 
-from utils import Bow, Violin
+from utils import Bow, Violin, Muscles
 
 
 def custom_dynamic(states, controls, parameters, nlp):
