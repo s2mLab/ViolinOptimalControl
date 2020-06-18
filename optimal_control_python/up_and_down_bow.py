@@ -61,11 +61,11 @@ def xia_model_dynamic(states, controls, parameters, nlp):
     qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
     dxdt = MX(nlp["nx"], nlp["ns"])
     for i, f_ext in enumerate(nlp["external_forces"]):
-        qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau, f_ext).to_mx()
-        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
-        dxdt[:, i] = vertcat(qdot_reduced, qddot_reduced)
+        qddot = biorbd.Model.ForwardDynamics(
+            nlp["model"], q, qdot, tau, f_ext
+        ).to_mx()  # ForwardDynamicsConstraintsDirect
+        dxdt[:, i] = vertcat(qdot, qddot, activate_dot)
 
-    # todo add 2 parameters for muscles
     return dxdt
 
 
