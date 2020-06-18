@@ -10,6 +10,7 @@ from biorbd_optim import (
     Axe,
     OptimalControlProgram,
     Dynamics,
+    Problem,
     ProblemType,
     Objective,
     Constraint,
@@ -53,12 +54,10 @@ def xia_model_dynamic(states, controls, parameters, nlp):
 
         # todo fix force max
 
-
     activate_dot = nlp["model"].activationDot(muscles_states).to_mx()
     muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
     tau = muscles_tau + residual_tau
 
-    qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
     dxdt = MX(nlp["nx"], nlp["ns"])
     for i, f_ext in enumerate(nlp["external_forces"]):
         qddot = biorbd.Model.ForwardDynamics(
@@ -119,32 +118,30 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
     :param show_online_optim: bool which active live plot function.
     :return: OptimalControlProgram object.
     """
+
     # --- Options --- #
-    # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
     muscle_activated_init, muscle_fatigued_init, muscle_resting_init = 0, 0, 1
     torque_min, torque_max, torque_init = -100, 100, 0
     muscle_states_ratio_min, muscle_states_ratio_max = 0, 1
-    # Problem parameters
     number_shooting_points = 30
     final_time = 0.5
 
-    # Choose the string of the violin
+    # --- String of the violin --- #
     violon_string = Violin("G")
     inital_bow_side = Bow("frog")
 
-    # Add objective functions
+    # --- Objective --- #
     objective_functions = (
         {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 100},
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "controls_idx": [0, 1, 2, 3], "weight": 2000},
     )
 
-    # Dynamics
+    # --- Dynamics --- #
     problem_type = {"type": ProblemType.CUSTOM, "configure": xia_model_configuration, "dynamic": xia_model_dynamic}
 
-
-    # Constraints
+    # --- Constraints --- #
     constraints = (
         {
             "type": Constraint.ALIGN_MARKERS,
@@ -187,10 +184,10 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
         # TODO: add constraint about velocity in a marker of bow (start and end instant)
     )
 
-    # External forces
+    # --- External forces --- #
     external_forces = [np.repeat(violon_string.external_force[:, np.newaxis], number_shooting_points, axis=1)]
 
-    # Path constraint
+    # --- Path constraints --- #
     X_bounds = QAndQDotBounds(biorbd_model)
     for k in range(biorbd_model.nbQ(), biorbd_model.nbQdot()):
         X_bounds.first_node_min[k] = 0
@@ -209,7 +206,8 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
         [torque_max] * biorbd_model.nbGeneralizedTorque() + [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal(),
     )
 
-    optimal_initial_values = True
+    # --- Initial guess --- #
+    optimal_initial_values = False
     if optimal_initial_values:
         X_init = InitialConditions(violon_string.x_init, InterpolationType.EACH_FRAME)
         U_init = InitialConditions(violon_string.u_init, InterpolationType.EACH_FRAME)
@@ -219,7 +217,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
             InterpolationType.CONSTANT,
         )
         U_init = InitialConditions(
-            [torque_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal(),
+            [torque_init] * biorbd_model.nbGeneralizedTorque() + [muscle_activated_init] * biorbd_model.nbMuscleTotal(),
             InterpolationType.CONSTANT,
         )
 
