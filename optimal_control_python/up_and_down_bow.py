@@ -122,9 +122,9 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
-    muscle_min, muscle_max, muscle_init = 0, 1, 0.5
+    muscle_activated_init, muscle_fatigued_init, muscle_resting_init = 0, 0, 1
     torque_min, torque_max, torque_init = -100, 100, 0
-
+    muscle_states_ratio_min, muscle_states_ratio_max = 0, 1
     # Problem parameters
     number_shooting_points = 30
     final_time = 0.5
