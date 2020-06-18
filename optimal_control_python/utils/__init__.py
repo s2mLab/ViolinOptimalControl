@@ -13,8 +13,9 @@ class Muscles:
         for k in range(model.nbMuscleGroups()):
             for i in range(model.muscleGroup(k).nbMuscles()):
                 print(model.muscleGroup(k).muscle(i).force().to_mx())
-                #todo forces
+                # todo forces
         return []
+
 
 class Bow:
     """
