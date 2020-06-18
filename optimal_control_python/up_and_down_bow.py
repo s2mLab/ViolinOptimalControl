@@ -69,6 +69,38 @@ def xia_model_dynamic(states, controls, parameters, nlp):
     return dxdt
 
 
+def xia_model_configuration(ocp, nlp):
+    Problem.configure_q_qdot(nlp, True, False)
+    Problem.configure_tau(nlp, False, True)
+    Problem.configure_muscles(nlp, False, True)
+
+    x = MX()
+    u = MX()
+    for i in range(nlp["nbMuscle"]):
+        x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_active"))
+    for i in range(nlp["nbMuscle"]):
+        x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_fatigue"))
+    for i in range(nlp["nbMuscle"]):
+        x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_resting"))
+
+    for i in range(nlp["nbMuscle"]):
+        u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+    nlp["u"] = vertcat(nlp["u"], u)
+    nlp["x"] = vertcat(nlp["x"], x)
+    nlp["var_states"]["muscles"] = nlp["nbMuscle"]
+    nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
+
+    nlp["nx"] = nlp["x"].rows()
+    nlp["nu"] = nlp["u"].rows()
+
+    # nx_q = nlp["nbQ"] + nlp["nbQdot"]
+    # nlp["plot"]["muscles_states"] = CustomPlot(
+    #     lambda x, u, p: x[nx_q: nx_q + nlp["nbMuscle"]],
+    #     plot_type=PlotType.INTEGRATED,
+    #     legend=nlp["muscleNames"],
+    #     ylim=[0, 1],
+
+    Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
 def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
     """
     Mix .bioMod and users data to call OptimalControlProgram constructor.
