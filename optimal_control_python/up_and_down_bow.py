@@ -101,6 +101,17 @@ def xia_model_configuration(ocp, nlp):
     #     ylim=[0, 1],
 
     Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
+
+
+def xia_model_fibers_constraint(ocp, nlp, t, x, u, p):
+    offset = nlp["model"].nbQ() + nlp["model"].nbQdot()
+    nb_muscles = nlp["nbMuscles"]
+    val = []
+    for k in range(nb_muscles):
+        val = vertcat(val, 1 - x[offset + k] - x[offset + k + nb_muscles] - x[offset + k + 2 * nb_muscles])
+    return val
+
+
 def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
     """
     Mix .bioMod and users data to call OptimalControlProgram constructor.
