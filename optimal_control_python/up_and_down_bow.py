@@ -223,11 +223,13 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
             InterpolationType.CONSTANT,
         )
 
-    # Define control path constraint
-    U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
-        [torque_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
+    muscle_states_init = InitialConditions(
+        [muscle_activated_init] * biorbd_model.nbMuscleTotal()
+        + [muscle_fatigued_init] * biorbd_model.nbMuscleTotal()
+        + [muscle_resting_init] * biorbd_model.nbMuscleTotal(),
+        InterpolationType.CONSTANT,
     )
+    X_init.concatenate(muscle_states_init)
 
     # ------------- #
 
