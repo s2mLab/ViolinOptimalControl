@@ -198,7 +198,16 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
         X_bounds.last_node_min[k] = 0
         X_bounds.last_node_max[k] = 0
 
-    # Initial guess
+    muscle_states_bounds = Bounds(
+        [muscle_states_ratio_min] * biorbd_model.nbMuscleTotal() * 3,
+        [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal() * 3,
+    )
+    X_bounds.concatenate(muscle_states_bounds)
+
+    U_bounds = Bounds(
+        [torque_min] * biorbd_model.nbGeneralizedTorque() + [muscle_states_ratio_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * biorbd_model.nbGeneralizedTorque() + [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal(),
+    )
 
     optimal_initial_values = True
     if optimal_initial_values:
