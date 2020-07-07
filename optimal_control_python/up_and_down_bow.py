@@ -2,7 +2,7 @@ import time
 
 import biorbd
 import numpy as np
-from casadi import MX, vertcat
+from casadi import MX, vertcat, if_else, lt, gt
 
 from biorbd_optim import (
     Instant,
@@ -11,6 +11,8 @@ from biorbd_optim import (
     OptimalControlProgram,
     Dynamics,
     Problem,
+    CustomPlot,
+    PlotType,
     ProblemType,
     Objective,
     Constraint,
@@ -24,47 +26,64 @@ from utils import Bow, Violin, Muscles
 
 
 def xia_model_dynamic(states, controls, parameters, nlp):
-    Dynamics.apply_parameters(parameters, nlp)
     nbq = nlp["model"].nbQ()
     nbqdot = nlp["model"].nbQdot()
-    nb_q_and_qdot = nbq + nbqdot
+    nb_q_qdot = nbq + nbqdot
 
     q = states[:nbq]
-    qdot = states[nbq:nb_q_and_qdot]
-    activate = states[nb_q_and_qdot : nb_q_and_qdot + nlp["nbMuscle"]]
-    fatigue = states[nb_q_and_qdot + nlp["nbMuscle"] : nb_q_and_qdot + 2 * nlp["nbMuscle"]]
-    resting = states[nb_q_and_qdot + 2 * nlp["nbMuscle"] :]
-
-    muscles_states = biorbd.VecBiorbdMuscleState(nlp["nbMuscle"])
+    qdot = states[nbq:nb_q_qdot]
+    active_fibers = states[nb_q_qdot : nb_q_qdot + nlp["nbMuscle"]]
+    fatigued_fibers = states[nb_q_qdot + nlp["nbMuscle"] : nb_q_qdot + 2 * nlp["nbMuscle"]]
+    resting_fibers = states[nb_q_qdot + 2 * nlp["nbMuscle"] :]
 
     residual_tau = controls[: nlp["nbTau"]]
-    excitement = controls[nlp["nbTau"] :]
+    activation = controls[nlp["nbTau"] :]
+    command = MX()
 
-    for k in range(nlp["nbMuscle"]):
-        resting[k] += fatigue[k] * Muscles.R
-        fatigue[k] -= fatigue[k] * Muscles.R
+    comp = 0
+    for i in range(nlp["model"].nbMuscleGroups()):
+        for k in range(nlp["model"].muscleGroup(i).nbMuscles()):
 
-        fatigue[k] += activate[k] * Muscles.F
-        activate[k] -= activate[k] * Muscles.F
+            develop_factor = (
+                nlp["model"].muscleGroup(i).muscle(k).characteristics().fatigueParameters().developFactor().to_mx()
+            )
+            recovery_factor = (
+                nlp["model"].muscleGroup(i).muscle(k).characteristics().fatigueParameters().recoveryFactor().to_mx()
+            )
 
-        resting[k] += activate[k]  # catch not use fiber
+            command = vertcat(
+                command,
+                if_else(
+                    lt(active_fibers[comp], activation[comp]),
+                    (
+                        if_else(
+                            gt(resting_fibers[comp], activation[comp] - active_fibers[comp]),
+                            develop_factor * (activation[comp] - active_fibers[comp]),
+                            develop_factor * resting_fibers[comp],
+                        )
+                    ),
+                    recovery_factor * (active_fibers[comp] - activation[comp]),
+                ),
+            )
+            comp += 1
+        # todo lt "else" include equal ??
+    restingdot = -command + Muscles.R * fatigued_fibers
+    activatedot = command - Muscles.F * active_fibers
+    fatiguedot = Muscles.F * active_fibers - Muscles.R * fatigued_fibers
 
-        muscles_states[k].setActivation(activate[k])
-        muscles_states[k].setActivation(excitement[k])
+    muscles_states = biorbd.VecBiorbdMuscleState(nlp["nbMuscle"])
+    for k in range(nlp["nbMuscles"]):
+        muscles_states[k].setActivation(active_fibers[k])
+    # todo fix force max
 
-        # todo fix force max
-
-    activate_dot = nlp["model"].activationDot(muscles_states).to_mx()
     muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
+    # todo get muscle forces and multiplicate them by activate [k] and same as muscularJointTorque
     tau = muscles_tau + residual_tau
 
     dxdt = MX(nlp["nx"], nlp["ns"])
     for i, f_ext in enumerate(nlp["external_forces"]):
-        qddot = biorbd.Model.ForwardDynamics(
-            nlp["model"], q, qdot, tau, f_ext
-        ).to_mx()  # ForwardDynamicsConstraintsDirect
-        dxdt[:, i] = vertcat(qdot, qddot, activate_dot)
-
+        qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau, f_ext).to_mx()
+        dxdt[:, i] = vertcat(qdot, qddot, activatedot, fatiguedot, restingdot)
     return dxdt
 
 
@@ -74,30 +93,45 @@ def xia_model_configuration(ocp, nlp):
     Problem.configure_muscles(nlp, False, True)
 
     x = MX()
-    u = MX()
     for i in range(nlp["nbMuscle"]):
-        x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_active"))
+        x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_active", 1, 1))
     for i in range(nlp["nbMuscle"]):
-        x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_fatigue"))
+        x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_fatigue", 1, 1))
     for i in range(nlp["nbMuscle"]):
-        x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_resting"))
+        x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_resting", 1, 1))
 
-    for i in range(nlp["nbMuscle"]):
-        u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-    nlp["u"] = vertcat(nlp["u"], u)
     nlp["x"] = vertcat(nlp["x"], x)
-    nlp["var_states"]["muscles"] = nlp["nbMuscle"]
-    nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
-
+    nlp["var_states"]["muscles_active"] = nlp["nbMuscle"]
+    nlp["var_states"]["muscles_fatigue"] = nlp["nbMuscle"]
+    nlp["var_states"]["muscles_resting"] = nlp["nbMuscle"]
     nlp["nx"] = nlp["x"].rows()
-    nlp["nu"] = nlp["u"].rows()
 
-    # nx_q = nlp["nbQ"] + nlp["nbQdot"]
-    # nlp["plot"]["muscles_states"] = CustomPlot(
-    #     lambda x, u, p: x[nx_q: nx_q + nlp["nbMuscle"]],
-    #     plot_type=PlotType.INTEGRATED,
-    #     legend=nlp["muscleNames"],
-    #     ylim=[0, 1],
+    nb_q_qdot = nlp["nbQ"] + nlp["nbQdot"]
+    nlp["plot"]["muscles_active"] = CustomPlot(
+        lambda x, u, p: x[nb_q_qdot : nb_q_qdot + nlp["nbMuscle"]],
+        plot_type=PlotType.INTEGRATED,
+        legend=nlp["muscleNames"],
+        color="r",
+        ylim=[0, 1],
+    )
+
+    combine = "muscles_active"
+    nlp["plot"]["muscles_fatigue"] = CustomPlot(
+        lambda x, u, p: x[nb_q_qdot + nlp["nbMuscle"] : nb_q_qdot + 2 * nlp["nbMuscle"]],
+        plot_type=PlotType.INTEGRATED,
+        legend=nlp["muscleNames"],
+        combine_to=combine,
+        color="g",
+        ylim=[0, 1],
+    )
+    nlp["plot"]["muscles_resting"] = CustomPlot(
+        lambda x, u, p: x[nb_q_qdot + 2 * nlp["nbMuscle"] : nb_q_qdot + 3 * nlp["nbMuscle"]],
+        plot_type=PlotType.INTEGRATED,
+        legend=nlp["muscleNames"],
+        combine_to=combine,
+        color="b",
+        ylim=[0, 1],
+    )
 
     Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
 
@@ -122,7 +156,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     muscle_activated_init, muscle_fatigued_init, muscle_resting_init = 0, 0, 1
-    torque_min, torque_max, torque_init = -100, 100, 0
+    torque_min, torque_max, torque_init = -10, 10, 0
     muscle_states_ratio_min, muscle_states_ratio_max = 0, 1
     number_shooting_points = 30
     final_time = 0.5
@@ -133,7 +167,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
 
     # --- Objective --- #
     objective_functions = (
-        {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 100},
+        {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 10},
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "controls_idx": [0, 1, 2, 3], "weight": 2000},
     )
@@ -180,7 +214,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
             "first_marker_idx": Bow.contact_marker,
             "second_marker_idx": violon_string.bridge_marker,
         },
-        {"type": Constraint.CUSTOM, "function": xia_model_fibers_constraint, "instant": Instant.ALL,},
+        # {"type": Constraint.CUSTOM, "function": xia_model_fibers_constraint, "instant": Instant.ALL,},
         # TODO: add constraint about velocity in a marker of bow (start and end instant)
     )
 
@@ -189,11 +223,10 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
 
     # --- Path constraints --- #
     X_bounds = QAndQDotBounds(biorbd_model)
-    for k in range(biorbd_model.nbQ(), biorbd_model.nbQdot()):
-        X_bounds.first_node_min[k] = 0
-        X_bounds.first_node_max[k] = 0
-        X_bounds.last_node_min[k] = 0
-        X_bounds.last_node_max[k] = 0
+
+    X_bounds.min[biorbd_model.nbQ() :, [0, 2]] = 0
+    X_bounds.max[biorbd_model.nbQ() :, [0, 2]] = 0
+    # todo compare with
 
     muscle_states_bounds = Bounds(
         [muscle_states_ratio_min] * biorbd_model.nbMuscleTotal() * 3,
@@ -255,7 +288,13 @@ if __name__ == "__main__":
     sol, sol_iterations = ocp.solve(
         show_online_optim=True,
         return_iterations=True,
-        options_ipopt={"tol": 1e-4, "max_iter": 2000, "ipopt.bound_push": 1e-10, "ipopt.bound_frac": 1e-10},
+        options_ipopt={
+            "tol": 1e-4,
+            "max_iter": 3000,
+            "ipopt.bound_push": 1e-10,
+            "ipopt.bound_frac": 1e-10,
+            "ipopt.hessian_approximation": "limited-memory",
+        },
     )
     toc = time.time() - tic
     print(f"Time to solve : {toc}sec")
