@@ -602,6 +602,13 @@ endmusclegroup
 		pennationAngle		0.43633
 		PCSA				3.7
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 	
 		viapoint via1
@@ -629,6 +636,13 @@ endmusclegroup
 		pennationAngle		0.436
 		PCSA				2.8
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 	
 		viapoint via1
@@ -663,6 +677,13 @@ endmusclegroup
 		pennationAngle		0.31415
 		PCSA				1.9
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 
 		viapoint via1
@@ -691,6 +712,13 @@ endmusclegroup
 		pennationAngle		0.2094
 		PCSA				5.7
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 	
 		viapoint via1
@@ -726,6 +754,13 @@ endmusclegroup
 		pennationAngle		0.1700
 		PCSA				4.5
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 	
 		viapoint via1
@@ -747,6 +782,13 @@ endmusclegroup
 		pennationAngle		0.1570
 		PCSA				4.5
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 	
 		viapoint via1
@@ -782,6 +824,13 @@ endmusclegroup
 		pennationAngle		0.29670
 		PCSA				2.6
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 	
 	muscle	Deltoid1
@@ -796,6 +845,13 @@ endmusclegroup
 		pennationAngle		0.38397
 		PCSA				8.2
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 
 		viapoint via1
@@ -825,6 +881,13 @@ endmusclegroup
 		pennationAngle		0.32288
 		PCSA				8.6
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 
 		viapoint via1
@@ -846,6 +909,13 @@ endmusclegroup
 		pennationAngle		0.26179
 		PCSA				8.2
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 
 		viapoint via1
@@ -874,6 +944,13 @@ endmusclegroup
 		pennationAngle		0.12217
 		PCSA				3.5
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 	
 	muscle	SubScap
@@ -888,6 +965,13 @@ endmusclegroup
 		pennationAngle		0.34906
 		PCSA				9.8
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 
 		viapoint via1
@@ -916,6 +1000,13 @@ endmusclegroup
 		pennationAngle		0.000
 		PCSA				4.5
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 
 		viapoint via1
@@ -980,6 +1071,13 @@ endmusclegroup
 		pennationAngle		0.000
 		PCSA				3.1
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 
 		viapoint via1
@@ -1026,6 +1124,13 @@ endmusclegroup
 		pennationAngle		0.000
 		PCSA				1.8
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 
 		viapoint via1
@@ -1047,6 +1152,13 @@ endmusclegroup
 		pennationAngle		0.000
 		PCSA				1.8
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 
 		viapoint via1
@@ -1075,6 +1187,13 @@ endmusclegroup
 		pennationAngle		0.000
 		PCSA				1.8
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
 
 	muscle	Trapeze4
@@ -1089,4 +1208,11 @@ endmusclegroup
 		pennationAngle		0.000
 		PCSA				1.8
 		maxVelocity 		10
+		fatigueParameters
+            Type Xia
+            fatiguerate     0.01
+            recoveryrate    0.002
+            developfactor   10
+            recoveryfactor  10
+	    endfatigueparameters
 	endmuscle
