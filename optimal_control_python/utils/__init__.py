@@ -3,18 +3,8 @@ import biorbd
 
 
 class Muscles:
-    R = 0.1
-    F = 0.1
-
-    @staticmethod
-    def get_force_max():
-        model = biorbd.Model("../models/BrasViolon.bioMod")
-
-        for k in range(model.nbMuscleGroups()):
-            for i in range(model.muscleGroup(k).nbMuscles()):
-                print(model.muscleGroup(k).muscle(i).force().to_mx())
-                # todo forces
-        return []
+    R = 0.002
+    F = 0.01
 
 
 class Bow:
