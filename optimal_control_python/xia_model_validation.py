@@ -1,66 +1,40 @@
-import numpy as np
-import biorbd
-from optimal_control_python import up_and_down_bow
+from up_and_down_bow import prepare_ocp
+from utils import Bow, Violin, Muscles
 
-from utils import Muscles
+from biorbd_optim import InitialConditions, Simulate, ShowResult, InterpolationType, OptimalControlProgram
 
-biorbd_model_path = "../models/BrasViolon.bioMod"
-biorbd_model = biorbd.Model(biorbd_model_path)
+ocp = prepare_ocp()
+
 muscle_activated_init, muscle_fatigued_init, muscle_resting_init = 0, 0, 1
-torque_min, torque_max, torque_init = -10, 10, 0
-muscle_states_ratio_min, muscle_states_ratio_max = 0, 1
-number_shooting_points = 30
-final_time = 0.5
+torque_init = 0
+violon_string = Violin("G")
+inital_bow_side = Bow("frog")
 
-nbq = biorbd_model.nbQ()
-nbqdot = biorbd_model.nbQdot()
-nx = nbq + nbqdot
+X = InitialConditions(
+    violon_string.initial_position()[inital_bow_side.side] + [0] * ocp.nlp[0]["nbQdot"],
+    InterpolationType.CONSTANT,
+)
+U = InitialConditions(
+    [torque_init] * ocp.nlp[0]["nbTau"] + [0.1] * ocp.nlp[0]["model"].nbMuscles(),
+    InterpolationType.CONSTANT,
+)
 
-nbtau = biorbd_model.nbGeneralizedTorque()
-nbm = biorbd_model.nbMuscles()
-nu = nbtau + nbm
+muscle_states_init = InitialConditions(
+    [muscle_activated_init] * ocp.nlp[0]["model"].nbMuscles()
+    + [muscle_fatigued_init] * ocp.nlp[0]["model"].nbMuscles()
+    + [muscle_resting_init] * ocp.nlp[0]["model"].nbMuscles(),
+    InterpolationType.CONSTANT,
+)
+X.concatenate(muscle_states_init)
 
-q = np.array([0] * nbq)
-qdot = np.array([0] * nbqdot)
+# --- Simulate --- #
+sol_simulate = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=True)
 
-active_fibers = np.array([0] * nbm)
-fatigued_fibers = np.array([0] * nbm)
-resting_fibers = np.array([1] * nbm)
+# --- Save for biorbdviz --- #
+OptimalControlProgram.save_get_data(ocp, sol_simulate, f"results/simulate.bob", interpolate_nb_frames=100)
 
-residual_tau = np.array([0] * nbtau)
-activation = np.array([0.01] * nbm)
-command = np.array([0] * nbm)
+# --- Graph --- #
+result_single = ShowResult(ocp, sol_simulate)
+result_single.graphs()
 
-idx = 0
-for i in range(biorbd_model.nbMuscleGroups()):
-    for k in range(biorbd_model.muscleGroup(i).nbMuscles()):
-
-        develop_factor = 10
-        # (biorbd_model.muscleGroup(i).muscle(k).characteristics().fatigueParameters().developFactor().to_mx())
-        recovery_factor = 10
-        # (biorbd_model.muscleGroup(i).muscle(k).characteristics().fatigueParameters().recoveryFactor().to_mx())
-
-        if active_fibers[idx] < activation[idx]:
-            if resting_fibers[idx] > activation[idx] - active_fibers[idx]:
-                command[idx] = develop_factor * (activation[idx] - active_fibers[idx])
-            else:
-                command[idx] = develop_factor * resting_fibers[idx]
-        else:
-            command[idx] = recovery_factor * (active_fibers[idx] - activation[idx])
-
-        idx += 1
-
-restingdot = -command + Muscles.R * fatigued_fibers
-activatedot = command - Muscles.F * active_fibers
-fatiguedot = Muscles.F * active_fibers - Muscles.R * fatigued_fibers
-
-muscles_states = biorbd.VecBiorbdMuscleState(nbm)
-for k in range(nbm):
-    muscles_states[k].setActivation(active_fibers[k])
-
-muscles_tau = biorbd_model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-tau = muscles_tau + residual_tau
-
-qddot = biorbd.Model.ForwardDynamics(biorbd_model, q, qdot, tau).to_mx()
-
-# qdot, qddot, activatedot, fatiguedot, restingdot
+# result_single.animate()

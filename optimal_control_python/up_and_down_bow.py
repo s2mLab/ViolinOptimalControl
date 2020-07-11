@@ -145,7 +145,7 @@ def xia_model_fibers_constraint(ocp, nlp, t, x, u, p):
     return val
 
 
-def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
+def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
     """
     Mix .bioMod and users data to call OptimalControlProgram constructor.
     :param biorbd_model_path: path to the .bioMod file.
@@ -281,7 +281,7 @@ def prepare_nlp(biorbd_model_path="../models/BrasViolon.bioMod"):
 
 
 if __name__ == "__main__":
-    ocp = prepare_nlp()
+    ocp = prepare_ocp()
 
     # --- Solve the program --- #
     tic = time.time()

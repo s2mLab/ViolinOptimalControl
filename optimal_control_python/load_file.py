@@ -3,7 +3,7 @@ import pickle
 
 from BiorbdViz import BiorbdViz
 
-file_path = 0
+file_path = "results/simulate.bob"
 
 if not isinstance(file_path, str):
     t = time.localtime(time.time())
