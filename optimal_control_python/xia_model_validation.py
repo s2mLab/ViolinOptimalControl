@@ -7,6 +7,7 @@ ocp = prepare_ocp()
 
 muscle_activated_init, muscle_fatigued_init, muscle_resting_init = 0, 0, 1
 torque_init = 0
+command = 0.3
 violon_string = Violin("G")
 inital_bow_side = Bow("frog")
 
@@ -15,7 +16,7 @@ X = InitialConditions(
     InterpolationType.CONSTANT,
 )
 U = InitialConditions(
-    [torque_init] * ocp.nlp[0]["nbTau"] + [0.1] * ocp.nlp[0]["model"].nbMuscles(),
+    [torque_init] * ocp.nlp[0]["nbTau"] + [command] * ocp.nlp[0]["model"].nbMuscles(),
     InterpolationType.CONSTANT,
 )
 
@@ -36,5 +37,7 @@ OptimalControlProgram.save_get_data(ocp, sol_simulate, f"results/simulate.bob", 
 # --- Graph --- #
 result_single = ShowResult(ocp, sol_simulate)
 result_single.graphs()
+#todo multiphase
+print("ok")
 
 # result_single.animate()
