@@ -12,12 +12,10 @@ violon_string = Violin("G")
 inital_bow_side = Bow("frog")
 
 X = InitialConditions(
-    violon_string.initial_position()[inital_bow_side.side] + [0] * ocp.nlp[0]["nbQdot"],
-    InterpolationType.CONSTANT,
+    violon_string.initial_position()[inital_bow_side.side] + [0] * ocp.nlp[0]["nbQdot"], InterpolationType.CONSTANT,
 )
 U = InitialConditions(
-    [torque_init] * ocp.nlp[0]["nbTau"] + [command] * ocp.nlp[0]["model"].nbMuscles(),
-    InterpolationType.CONSTANT,
+    [torque_init] * ocp.nlp[0]["nbTau"] + [command] * ocp.nlp[0]["model"].nbMuscles(), InterpolationType.CONSTANT,
 )
 
 muscle_states_init = InitialConditions(
@@ -37,7 +35,7 @@ OptimalControlProgram.save_get_data(ocp, sol_simulate, f"results/simulate.bob", 
 # --- Graph --- #
 result_single = ShowResult(ocp, sol_simulate)
 result_single.graphs()
-#todo multiphase
+# todo multiphase
 print("ok")
 
 # result_single.animate()

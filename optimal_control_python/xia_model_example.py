@@ -70,7 +70,7 @@ def xia_model_dynamic(states, controls, parameters, nlp):
     fatiguedot = Muscles.F * active_fibers - Muscles.R * fatigued_fibers
 
     muscles_states = biorbd.VecBiorbdMuscleState(nlp["nbMuscle"])
-    for k in range(nlp["nbMuscles"]):
+    for k in range(nlp["nbMuscle"]):
         muscles_states[k].setActivation(active_fibers[k])
     # todo fix force max
 
