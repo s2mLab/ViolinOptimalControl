@@ -1,9 +1,13 @@
 import time
 import pickle
+import sys
 
 from BiorbdViz import BiorbdViz
 
-file_path = "results/simulate.bob"
+if len(sys.argv) > 1:
+    file_path = str(sys.argv[1])
+
+file_path = "results/xia/2020_7_20_upDown_interpolate.bob"
 
 if not isinstance(file_path, str):
     t = time.localtime(time.time())
