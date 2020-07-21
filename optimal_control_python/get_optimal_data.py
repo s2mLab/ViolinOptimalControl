@@ -1,8 +1,12 @@
 import time
 import pickle
 import numpy as np
+import sys
 
-file_path = 0
+file_path = "results/xia2/2020_7_21_upDown.bob"
+
+if len(sys.argv) > 1:
+    file_path = str(sys.argv[1])
 
 if not isinstance(file_path, str):
     t = time.localtime(time.time())
@@ -11,16 +15,13 @@ if not isinstance(file_path, str):
 with open(file_path, "rb") as file:
     data = pickle.load(file)
 
-data_interpolate, _ = data["data"]
 
-init = np.concatenate((data_interpolate["q"], data_interpolate["q_dot"]), 0)
+states, controls = data["data"]
 
-# step = 80/49
-# init = np.delete(init, [int(step * k) for k in range(80 - 31)], 1)
+optimal_states = np.concatenate((states["q"], states["q_dot"],  states["muscles_active"],  states["muscles_fatigue"],  states["muscles_resting"]), 0)
+optimal_controls = np.concatenate((controls["tau"], controls["muscles"]), 0)[:, :-1]
+dict = {"states": optimal_states, "controls": optimal_controls}
 
+with open("utils/optimal_init_15_nodes.bio", "wb") as file:
+    pickle.dump(dict, file)
 
-_, data_interpolate = data["data"]
-
-init = np.concatenate((data_interpolate["tau"], data_interpolate["muscles"]), 0)
-
-print(init[:, :-1])
