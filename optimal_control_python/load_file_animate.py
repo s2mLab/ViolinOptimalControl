@@ -4,10 +4,10 @@ import sys
 
 from BiorbdViz import BiorbdViz
 
+file_path = "results/xia 5 phases/2020_7_25_upDown_single.bob"
+
 if len(sys.argv) > 1:
     file_path = str(sys.argv[1])
-
-file_path = "results/xia/2020_7_20_upDown_interpolate.bob"
 
 if not isinstance(file_path, str):
     t = time.localtime(time.time())
@@ -18,6 +18,6 @@ with open(file_path, "rb") as file:
 
 data_interpolate, _ = data["data"]
 
-b = BiorbdViz("../models/BrasViolon.bioMod")
-b.load_movement(data_interpolate["q"].T)
+b = BiorbdViz("../models/BrasViolon.bioMod", markers_size=0.001)
+b.load_movement(data_interpolate["q"].T, )
 b.exec()
