@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import sys
 
-file_path = "results/xia3 5000 iter/output.bot"
+file_path = "output.bot"
 
 if len(sys.argv) > 1:
     file_path = str(sys.argv[1])
@@ -27,8 +27,8 @@ while True:
 ipopt = ipopt[1 : (len(ipopt) - i)]
 
 for k in ipopt:
-    line = list(filter(None, list(str(k).replace("b'","").split(" "))))
-    if "iter" not in line[0]:
+    line = list(filter(None, list(str(k).replace("b'", "").split(" "))))
+    if "iter" not in line[0] and "Reallocating" not in line[0]:
         if "r" in line[0]:
             line[0] = line[0].replace("r", "")
         for k, key in enumerate(keys):
