@@ -19,5 +19,5 @@ with open(file_path, "rb") as file:
 data_interpolate, _ = data["data"]
 
 b = BiorbdViz("../models/BrasViolon.bioMod", markers_size=0.001)
-b.load_movement(data_interpolate["q"].T, )
+b.load_movement(data_interpolate["q"].T,)
 b.exec()

@@ -19,15 +19,21 @@ ocp, sol = OptimalControlProgram.load(file_path)
 
 new_ns = 10
 
-if new_ns == ocp.nlp[0]['ns']:
+if new_ns == ocp.nlp[0]["ns"]:
     states, controls = Data.get_data(ocp, sol, concatenate=False)
 else:
     states, controls = Data.get_data(ocp, sol, interpolate_nb_frames=new_ns + 1, concatenate=False)
 
 
-
 optimal_states = np.concatenate(
-    (states["q"][0], states["q_dot"][0], states["muscles_active"][0], states["muscles_fatigue"][0], states["muscles_resting"][0]), 0
+    (
+        states["q"][0],
+        states["q_dot"][0],
+        states["muscles_active"][0],
+        states["muscles_fatigue"][0],
+        states["muscles_resting"][0],
+    ),
+    0,
 )
 optimal_controls = np.concatenate((controls["tau"][0], controls["muscles"][0]), 0)[:, :-1]
 
@@ -38,8 +44,14 @@ with open(f"utils/optimal_init_{new_ns}_nodes_first.bio", "wb") as file:
 
 if ocp.nb_phases > 1:
     optimal_states = np.concatenate(
-        (states["q"][1], states["q_dot"][1], states["muscles_active"][1], states["muscles_fatigue"][1],
-         states["muscles_resting"][0]), 0
+        (
+            states["q"][1],
+            states["q_dot"][1],
+            states["muscles_active"][1],
+            states["muscles_fatigue"][1],
+            states["muscles_resting"][0],
+        ),
+        0,
     )
     optimal_controls = np.concatenate((controls["tau"][1], controls["muscles"][1]), 0)[:, :-1]
 

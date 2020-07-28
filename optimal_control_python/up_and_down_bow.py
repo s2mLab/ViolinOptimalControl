@@ -70,7 +70,7 @@ def xia_model_dynamic(states, controls, parameters, nlp):
                 ),
             )
             comp += 1
-    restingdot = -command + Muscles.r * Muscles.R * fatigued_fibers #todo r=r when activation=0
+    restingdot = -command + Muscles.r * Muscles.R * fatigued_fibers  # todo r=r when activation=0
     activatedot = command - Muscles.F * active_fibers
     fatiguedot = Muscles.F * active_fibers - Muscles.R * fatigued_fibers
 
@@ -138,6 +138,7 @@ def xia_model_configuration(ocp, nlp):
 
     Problem.configure_forward_dyn_func(ocp, nlp, xia_model_dynamic)
 
+
 def xia_initial_fatigue_at_zero(ocp, nlp, t, x, u, p):
     offset = nlp["nbQ"] + nlp["nbQdot"] + nlp["nbMuscle"]
     val = []
@@ -187,8 +188,9 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
     inital_bow_side = Bow("frog")
 
     # --- External forces --- #
-    external_forces = [np.repeat(violon_string.external_force[:, np.newaxis], number_shooting_points[0], axis=1)] * nb_phases
-
+    external_forces = [
+        np.repeat(violon_string.external_force[:, np.newaxis], number_shooting_points[0], axis=1)
+    ] * nb_phases
 
     for idx_phase in range(nb_phases):
 
@@ -197,7 +199,9 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
         # --- Objective --- #
         objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=1, phase=idx_phase)
         objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1, phase=idx_phase)
-        objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, controls_idx=[0, 1, 2, 3], weight=10, phase=idx_phase)
+        objective_functions.add(
+            Objective.Lagrange.MINIMIZE_TORQUE, controls_idx=[0, 1, 2, 3], weight=10, phase=idx_phase
+        )
 
         # --- Dynamics --- #
         dynamics.add(xia_model_configuration, dynamic_function=xia_model_dynamic)
@@ -283,7 +287,6 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
             )
         x_bounds[idx_phase].concatenate(muscle_states_bounds)
 
-
         u_bounds.add(
             [
                 [torque_min] * biorbd_model[0].nbGeneralizedTorque()
@@ -291,7 +294,7 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
                 [torque_max] * biorbd_model[0].nbGeneralizedTorque()
                 + [muscle_states_ratio_max] * biorbd_model[0].nbMuscleTotal(),
             ],
-            phase=idx_phase
+            phase=idx_phase,
         )
 
         # --- Initial guess --- #
@@ -314,7 +317,8 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
                 phase=idx_phase,
             )
             u_init.add(
-                [torque_init] * biorbd_model[0].nbGeneralizedTorque() + [muscle_activated_init] * biorbd_model[0].nbMuscleTotal(),
+                [torque_init] * biorbd_model[0].nbGeneralizedTorque()
+                + [muscle_activated_init] * biorbd_model[0].nbMuscleTotal(),
                 interpolation=InterpolationType.CONSTANT,
                 phase=idx_phase,
             )
@@ -326,7 +330,6 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
                 interpolation=InterpolationType.CONSTANT,
             )
             x_init[idx_phase].concatenate(muscle_states_init)
-
 
     # ------------- #
 
