@@ -28,14 +28,14 @@ ipopt = ipopt[1 : (len(ipopt) - i)]
 
 for k in ipopt:
     line = list(filter(None, list(str(k).replace("b'", "").split(" "))))
-    if "iter" not in line[0] and "Reallocating" not in line[0]:
+    if "iter" not in line[0] and "Reallocating" not in line[0] and "In" not in line[0]:
         if "r" in line[0]:
             line[0] = line[0].replace("r", "")
         for k, key in enumerate(keys):
             stats[key].append(float(line[k]))
 
 for k, key in enumerate(keys[1:]):
-    plt.plot(stats[keys[0]], stats[key], "-o", markersize=1, label=key, color=["b", "g", "r"][k])
+    plt.plot(stats[keys[0]], stats[key], "-o", linewidth=1, markersize=1, label=key, color=["b", "g", "r", "c", "m", "y", "k"][k])
 plt.yscale("log")
 plt.legend()
 plt.show()
