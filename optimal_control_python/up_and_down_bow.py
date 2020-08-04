@@ -10,6 +10,7 @@ from biorbd_optim import (
     InitialConditionsList,
     Axe,
     BoundsList,
+    OdeSolver,
     OptimalControlProgram,
     DynamicsTypeList,
     PathCondition,
@@ -82,7 +83,6 @@ def xia_model_dynamic(states, controls, parameters, nlp):
     muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
     # todo get muscle forces and multiply them by activate [k] and same as muscularJointTorque
     tau = muscles_tau + residual_tau
-
     dxdt = MX(nlp["nx"], nlp["ns"])
     for i, f_ext in enumerate(nlp["external_forces"]):
         qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau, f_ext).to_mx()
@@ -176,7 +176,7 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
     u_init = InitialConditionsList()
 
     # --- Options --- #
-    number_shooting_points = [10] * nb_phases
+    number_shooting_points = [20] * nb_phases
     final_time = [1] * nb_phases
 
     muscle_activated_init, muscle_fatigued_init, muscle_resting_init = 0, 0, 1
@@ -199,6 +199,13 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
         # --- Objective --- #
         objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=1, phase=idx_phase)
         objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1, phase=idx_phase)
+        objective_functions.add(
+            Objective.Lagrange.ALIGN_SEGMENT_WITH_CUSTOM_RT,
+            weight=1,
+            segment_idx=Bow.segment_idx,
+            rt_idx=violon_string.rt_on_string,
+            phase=idx_phase,
+        )
         objective_functions.add(
             Objective.Lagrange.MINIMIZE_TORQUE, controls_idx=[0, 1, 2, 3], weight=10, phase=idx_phase
         )
@@ -234,25 +241,25 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
             second_marker_idx=violon_string.bridge_marker,
             phase=idx_phase,
         )
-        constraints.add(
-            Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT,
-            instant=Instant.ALL,
-            min_bound=-0.00001,
-            max_bound=0.00001,
-            segment_idx=Bow.segment_idx,
-            rt_idx=violon_string.rt_on_string,
-            phase=idx_phase,
-        )
-        constraints.add(
-            Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS,
-            instant=Instant.ALL,
-            min_bound=-0.00001,
-            max_bound=0.00001,
-            marker_idx=violon_string.bridge_marker,
-            segment_idx=Bow.segment_idx,
-            axis=(Axe.Y),
-            phase=idx_phase,
-        )
+        # constraints.add(
+        #     Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT,
+        #     instant=Instant.ALL,
+        #     min_bound=-0.00001,
+        #     max_bound=0.00001,
+        #     segment_idx=Bow.segment_idx,
+        #     rt_idx=violon_string.rt_on_string,
+        #     phase=idx_phase,
+        # )
+        # constraints.add(
+        #     Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS,
+        #     instant=Instant.ALL,
+        #     min_bound=-0.00001,
+        #     max_bound=0.00001,
+        #     marker_idx=violon_string.bridge_marker,
+        #     segment_idx=Bow.segment_idx,
+        #     axis=(Axe.Y),
+        #     phase=idx_phase,
+        # )
         constraints.add(
             Constraint.ALIGN_MARKERS,
             instant=Instant.ALL,
@@ -300,11 +307,11 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
         # --- Initial guess --- #
         optimal_initial_values = True
         if optimal_initial_values:
-            if idx_phase == 1:
-                with open(f"utils/optimal_init_{number_shooting_points[0]}_nodes_first.bio", "rb") as file:
+            if idx_phase == 0:
+                with open(f"utils/optimal_init_{number_shooting_points[0]}_nodes_constr_first.bio", "rb") as file:
                     dict = pickle.load(file)
             else:
-                with open(f"utils/optimal_init_{number_shooting_points[0]}_nodes_others.bio", "rb") as file:
+                with open(f"utils/optimal_init_{number_shooting_points[0]}_nodes_constr_first.bio", "rb") as file:
                     dict = pickle.load(file)
 
             x_init.add(dict["states"], interpolation=InterpolationType.EACH_FRAME, phase=idx_phase)
@@ -345,6 +352,7 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
         objective_functions,
         constraints,
         external_forces=external_forces,
+        ode_solver=OdeSolver.RK,
         nb_threads=4,
     )
 
@@ -359,13 +367,13 @@ if __name__ == "__main__":
         return_iterations=False,
         return_objectives=True,
         solver_options={
-            "tol": 1e-4,
+            "tol": 1e-3,
             "max_iter": 500000,
             "ipopt.bound_push": 1e-10,
             "ipopt.bound_frac": 1e-10,
             "ipopt.hessian_approximation": "limited-memory",
             "output_file": "output.bot",
-            "ipopt.linear_solver": "ma57",  # "mumps",  # "ma57", "ma86"
+            "ipopt.linear_solver": "ma86",  # "mumps",  # "ma57", "ma86"
             # "file_print_level": 5,
         },
     )
