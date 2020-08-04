@@ -35,7 +35,18 @@ for k in ipopt:
             stats[key].append(float(line[k]))
 
 for k, key in enumerate(keys[1:]):
-    plt.plot(stats[keys[0]], stats[key], "-o", linewidth=1, markersize=1, label=key, color=["b", "g", "r", "c", "m", "y", "k"][k])
+    plt.plot(
+        stats[keys[0]],
+        stats[key],
+        "-o",
+        linewidth=1,
+        markersize=1,
+        label=key,
+        color=["b", "g", "r", "c", "m", "y", "k"][k],
+        zorder=10-k,
+    )
 plt.yscale("log")
+plt.xlabel("itérations")
+plt.title("Evolution des objectifs et des valeurs inf_pr et inf_du en fonction des itérations.")
 plt.legend()
 plt.show()
