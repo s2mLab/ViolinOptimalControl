@@ -68,6 +68,7 @@ protected:
             std::vector<casadi::DM>& QOut,
             std::vector<casadi::DM>& QDotOut) const;
     const casadi::Function& _dynamicsFunc;
+    mutable bool _isReady;
 
     void QtWindowThread();
     unsigned int _sparsityX;
@@ -85,7 +86,6 @@ protected:
     std::thread * refresh_thread;
     unsigned int _nbElementsRK4;
     bool _isActive = true;
-    bool _isReady = false;
 };
 
 #endif // ANIMATION_CALLBACK_H
