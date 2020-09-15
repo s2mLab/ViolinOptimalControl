@@ -94,6 +94,7 @@ class Violin:
 
     @property
     def external_force(self):
+        # This was obtained from "utils.find_forces_and_moments"
         return {
             "E": np.array([0.0, 0.0, 0.0, 0.40989355, 1.84413989, 0.65660896]),
             "A": np.array([0.0, 0.0, 0.0, 0.30881124, 1.65124622, 1.08536701]),
