@@ -15,7 +15,7 @@ state_init = (0.5, 0, 0.5)
 n_frames = 300
 
 # Load model for biorbd
-model = biorbd.s2mMusculoSkeletalModel("../models/conv-arm26.bioMod")
+model = biorbd.Model("../models/conv-arm26.bioMod")
 muscle = model.muscleGroup(0).muscle(0)
 
 
@@ -77,8 +77,8 @@ def def_dyn(fun_load, recovery_rate, fatigue_rate, develop_factor, recovery_fact
 
 # Get values from biorbd
 def fatigue_dyn_biorbd(_model, _muscle, _q, _q_dot, fun_load, is_state, is_muscle_updated=True):
-    _fatigue_model = biorbd.s2mMuscleHillTypeThelenFatigable_getRef(_muscle)
-    _fatigue_state = biorbd.s2mMuscleFatigueDynamicStateXia_getRef(_fatigue_model.fatigueState())
+    _fatigue_model = biorbd.HillThelenTypeFatigable_DeepCopy(_muscle)
+    _fatigue_state = biorbd.s2mMuscleFatigueDynamicStateXia_getRef(_fatigue_model.fatigueState()) # needs correct function
     if is_state and type(fun_load) != biorbd.s2mMuscleStateActual:
         print("Warning: command function is not of type s2mMuscleStateActual")
         return 1

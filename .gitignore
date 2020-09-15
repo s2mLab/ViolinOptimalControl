@@ -115,5 +115,8 @@ venv.bak/
 *.png
 BiorbdViz
 *biorbd_optim
-
+*.bo
+*.bob
+*.bio
+*.bot
 *.npy
