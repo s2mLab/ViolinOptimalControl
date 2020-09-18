@@ -174,13 +174,13 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
             raise NotImplementedError("optimal_initial_values = True should be reviewed")
             if idx_phase == 0:
                 with open(f"utils/optimal_init_{number_shooting_points[0]}_nodes_constr_first.bio", "rb") as file:
-                    dico = pickle.load(file)
+                    dict = pickle.load(file)
             else:
                 with open(f"utils/optimal_init_{number_shooting_points[0]}_nodes_constr_first.bio", "rb") as file:
-                    dico = pickle.load(file)
+                    dict = pickle.load(file)
 
-            x_init.add(dico["states"], interpolation=InterpolationType.EACH_FRAME, phase=idx_phase)
-            u_init.add(dico["controls"], interpolation=InterpolationType.EACH_FRAME, phase=idx_phase)
+            x_init.add(dict["states"], interpolation=InterpolationType.EACH_FRAME, phase=idx_phase)
+            u_init.add(dict["controls"], interpolation=InterpolationType.EACH_FRAME, phase=idx_phase)
 
         else:
             # TODO: x_init could be a LINEAR from frog to tip

@@ -76,14 +76,14 @@ class Violin:
         """
         :return: Marker number on the bridge, associate to the string.
         """
-        return {"E": 35, "A": 37, "D": 39, "G": 41,}[self.string]
+        return {"E": 34, "A": 36, "D": 38, "G": 40,}[self.string]
 
     @property
     def neck_marker(self):
         """
         :return: Marker number on the neck of the violin, associate to the string.
         """
-        return {"E": 36, "A": 38, "D": 40, "G": 42,}[self.string]
+        return {"E": 35, "A": 37, "D": 49, "G": 41,}[self.string]
 
     @property
     def rt_on_string(self):
