@@ -1,4 +1,5 @@
 import biorbd
+import numpy as np
 
 from biorbd_optim import (
     OptimalControlProgram,
@@ -12,62 +13,28 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditionsOption,
     Instant,
-    OdeSolver,
+    InterpolationType,
+    Data,
 )
 from optimal_control_python.utils import Bow, Violin
 
-
-def prepare_ocp(biorbd_model_path="/home/carla/Documents/Programmation/ViolinOptimalControl/models/BrasViolon.bioMod", ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u_init, x0):
     biorbd_model = biorbd.Model(biorbd_model_path)
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
     n_tau = biorbd_model.nbGeneralizedTorque()
-
-
-    # Problem parameters
-    number_shooting_points = 15
-    final_time = 0.5
-
     tau_min, tau_max, tau_init = -100, 100, 0
 
-    # Choose the string of the violin
-    violon_string = Violin("E")
-    inital_bow_side = Bow("frog")
-
-    # Objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
-    objective_functions.add(Objective.Mayer.ALIGN_MARKERS, first_marker_idx=Bow.segment_idx,
-                            second_marker_idx=violon_string.bridge_marker)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1)
 
-    # Dynamics
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
 
-    # Constraints
-    constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=Bow.frog_marker,
-                    second_marker_idx=violon_string.bridge_marker)
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=Bow.tip_marker,
-                    second_marker_idx=violon_string.bridge_marker)
-
-
-    # Path constraint
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-
-    x_bounds.min[n_q:n_q+n_qdot, [0, -1]] = 0
-    x_bounds.max[n_q:n_q+n_qdot, [0, -1]] = 0
-
-    # Initial guess
-    x_init = InitialConditionsOption(
-        violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot
-    )
+    x_bounds[:, 0] = x0
+    x_init = InitialConditionsOption(x_init, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control bounds
     u_bounds = BoundsOption([[tau_min] * n_tau, [tau_max] * n_tau])
-
-    u_init = InitialConditionsOption([tau_init] * n_tau)
-
-    # _________________#
+    u_init = InitialConditionsOption(u_init, interpolation=InterpolationType.EACH_FRAME)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -79,24 +46,89 @@ def prepare_ocp(biorbd_model_path="/home/carla/Documents/Programmation/ViolinOpt
         x_bounds,
         u_bounds,
         objective_functions=objective_functions,
-        constraints=constraints,
-        # show_online_optim = show_online_optim,
-        use_SX=False
     )
 
 
+
+# "/home/carla/Documents/Programmation/ViolinOptimalControl/models/BrasViolon.bioMod", ode_solver=OdeSolver.RK):
+
+def warm_start_mhe(data_sol_prev):
+    q = data_sol_prev[0]["q"]
+    dq = data_sol_prev[0]["q_dot"]
+    u = data_sol_prev[1]["tau"]
+    x = np.vstack([q, dq])
+    x_init = np.hstack((x[:, 1:], np.tile(x[:, [-1]], 1)))  # discard oldest estimate of the window, duplicates youngest
+    u_init = u[:, 1:]  # discard oldest estimate of the window
+    X_out = x[:, 0]
+    return x_init, u_init, X_out
+
+
 if __name__ == "__main__":
-    ocp = prepare_ocp()
+    biorbd_model_path = "/home/carla/Documents/Programmation/ViolinOptimalControl/models/BrasViolon.bioMod"
+    biorbd_model = biorbd.Model(biorbd_model_path)
+    n_q = biorbd_model.nbQ()
+    n_qdot = biorbd_model.nbQdot()
+    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_muscles = biorbd_model.nbMuscles()
 
-    # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=False,
-                    solver_options={"max_iter": 1000, "hessian_approximation": "exact"})
-    #result = ShowResult(ocp, sol)
-    # result.graphs()
-    # result.animate()
+    # Choose the string of the violin
+    violon_string = Violin("D")
+    inital_bow_side = Bow("frog")
+    x0 = np.array(violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot)
+    x_init = np.tile(np.array(violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot)[:, np.newaxis], 17)
+    u_init = [0.5] * biorbd_model.nbGeneralizedTorque()
 
-    # # --- Show results --- #
-    # result = ShowResult(ocp, sol)
+    final_time = 2  # duration of the simulation
+    window = 15  # size of MHE window
+    window_time = 0.5  # duration of a window simulation
+    number_shooting_points = window + 1  # int(final_time/window_time * window)  # number of shooting nodes per sec
+
+    # X_est = np.zeros((biorbd_model.nbQ() * 2, int(number_shooting_points - window)))
+    # U_est = np.zeros((biorbd_model.nbQ()*2, ))
+    # for i in range(number_shooting_points - window):
+    ocp = prepare_ocp(
+        biorbd_model_path=biorbd_model_path,
+        number_shooting_points=number_shooting_points,
+        final_time=final_time,
+        x_init=x_init,
+        u_init=u_init,
+        x0=x0,
+    )
+
+    new_objectives = ObjectiveList()
+    new_objectives.add(Objective.Lagrange.ALIGN_MARKERS, first_marker_idx=Bow.contact_marker, second_marker_idx=violon_string.bridge_marker, idx=1)
+    new_objectives.add(Objective.Mayer.TRACK_STATE, instant=Instant.END, states_idx=10, idx=2)
+    ocp.update_objectives(new_objectives)
+
+    new_constraints = ConstraintList()
+    for j in range(1, 5):
+        new_constraints.add(Constraint.ALIGN_MARKERS,
+                            instant=j,
+                            min_bound=0,
+                            max_bound=0,
+                            first_marker_idx=Bow.contact_marker,
+                            second_marker_idx=violon_string.bridge_marker)
+    for j in range(5, number_shooting_points):
+        new_constraints.add(Constraint.ALIGN_MARKERS,
+                            instant=j,
+                            min_bound=-0.0000001*(10 ^ j),
+                            max_bound=0.0000001*(10 ^ j),
+                            first_marker_idx=Bow.contact_marker,
+                            second_marker_idx=violon_string.bridge_marker)
+    ocp.update_constraints(new_constraints)
+
+    sol = ocp.solve(
+        show_online_optim=False,
+        solver_options={"max_iter": 1000, "hessian_approximation": "exact"}
+    )
+    data_sol = Data.get_data(ocp, sol, concatenate=False)
+    x_init, u_init, x0 = warm_start_mhe(data_sol)
+    X_est = x_init
+
+    # --- Show results --- #
     ocp.save_get_data(sol, "up_and_down_NMPC")
-    # result.keep_matplotlib()
-    # result.show_biorbd_viz(show_meshes=False)
+    # np.save("coucou", X_est)
+
+
+
+
