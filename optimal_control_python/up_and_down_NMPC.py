@@ -70,25 +70,26 @@ if __name__ == "__main__":
     n_qdot = biorbd_model.nbQdot()
     n_tau = biorbd_model.nbGeneralizedTorque()
     n_muscles = biorbd_model.nbMuscles()
+    final_time = 2  # duration of the simulation
+    nb_shooting_pts_window = 15  # size of MHE window
+    # window_time = 0.5  # duration of a window simulation
 
     # Choose the string of the violin
     violon_string = Violin("D")
     inital_bow_side = Bow("frog")
     x0 = np.array(violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot)
-    x_init = np.tile(np.array(violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot)[:, np.newaxis], 17)
-    u_init = [0.5] * biorbd_model.nbGeneralizedTorque()
+    x_init = np.tile(np.array(violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot)[:, np.newaxis],
+                     nb_shooting_pts_window+1)
+    u_init = np.tile(np.array([0.5] * n_tau)[:, np.newaxis],
+                     nb_shooting_pts_window)
 
-    final_time = 2  # duration of the simulation
-    window = 15  # size of MHE window
-    window_time = 0.5  # duration of a window simulation
-    number_shooting_points = window + 1  # int(final_time/window_time * window)  # number of shooting nodes per sec
 
     # X_est = np.zeros((biorbd_model.nbQ() * 2, int(number_shooting_points - window)))
     # U_est = np.zeros((biorbd_model.nbQ()*2, ))
     # for i in range(number_shooting_points - window):
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
-        number_shooting_points=number_shooting_points,
+        number_shooting_points=nb_shooting_pts_window,
         final_time=final_time,
         x_init=x_init,
         u_init=u_init,
@@ -108,7 +109,7 @@ if __name__ == "__main__":
                             max_bound=0,
                             first_marker_idx=Bow.contact_marker,
                             second_marker_idx=violon_string.bridge_marker)
-    for j in range(5, number_shooting_points):
+    for j in range(5, nb_shooting_pts_window):
         new_constraints.add(Constraint.ALIGN_MARKERS,
                             instant=j,
                             min_bound=-0.0000001*(10 ^ j),

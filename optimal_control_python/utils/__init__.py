@@ -83,7 +83,7 @@ class Violin:
         """
         :return: Marker number on the neck of the violin, associate to the string.
         """
-        return {"E": 35, "A": 37, "D": 49, "G": 41,}[self.string]
+        return {"E": 35, "A": 37, "D": 39, "G": 41,}[self.string]
 
     @property
     def rt_on_string(self):
