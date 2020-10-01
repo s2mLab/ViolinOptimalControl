@@ -24,7 +24,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u
     tau_min, tau_max, tau_init = -100, 100, 0
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
 
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
 
@@ -52,15 +52,15 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u
 
 # "/home/carla/Documents/Programmation/ViolinOptimalControl/models/BrasViolon.bioMod", ode_solver=OdeSolver.RK):
 
-def warm_start_mhe(data_sol_prev):
-    q = data_sol_prev[0]["q"]
-    dq = data_sol_prev[0]["q_dot"]
-    u = data_sol_prev[1]["tau"]
-    x = np.vstack([q, dq])
-    x_init = np.hstack((x[:, 1:], np.tile(x[:, [-1]], 1)))  # discard oldest estimate of the window, duplicates youngest
-    u_init = u[:, 1:]  # discard oldest estimate of the window
-    X_out = x[:, 0]
-    return x_init, u_init, X_out
+# def warm_start_mhe(data_sol_prev):
+#     q = data_sol_prev[0]["q"]
+#     dq = data_sol_prev[0]["q_dot"]
+#     u = data_sol_prev[1]["tau"]
+#     x = np.vstack([q, dq])
+#     x_init = np.hstack((x[:, 1:], np.tile(x[:, [-1]], 1)))  # discard oldest estimate of the window, duplicates youngest
+#     u_init = u[:, 1:]  # discard oldest estimate of the window
+#     X_out = x[:, 0]
+#     return x_init, u_init, X_out
 
 
 if __name__ == "__main__":
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # window_time = 0.5  # duration of a window simulation
 
     # Choose the string of the violin
-    violon_string = Violin("D")
+    violon_string = Violin("E")
     inital_bow_side = Bow("frog")
     x0 = np.array(violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot)
     x_init = np.tile(np.array(violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot)[:, np.newaxis],
@@ -96,10 +96,11 @@ if __name__ == "__main__":
         x0=x0,
     )
 
-    new_objectives = ObjectiveList()
-    new_objectives.add(Objective.Lagrange.ALIGN_MARKERS, first_marker_idx=Bow.contact_marker, second_marker_idx=violon_string.bridge_marker, idx=1)
-    new_objectives.add(Objective.Mayer.TRACK_STATE, instant=Instant.END, states_idx=10, idx=2)
-    ocp.update_objectives(new_objectives)
+    # new_objectives = ObjectiveList()
+    # new_objectives.add(Objective.Lagrange.ALIGN_MARKERS, first_marker_idx=Bow.contact_marker,
+    #                    second_marker_idx=violon_string.bridge_marker, idx=1)
+    # # new_objectives.add(Objective.Mayer.TRACK_STATE, instant=Instant.END, states_idx=10, idx=2)
+    # ocp.update_objectives(new_objectives)
 
     new_constraints = ConstraintList()
     for j in range(1, 5):
@@ -120,10 +121,10 @@ if __name__ == "__main__":
 
     sol = ocp.solve(
         show_online_optim=False,
-        solver_options={"max_iter": 1000, "hessian_approximation": "exact"}
+        solver_options={"max_iter": 10000, "hessian_approximation": "exact"}
     )
     data_sol = Data.get_data(ocp, sol, concatenate=False)
-    x_init, u_init, x0 = warm_start_mhe(data_sol)
+    # x_init, u_init, x0 = warm_start_mhe(data_sol)
     X_est = x_init
 
     # --- Show results --- #
