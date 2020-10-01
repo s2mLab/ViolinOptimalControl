@@ -32,7 +32,6 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u
     x_bounds[:, 0] = x0
     x_init = InitialConditionsOption(x_init, interpolation=InterpolationType.EACH_FRAME)
 
-    # Define control bounds
     u_bounds = BoundsOption([[tau_min] * n_tau, [tau_max] * n_tau])
     u_init = InitialConditionsOption(u_init, interpolation=InterpolationType.EACH_FRAME)
 
@@ -50,7 +49,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u
 
 
 
-# "/home/carla/Documents/Programmation/ViolinOptimalControl/models/BrasViolon.bioMod", ode_solver=OdeSolver.RK):
+
 
 # def warm_start_mhe(data_sol_prev):
 #     q = data_sol_prev[0]["q"]
@@ -72,9 +71,8 @@ if __name__ == "__main__":
     n_muscles = biorbd_model.nbMuscles()
     final_time = 2  # duration of the simulation
     nb_shooting_pts_window = 15  # size of MHE window
-    # window_time = 0.5  # duration of a window simulation
 
-    # Choose the string of the violin
+
     violon_string = Violin("E")
     inital_bow_side = Bow("frog")
     x0 = np.array(violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot)
@@ -84,9 +82,7 @@ if __name__ == "__main__":
                      nb_shooting_pts_window)
 
 
-    # X_est = np.zeros((biorbd_model.nbQ() * 2, int(number_shooting_points - window)))
-    # U_est = np.zeros((biorbd_model.nbQ()*2, ))
-    # for i in range(number_shooting_points - window):
+
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         number_shooting_points=nb_shooting_pts_window,
@@ -124,12 +120,11 @@ if __name__ == "__main__":
         solver_options={"max_iter": 10000, "hessian_approximation": "exact"}
     )
     data_sol = Data.get_data(ocp, sol, concatenate=False)
-    # x_init, u_init, x0 = warm_start_mhe(data_sol)
     X_est = x_init
 
     # --- Show results --- #
     ocp.save_get_data(sol, "up_and_down_NMPC")
-    # np.save("coucou", X_est)
+
 
 
 
