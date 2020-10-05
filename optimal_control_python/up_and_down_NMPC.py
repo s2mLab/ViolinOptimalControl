@@ -1,7 +1,7 @@
 import biorbd
 import numpy as np
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     Objective,
     ObjectiveList,
@@ -11,12 +11,13 @@ from biorbd_optim import (
     ConstraintList,
     BoundsOption,
     QAndQDotBounds,
-    InitialConditionsOption,
+    InitialGuessOption,
     Instant,
     InterpolationType,
     Data,
 )
 from optimal_control_python.utils import Bow, Violin
+
 
 def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u_init, x0):
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -24,16 +25,16 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u
     tau_min, tau_max, tau_init = -100, 100, 0
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, idx=0)
 
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
 
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
     x_bounds[:, 0] = x0
-    x_init = InitialConditionsOption(x_init, interpolation=InterpolationType.EACH_FRAME)
+    x_init = InitialGuessOption(x_init, interpolation=InterpolationType.EACH_FRAME)
 
     u_bounds = BoundsOption([[tau_min] * n_tau, [tau_max] * n_tau])
-    u_init = InitialConditionsOption(u_init, interpolation=InterpolationType.EACH_FRAME)
+    u_init = InitialGuessOption(u_init, interpolation=InterpolationType.EACH_FRAME)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -51,15 +52,15 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u
 
 
 
-# def warm_start_mhe(data_sol_prev):
-#     q = data_sol_prev[0]["q"]
-#     dq = data_sol_prev[0]["q_dot"]
-#     u = data_sol_prev[1]["tau"]
-#     x = np.vstack([q, dq])
-#     x_init = np.hstack((x[:, 1:], np.tile(x[:, [-1]], 1)))  # discard oldest estimate of the window, duplicates youngest
-#     u_init = u[:, 1:]  # discard oldest estimate of the window
-#     X_out = x[:, 0]
-#     return x_init, u_init, X_out
+def warm_start_mhe(data_sol_prev):
+    q = data_sol_prev[0]["q"]
+    dq = data_sol_prev[0]["q_dot"]
+    u = data_sol_prev[1]["tau"]
+    x = np.vstack([q, dq])
+    x_init = np.hstack((x[:, 1:], np.tile(x[:, [-1]], 1)))  # discard oldest estimate of the window, duplicates youngest
+    u_init = u[:, 1:]  # discard oldest estimate of the window
+    X_out = x[:, 0]
+    return x_init, u_init, X_out
 
 
 if __name__ == "__main__":
@@ -69,14 +70,15 @@ if __name__ == "__main__":
     n_qdot = biorbd_model.nbQdot()
     n_tau = biorbd_model.nbGeneralizedTorque()
     n_muscles = biorbd_model.nbMuscles()
-    final_time = 2  # duration of the simulation
+    final_time = 1/3  # duration of the simulation
     nb_shooting_pts_window = 15  # size of MHE window
 
 
-    violon_string = Violin("E")
-    inital_bow_side = Bow("frog")
-    x0 = np.array(violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot)
-    x_init = np.tile(np.array(violon_string.initial_position()[inital_bow_side.side] + [0] * n_qdot)[:, np.newaxis],
+    violin = Violin("E")
+    bow = Bow("frog")
+
+    x0 = np.array(violin.initial_position()[bow.side] + [0] * n_qdot)
+    x_init = np.tile(np.array(violin.initial_position()[bow.side] + [0] * n_qdot)[:, np.newaxis],
                      nb_shooting_pts_window+1)
     u_init = np.tile(np.array([0.5] * n_tau)[:, np.newaxis],
                      nb_shooting_pts_window)
@@ -92,11 +94,18 @@ if __name__ == "__main__":
         x0=x0,
     )
 
-    # new_objectives = ObjectiveList()
+    new_objectives = ObjectiveList()
     # new_objectives.add(Objective.Lagrange.ALIGN_MARKERS, first_marker_idx=Bow.contact_marker,
     #                    second_marker_idx=violon_string.bridge_marker, idx=1)
-    # # new_objectives.add(Objective.Mayer.TRACK_STATE, instant=Instant.END, states_idx=10, idx=2)
-    # ocp.update_objectives(new_objectives)
+    bow_target = np.ndarray((n_q, nb_shooting_pts_window+1))
+    bow_target[bow.hair_idx, -1] = -0.28
+    new_objectives.add(Objective.Mayer.TRACK_STATE, instant=Instant.END, states_idx=bow.hair_idx, target=bow_target,
+                       weight=1000, idx=1)
+    ocp.update_objectives(new_objectives)
+
+    # objective_functions.add(
+    #     Objective.Lagrange.TRACK_STATE, weight=100, target=q_ref, states_idx=range(biorbd_model.nbQ())
+    # ) # example of the track state use
 
     new_constraints = ConstraintList()
     for j in range(1, 5):
@@ -105,18 +114,20 @@ if __name__ == "__main__":
                             min_bound=0,
                             max_bound=0,
                             first_marker_idx=Bow.contact_marker,
-                            second_marker_idx=violon_string.bridge_marker)
+                            second_marker_idx=violin.bridge_marker)
     for j in range(5, nb_shooting_pts_window):
         new_constraints.add(Constraint.ALIGN_MARKERS,
                             instant=j,
-                            min_bound=-0.0000001*(10 ^ j),
-                            max_bound=0.0000001*(10 ^ j),
+                            # min_bound=-0.000000001*(10 ^ j),
+                            # max_bound=0.000000001*(10 ^ j),
                             first_marker_idx=Bow.contact_marker,
-                            second_marker_idx=violon_string.bridge_marker)
+                            second_marker_idx=violin.bridge_marker)
+    # new_constraints.add(Constraint.TRACK_STATE, instant=Instant.END, states_idx=10, idx=2)
+    new_constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=Bow.contact_marker, second_marker_idx=violin.bridge_marker)
     ocp.update_constraints(new_constraints)
 
     sol = ocp.solve(
-        show_online_optim=False,
+        show_online_optim=True,
         solver_options={"max_iter": 10000, "hessian_approximation": "exact"}
     )
     data_sol = Data.get_data(ocp, sol, concatenate=False)
