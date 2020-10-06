@@ -26,6 +26,14 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u
 
     objective_functions = ObjectiveList()
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, idx=0)
+    objective_functions.add(
+        Objective.Lagrange.ALIGN_SEGMENT_WITH_CUSTOM_RT,
+        weight=100,
+        segment_idx=Bow.segment_idx,
+        rt_idx=violin.rt_on_string,
+        idx=1
+    )
+
 
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
 
@@ -98,14 +106,17 @@ if __name__ == "__main__":
     # new_objectives.add(Objective.Lagrange.ALIGN_MARKERS, first_marker_idx=Bow.contact_marker,
     #                    second_marker_idx=violon_string.bridge_marker, idx=1)
     bow_target = np.ndarray((n_q, nb_shooting_pts_window+1))
-    bow_target[bow.hair_idx, -1] = -0.28
+    bow_target[bow.hair_idx, -1] = -0.23
     new_objectives.add(Objective.Mayer.TRACK_STATE, instant=Instant.END, states_idx=bow.hair_idx, target=bow_target,
-                       weight=1000, idx=1)
+                       weight=1000, idx=2)
+    new_objectives.add(Objective.Lagrange.MINIMIZE_TORQUE, instant=Instant.ALL, state_idx=bow.hair_idx,
+                       weight=1,
+                       idx=3) # permet de réduire le nombre d'itérations avant la convergence
+    new_objectives.add(Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE, instant=Instant.ALL, state_idx=bow.hair_idx,
+                       # weight=1,
+                       idx=4)  # rajoute des itérations et ne semble riuen changer au mouvement...
     ocp.update_objectives(new_objectives)
 
-    # objective_functions.add(
-    #     Objective.Lagrange.TRACK_STATE, weight=100, target=q_ref, states_idx=range(biorbd_model.nbQ())
-    # ) # example of the track state use
 
     new_constraints = ConstraintList()
     for j in range(1, 5):
@@ -115,15 +126,14 @@ if __name__ == "__main__":
                             max_bound=0,
                             first_marker_idx=Bow.contact_marker,
                             second_marker_idx=violin.bridge_marker)
-    for j in range(5, nb_shooting_pts_window):
+    for j in range(5, nb_shooting_pts_window+1):
         new_constraints.add(Constraint.ALIGN_MARKERS,
                             instant=j,
-                            # min_bound=-0.000000001*(10 ^ j),
-                            # max_bound=0.000000001*(10 ^ j),
+                            # min_bound=-1, #-10**(j-14) donne 25 itérations
+                            # max_bound=1, # (j-4)/10 donne 21 itérations
                             first_marker_idx=Bow.contact_marker,
                             second_marker_idx=violin.bridge_marker)
-    # new_constraints.add(Constraint.TRACK_STATE, instant=Instant.END, states_idx=10, idx=2)
-    new_constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=Bow.contact_marker, second_marker_idx=violin.bridge_marker)
+
     ocp.update_constraints(new_constraints)
 
     sol = ocp.solve(
