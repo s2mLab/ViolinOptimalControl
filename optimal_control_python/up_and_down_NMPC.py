@@ -164,7 +164,6 @@ if __name__ == "__main__":
             matplotlib.pyplot.plot(x_bounds.min[idx, :], color="green")
             matplotlib.pyplot.plot(x_bounds.max[idx, :], color="green")
 
-
         matplotlib.pyplot.figure(2)
         matplotlib.pyplot.suptitle('Qdot et x_init')
 
