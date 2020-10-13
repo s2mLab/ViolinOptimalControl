@@ -16,8 +16,6 @@ from bioptim import (
     Instant,
     InterpolationType,
     Data,
-    Simulate,
-    ShowResult
 )
 from optimal_control_python.utils import Bow, Violin
 
@@ -158,9 +156,9 @@ if __name__ == "__main__":
         for idx in range(10): # idx = degré de liberté
             matplotlib.pyplot.subplot(2, 5, int(idx+1))
 
-            matplotlib.pyplot.plot(data_sol[0]["q"][idx], color="red") # degré de liberté idx à tous les noeuds
+            matplotlib.pyplot.plot(data_sol[0]["q"][idx], color="blue") # degré de liberté idx à tous les noeuds
             matplotlib.pyplot.title(f"dof {idx}")
-            matplotlib.pyplot.plot(x_init[idx, :], color="blue") # degré de liberté idx à tous les noeuds # color = ""
+            matplotlib.pyplot.plot(x_init[idx, :], color="red") # degré de liberté idx à tous les noeuds # color = ""
             matplotlib.pyplot.plot(x_bounds.min[idx, :], color="green")
             matplotlib.pyplot.plot(x_bounds.max[idx, :], color="green")
 
@@ -171,10 +169,10 @@ if __name__ == "__main__":
             matplotlib.pyplot.subplot(2, 5, int(idx+1))
             matplotlib.pyplot.title(f"dof {idx}")
             matplotlib.pyplot.plot(data_sol[0]["q_dot"][idx], color="blue") # degré de liberté idx à tous les noeuds
-            matplotlib.pyplot.plot(x_init[idx, :], color="red") # degré de liberté idx à tous les noeuds
-            matplotlib.pyplot.plot(x_bounds.min[idx, :], color="green")
-            matplotlib.pyplot.plot(x_bounds.max[idx, :], color="green")
-        matplotlib.pyplot.show()
+            matplotlib.pyplot.plot(x_init[idx+n_q, :], color="red") # degré de liberté idx à tous les noeuds
+            matplotlib.pyplot.plot(x_bounds.min[idx+n_q, :], color="green")
+            matplotlib.pyplot.plot(x_bounds.max[idx+n_q, :], color="green")
+
 
         matplotlib.pyplot.figure(3)
         matplotlib.pyplot.suptitle('tau et u_init')
