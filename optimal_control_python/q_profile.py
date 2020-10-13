@@ -22,7 +22,7 @@ def curve(x):
         elif t[i] > (1 + (period/4)) and t[i] < (2 - (period / 4)):
             y[i] = - x[0]
         elif t[i] > 2- period/4:
-            y[i] = x[0] * np.sin((t[i] - period/2) * x[1])
+            y[i] = x[0] * np.sin((t[i] -2) * x[1])
 
 
 
