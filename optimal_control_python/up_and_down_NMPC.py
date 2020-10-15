@@ -93,7 +93,7 @@ if __name__ == "__main__":
     x0 = np.array(violin.initial_position()[bow.side] + [0] * n_qdot)
     x_init = np.tile(np.array(violin.initial_position()[bow.side] + [0] * n_qdot)[:, np.newaxis],
                      nb_shooting_pts_window+1)
-    x_init[0, :] = 0.07
+    # x_init[0, :] = 0.07
     u_init = np.tile(np.array([0.5] * n_tau)[:, np.newaxis],
                      nb_shooting_pts_window)
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
 
             matplotlib.pyplot.plot(data_sol[0]["q"][idx], color="blue") # degré de liberté idx à tous les noeuds
             matplotlib.pyplot.title(f"dof {idx}")
-            matplotlib.pyplot.plot(x_init[idx, :], color="red") # degré de liberté idx à tous les noeuds # color = ""
+            matplotlib.pyplot.plot(x_init[idx, :], color="red") # degré de liberté idx à tous les noeuds
             matplotlib.pyplot.plot(x_bounds.min[idx, :], color="green")
             matplotlib.pyplot.plot(x_bounds.max[idx, :], color="green")
 
