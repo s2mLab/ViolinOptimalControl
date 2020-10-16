@@ -172,6 +172,7 @@ if __name__ == "__main__":
             matplotlib.pyplot.plot(x_init[idx+n_q, :], color="red") # degré de liberté idx à tous les noeuds
             matplotlib.pyplot.plot(x_bounds.min[idx+n_q, :], color="green")
             matplotlib.pyplot.plot(x_bounds.max[idx+n_q, :], color="green")
+        matplotlib.pyplot.show()
 
 
         matplotlib.pyplot.figure(3)
@@ -188,7 +189,6 @@ if __name__ == "__main__":
 
         # matplotlib.pyplot.sumplot()
 
-        # les contraintes, ton initial guess et l'itération 0 de ipopt ?
 
         print(f"NUMERO DE LA FENETRE : {i}")
         data_sol = Data.get_data(ocp, sol, concatenate=False)
