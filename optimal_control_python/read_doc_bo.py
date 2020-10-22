@@ -1,7 +1,7 @@
 import time
 import sys
 
-from biorbd_optim import OptimalControlProgram
+from bioptim import OptimalControlProgram
 
 from up_and_down_bow import xia_model_dynamic, xia_model_configuration, xia_model_fibers, xia_initial_fatigue_at_zero
 

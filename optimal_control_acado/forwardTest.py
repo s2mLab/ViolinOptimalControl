@@ -1,5 +1,5 @@
 import biorbd
-from BiorbdViz import BiorbdViz
+from bioviz import Viz
 from scipy import integrate
 import numpy as np
 
@@ -35,8 +35,8 @@ plt.plot(t_interp, q_interp)
 plt.plot(t_interp2, q_interp2, '-.')
 plt.show()
 
-bioviz = BiorbdViz(loaded_model=biorbd_model)
-bioviz2 = BiorbdViz(loaded_model=biorbd_model)
+bioviz = Viz(loaded_model=biorbd_model)
+bioviz2 = Viz(loaded_model=biorbd_model)
 bioviz.load_movement(q_interp)
 bioviz2.load_movement(q_interp2)
 

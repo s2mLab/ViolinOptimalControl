@@ -3,7 +3,7 @@ import pickle
 
 import biorbd
 import numpy as np
-from biorbd_optim import (
+from bioptim import (
     Instant,
     InterpolationType,
     InitialConditionsList,

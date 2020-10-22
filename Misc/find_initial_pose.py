@@ -1,5 +1,5 @@
 import biorbd
-import BiorbdViz
+import bioviz
 from scipy import optimize
 import numpy as np
 
@@ -42,7 +42,7 @@ else:
     raise ValueError("string_to_test should be: 'G', 'D', 'A' or 'E'")
 
 m = biorbd.Model(model_path)
-b = BiorbdViz.BiorbdViz(loaded_model=m, markers_size=0.003, show_markers=True)
+b = bioviz.Viz(loaded_model=m, markers_size=0.003, show_markers=True)
 bound_min = []
 bound_max = []
 for i in range(m.nbSegment()):
