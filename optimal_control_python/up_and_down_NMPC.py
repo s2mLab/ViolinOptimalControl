@@ -78,7 +78,7 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
 
 
 
-def warm_start_mhe(sol):
+def warm_start_nmpc(sol, shift=1):
     data_sol_prev = Data.get_data(ocp, sol, concatenate=False)
     q = data_sol_prev[0]["q"]
     dq = data_sol_prev[0]["q_dot"]
@@ -89,10 +89,12 @@ def warm_start_mhe(sol):
     x_init = np.vstack([q, dq])
 
     # x_init = np.zeros(x.shape)
-    x_init[:, :-5] = x[:, 5:]
+    x_init[:, :-shift] = x[:, shift:]
+    x_init[:, -shift:]= np.tile(np.array(x[:, -1])[:, np.newaxis], shift) # constant
     x_init=InitialGuessOption(x_init, interpolation=InterpolationType.EACH_FRAME)
-    u_init = u[:, :-1]
-    u_init[:, :-3] = u[:, 4:]  # [:, -1:]  # discard oldest estimate of the window
+    u_init = u [:, :-1]
+    u_init[:, :-shift] = u[:, shift+1:]  # [:, -1:]  # discard oldest estimate of the window
+    u_init[:, -shift:]= np.tile(np.array(u[:, -2])[:, np.newaxis], shift)
     u_init=InitialGuessOption(u_init, interpolation=InterpolationType.EACH_FRAME)
 
     ocp.update_initial_guess(x_init, u_init)
@@ -172,7 +174,7 @@ if __name__ == "__main__":
     n_muscles = biorbd_model.nbMuscles()
     final_time = 1/3  # duration of the simulation
     nb_shooting_pts_window = 15  # size of NMPC window
-    ns_tot = nb_shooting_pts_window*2 # size of the entire optimization
+    ns_tot = nb_shooting_pts_window*7 # size of the entire optimization
 
     violin = Violin("E")
     bow = Bow("frog")
@@ -209,22 +211,22 @@ if __name__ == "__main__":
 
         define_new_objectives()
 
-        sol = ocp.solve(
-            show_online_optim=False,
-            solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10**(-10), "bound_frac": 10**(-10)}  #, "bound_push": 10**(-10), "bound_frac": 10**(-10)}
-        )
+        first_iter=False
+        if first_iter==True:
+            sol = ocp.solve(
+                show_online_optim=False,
+                solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10**(-10), "bound_frac": 10**(-10)}  #, "bound_push": 10**(-10), "bound_frac": 10**(-10)}
+            )
 
-        data_sol_prev = Data.get_data(ocp, sol, concatenate=False)
-        x_init, u_init, X_out, U_out = warm_start_mhe(sol)
+            ocp.save(sol, "1èreItération")  # you don't have to specify the extension ".bo"
+            #             x_init, u_init, X_out, U_out = warm_start_nmpc(sol_load)
+        else:
 
-        # ocp, x_bounds = prepare_generic_ocp(
-        #     biorbd_model_path=biorbd_model_path,
-        #     number_shooting_points=nb_shooting_pts_window,
-        #     final_time=final_time,
-        #     x_init=x_init,
-        #     u_init=u_init,
-        #     x0=x0,
-        # )
+            ocp_load, sol_load = OptimalControlProgram.load("1èreItération.bo")
+
+            data_sol_prev = Data.get_data(ocp_load, sol_load, concatenate=False)
+            x_init, u_init, X_out, U_out = warm_start_nmpc(sol=sol_load)
+
 
         sol = ocp.solve(
             show_online_optim=False,
@@ -237,15 +239,16 @@ if __name__ == "__main__":
         print(f"NUMERO DE LA FENETRE : {i}")
         data_sol = Data.get_data(ocp, sol, concatenate=False)
 
-        x_init, u_init, x0, u0 = warm_start_mhe(data_sol)
-
-        X_est = x0
-        U_est = u0
-
-    # --- Show results --- #
-    ocp.save_get_data(sol, "up_and_down_NMPC")
-
-    np.save("results", X_est)
+    #     x_init, u_init, x0, u0 = warm_start_nmpc(data_sol)
+    #
+    #     X_est = x0
+    #     U_est = u0
+    #
+    # # --- Show results --- #
+    # # ocp.save_get_data(sol, "up_and_down_NMPC")
+    #
+    # np.save("results", X_est)
+    # bow_target_param = np.load("results.npy")
 
 
 
