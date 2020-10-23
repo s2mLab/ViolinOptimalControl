@@ -211,18 +211,18 @@ if __name__ == "__main__":
 
         define_new_objectives()
 
-        first_iter=False
+        first_iter=True
         if first_iter==True:
             sol = ocp.solve(
                 show_online_optim=False,
                 solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10**(-10), "bound_frac": 10**(-10)}  #, "bound_push": 10**(-10), "bound_frac": 10**(-10)}
             )
 
-            ocp.save(sol, "1èreItération")  # you don't have to specify the extension ".bo"
+            ocp.save(sol, "First_iteration")  # you don't have to specify the extension ".bo"
             #             x_init, u_init, X_out, U_out = warm_start_nmpc(sol_load)
         else:
 
-            ocp_load, sol_load = OptimalControlProgram.load("1èreItération.bo")
+            ocp_load, sol_load = OptimalControlProgram.load("First_iteration.bo")
 
             data_sol_prev = Data.get_data(ocp_load, sol_load, concatenate=False)
             x_init, u_init, X_out, U_out = warm_start_nmpc(sol=sol_load)
