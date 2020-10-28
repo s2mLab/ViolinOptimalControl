@@ -78,7 +78,7 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
 
 
 
-def warm_start_nmpc(sol, shift=1):
+def warm_start_nmpc(sol, shift=5):
     data_sol_prev = Data.get_data(ocp, sol, concatenate=False)
     q = data_sol_prev[0]["q"]
     dq = data_sol_prev[0]["q_dot"]
@@ -91,6 +91,10 @@ def warm_start_nmpc(sol, shift=1):
     # x_init = np.zeros(x.shape)
     x_init[:, :-shift] = x[:, shift:]
     x_init[:, -shift:]= np.tile(np.array(x[:, -1])[:, np.newaxis], shift) # constant
+    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds[:, 0] = x_init[:, 0]
+    x_bounds_prev = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds_prev[:, 0] = x0
     x_init=InitialGuessOption(x_init, interpolation=InterpolationType.EACH_FRAME)
     u_init = u [:, :-1]
     u_init[:, :-shift] = u[:, shift+1:]  # [:, -1:]  # discard oldest estimate of the window
@@ -99,11 +103,12 @@ def warm_start_nmpc(sol, shift=1):
 
     ocp.update_initial_guess(x_init, u_init)
 
-    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-    x_bounds[:, 0] = x0
+    # x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    # x_bounds[:, 0] = x0 # _init[:, 0]
+
     ocp.update_bounds(x_bounds=x_bounds)
 
-    return x_init, u_init, X_out, U_out
+    return x_init, u_init, X_out, U_out, x_bounds, x_bounds_prev
 
 
 
@@ -136,8 +141,11 @@ def display_graphics():
         matplotlib.pyplot.plot(data_sol_prev[0]["q"][dof], color="yellow")
         matplotlib.pyplot.title(f"dof {dof}")
         # matplotlib.pyplot.plot(x_init[dof, :], color="red")  # degré de liberté idx à tous les noeuds
+        matplotlib.pyplot.plot(x_bounds_prev.min[dof, :], color="red")
+        matplotlib.pyplot.plot(x_bounds_prev.max[dof, :], color="red")
         matplotlib.pyplot.plot(x_bounds.min[dof, :], color="green")
         matplotlib.pyplot.plot(x_bounds.max[dof, :], color="green")
+
 
     matplotlib.pyplot.figure(2)
     matplotlib.pyplot.suptitle('Qdot et x_init')
@@ -174,7 +182,7 @@ if __name__ == "__main__":
     n_muscles = biorbd_model.nbMuscles()
     final_time = 1/3  # duration of the simulation
     nb_shooting_pts_window = 15  # size of NMPC window
-    ns_tot = nb_shooting_pts_window*7 # size of the entire optimization
+    ns_tot = nb_shooting_pts_window*10 # size of the entire optimization
 
     violin = Violin("E")
     bow = Bow("frog")
@@ -203,34 +211,42 @@ if __name__ == "__main__":
         x0=x0,
     )
 
-    for i in range(ns_tot):
+    # n_points = 200
+    t = np.linspace(0, 2, ns_tot)
+    a = curve_integral(bow_target_param, t)
 
-        t = np.linspace(0, final_time, nb_shooting_pts_window + 1)
+    for i in range(1, ns_tot):
+
+        # t = np.linspace(i/ns_tot, final_time+i/ns_tot, nb_shooting_pts_window + 1)
+        # q_target = np.ndarray((n_q, nb_shooting_pts_window + 1))
+        # q_target[bow.hair_idx, :] = curve_integral(bow_target_param, t)
         q_target = np.ndarray((n_q, nb_shooting_pts_window + 1))
-        q_target[bow.hair_idx, :] = curve_integral(bow_target_param, t)
+        q_target[bow.hair_idx, :] = a [i : nb_shooting_pts_window + i +1]
+
 
         define_new_objectives()
 
-        first_iter=True
-        if first_iter==True:
+        first_iter=False
+        if first_iter == True:
             sol = ocp.solve(
                 show_online_optim=False,
                 solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10**(-10), "bound_frac": 10**(-10)}  #, "bound_push": 10**(-10), "bound_frac": 10**(-10)}
             )
 
             ocp.save(sol, "First_iteration")  # you don't have to specify the extension ".bo"
-            #             x_init, u_init, X_out, U_out = warm_start_nmpc(sol_load)
+            #             x_init, u_init, X_out, U_out, x_bounds = warm_start_nmpc(sol_load)
         else:
 
             ocp_load, sol_load = OptimalControlProgram.load("First_iteration.bo")
 
             data_sol_prev = Data.get_data(ocp_load, sol_load, concatenate=False)
-            x_init, u_init, X_out, U_out = warm_start_nmpc(sol=sol_load)
-
+            x_init, u_init, X_out, U_out, x_bounds, x_bounds_prev = warm_start_nmpc(sol=sol_load)
+            # X_est=x_init
+            # X_est[:,i]=X_out
 
         sol = ocp.solve(
             show_online_optim=False,
-            solver_options={"max_iter": 0, "hessian_approximation": "exact", "bound_push": 10**(-10), "bound_frac": 10**(-10)}  #, "bound_push": 10**(-10), "bound_frac": 10**(-10)}
+            solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10**(-10), "bound_frac": 10**(-10)}  #, "bound_push": 10**(-10), "bound_frac": 10**(-10)}
         )
 
         # display_graphics()
