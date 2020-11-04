@@ -20,6 +20,7 @@ from bioptim import (
     InterpolationType,
     Data,
     ShowResult,
+    Simulate,
 )
 
 def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u_init, x0, ):
@@ -137,6 +138,22 @@ def display_graphics_X_est():
         matplotlib.pyplot.title(f"dof {dof}")
         matplotlib.pyplot.show()
 
+def display_X_est_():
+    X_est_ = np.load('X_est_.npy')
+    matplotlib.pyplot.suptitle('X_est')
+    matplotlib.pyplot.plot(X_est_[9, :], color="blue")
+    matplotlib.pyplot.title(f"dof {9}")
+    matplotlib.pyplot.show()
+
+def compare_target():
+    matplotlib.pyplot.suptitle('target_curve et target modulo')
+    matplotlib.pyplot.subplot(2, 1, 1)
+    matplotlib.pyplot.plot(target, color="blue")
+    matplotlib.pyplot.title(f"target")
+    matplotlib.pyplot.subplot(2, 1, 2)
+    matplotlib.pyplot.plot(target_curve, color="red")
+    matplotlib.pyplot.title(f"target_curve")
+    matplotlib.pyplot.show()
 
 def display_graphics():
     matplotlib.pyplot.figure(1)
@@ -191,18 +208,18 @@ if __name__ == "__main__":
     n_muscles = biorbd_model.nbMuscles()
     final_time = 1/3  # duration of the simulation
     nb_shooting_pts_window = 15  # size of NMPC window
-    ns_tot = nb_shooting_pts_window*10 # size of the entire optimization
+    ns_tot = nb_shooting_pts_window* 10 # size of the entire optimization
 
     violin = Violin("E")
     bow = Bow("frog")
     bow_target_param = np.load("bow_target_param.npy")  # generate_up_and_down_bow_target(200)
 
 
-    X_est = np.zeros((n_qdot + n_q , nb_shooting_pts_window+1))
-    U_est = np.zeros((n_tau, nb_shooting_pts_window))
+    X_est = np.zeros((n_qdot + n_q , ns_tot+1))
+    U_est = np.zeros((n_tau, ns_tot))
 
-    begin_at_first_iter = True
-    if begin_at_first_iter==True:
+    begin_at_first_iter = False
+    if begin_at_first_iter == True :
         # Initial guess and bounds
         x0 = np.array(violin.initial_position()[bow.side] + [0] * n_qdot)
 
@@ -211,17 +228,18 @@ if __name__ == "__main__":
         u_init = np.tile(np.array([0.5] * n_tau)[:, np.newaxis],
                          nb_shooting_pts_window)
     else:
-        X_est_75iter = np.load('X_est.npy')
-        U_est_75iter = np.load('U_est.npy')
-        x0 = X_est_75iter[:, -1]
-        x_init = X_est_75iter[:, -16:]
-        u_init = U_est_75iter[:, -16:]
+        X_est_init = np.load('X_est_stop.npy')
+        # X_est_init = np.delete(X_est_init, np.s_[75:], axis=1)
+        U_est_init = np.load('U_est_stop.npy')
+        # U_est_init = np.delete(U_est_init, np.s_[75:], axis=1)
+        x0 = X_est_init[:, -1]
+        x_init = X_est_init[:, -(nb_shooting_pts_window+1):]
+        u_init = U_est_init[:, -nb_shooting_pts_window:]
 
 
 
 
     # position initiale de l'ocp
-
     ocp, x_bounds = prepare_generic_ocp(
         biorbd_model_path=biorbd_model_path,
         number_shooting_points=nb_shooting_pts_window,
@@ -231,44 +249,50 @@ if __name__ == "__main__":
         x0=x0,
     )
 
+
     # n_points = 200
     t = np.linspace(0, 2, ns_tot)
     target_curve = curve_integral(bow_target_param, t)
     q_target = np.ndarray((n_q, nb_shooting_pts_window + 1))
+    target = np.ndarray((ns_tot * 2))
+
 
     shift = 1
-    for i in range(1, 76):
-    # for i in range(1, ns_tot):
+    frame_to_init_from = 75
 
-        q_target[bow.hair_idx, :] = target_curve[i*shift: nb_shooting_pts_window + (i*shift)+1]
+    # Init from known position
+    ocp_load, sol_load = OptimalControlProgram.load(f"{frame_to_init_from}_iter.bo")
+    data_sol_prev = Data.get_data(ocp_load, sol_load, concatenate=False)
+    x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(sol=sol_load, shift=shift)
+    # U_est = U_est_init
+    # X_est = X_est_init
+    U_est[:, :U_est_init.shape[1]] = U_est_init
+    X_est[:, :X_est_init.shape[1]] = X_est_init
 
 
+    # for i in range(frame_to_init_from, 150):
+    for i in range(frame_to_init_from, ns_tot):
+        target = np.ndarray((ns_tot*2))
+        target[i] = target_curve[i % 150]
+        q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
+        # q_target[bow.hair_idx, :] = target_curve[a*shift: nb_shooting_pts_window + (a*shift)+1]
         define_new_objectives()
 
-        # first_iter = False
-        # if first_iter == True:
         sol = ocp.solve(
             show_online_optim=False,
-            solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10**(-10), "bound_frac": 10**(-10)}  #, "bound_push": 10**(-10), "bound_frac": 10**(-10)}
+            solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10 ** (-10),
+                            "bound_frac": 10 ** (-10)}  # , "bound_push": 10**(-10), "bound_frac": 10**(-10)}
         )
-
-        # ocp.save(sol, "First_iteration")  # you don't have to specify the extension ".bo"
-        # #             x_init, u_init, X_out, U_out, x_bounds = warm_start_nmpc(sol_load)
-        # else:
-
-        #     ocp_load, sol_load = OptimalControlProgram.load("First_iteration.bo")
-
-        #     data_sol_prev = Data.get_data(ocp_load, sol_load, concatenate=False)
+        # sol = Simulate.from_controls_and_initial_states(ocp, x_init.initial_guess, u_init.initial_guess)
         x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(sol=sol, shift=shift)
-        # X_est=x_init
-        X_est[:, 0] = x0
-        X_est = np.insert(X_est, i, X_out, axis=1)
-        U_est[:, 0] = u[:, 0]
-        U_est = np.insert(U_est, i, U_out, axis=1)
-        # X_est[:, i] = X_out
 
-    np.save("X_est", X_est)
-    np.save("U_est", U_est)
+        X_est[:, i] = X_out
+        U_est[:, i] = U_out
+
+        ocp.save(sol, f"{i}_iter")  # you don't have to specify the extension ".bo"
+        np.save("X_est", X_est)
+        np.save("U_est", U_est)
+
     np.load(U_est)
 
 
@@ -307,17 +331,19 @@ if __name__ == "__main__":
 # X_est.shape
 # (20, 91)
 #
-# ocp, x_bounds = prepare_generic_ocp(
-#     biorbd_model_path=biorbd_model_path,
-#     number_shooting_points=90,
-#     final_time=2,
-#     x_init=X_est,
-#     u_init=U_est,
-#     x0=x0,
-#     )
-# sol = ocp.solve(
-#     show_online_optim=False,
-#     solver_options={"max_iter": 0, "hessian_approximation": "exact", "bound_push": 10 ** (-10),
-#                     "bound_frac": 10 ** (-10)}  # , "bound_push": 10**(-10), "bound_frac": 10**(-10)}
-#     )
-# ShowResult(ocp, sol).graphs()
+nb_shooting_pts_window=89
+ocp, x_bounds = prepare_generic_ocp(
+    biorbd_model_path=biorbd_model_path,
+    number_shooting_points=nb_shooting_pts_window,
+    final_time=2,
+    x_init=X_est,
+    u_init=U_est,
+    x0=x0,
+    )
+sol = ocp.solve(
+    show_online_optim=False,
+    solver_options={"max_iter": 0, "hessian_approximation": "exact", "bound_push": 10 ** (-10),
+                    "bound_frac": 10 ** (-10)}  # , "bound_push": 10**(-10), "bound_frac": 10**(-10)}
+    )
+ShowResult(ocp, sol).graphs()
+display_graphics_X_est()
