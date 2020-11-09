@@ -31,6 +31,7 @@ def curve_integral(x, t):
     integ[0] = 0
     for i in range(t.shape[0]-1):
         integ[i+1] = integrate.quad(lambda t: curve(x, t), 0, t[i+1])[0]
+        # integ[i] = integrate.quad(lambda t: curve(x, t), 0, t[i])[0]
     return integ + min_bow
 
 def generate_up_and_down_bow_target(n_points, bow_speed=10, bow_acceleration=0.5):

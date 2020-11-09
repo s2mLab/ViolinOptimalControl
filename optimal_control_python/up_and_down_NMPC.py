@@ -213,8 +213,9 @@ if __name__ == "__main__":
     violin = Violin("E")
     bow = Bow("frog")
 
-    bow_target_param = generate_up_and_down_bow_target(200) #np.load("bow_target_param.npy")  # generate_up_and_down_bow_target(200)
-
+    np.save("bow_target_param", generate_up_and_down_bow_target(200)) #np.load("bow_target_param.npy")  # generate_up_and_down_bow_target(200)
+    bow_target_param = np.load("bow_target_param.npy")
+    frame_to_init_from = 75
 
     X_est = np.zeros((n_qdot + n_q , ns_tot+1))
     U_est = np.zeros((n_tau, ns_tot))
@@ -229,9 +230,9 @@ if __name__ == "__main__":
         u_init = np.tile(np.array([0.5] * n_tau)[:, np.newaxis],
                          nb_shooting_pts_window)
     else:
-        X_est_init = np.load('X_est.npy')
+        X_est_init = np.load('X_est.npy')[:, :frame_to_init_from+1]
         # X_est_init = np.delete(X_est_init, np.s_[75:], axis=1)
-        U_est_init = np.load('U_est.npy')
+        U_est_init = np.load('U_est.npy')[:, :frame_to_init_from+1]
         # U_est_init = np.delete(U_est_init, np.s_[75:], axis=1)
         x0 = X_est_init[:, -1]
         x_init = X_est_init[:, -(nb_shooting_pts_window+1):]
@@ -259,13 +260,13 @@ if __name__ == "__main__":
     Nmax = 250
     T = np.ndarray((Nmax))
     for i in range(Nmax):
-        a=i%150
+        a=i % ns_tot
         T[i]=t[a]
     target = curve_integral(bow_target_param, T)
 
 
     shift = 1
-    frame_to_init_from = 75
+
 
     # Init from known position
     ocp_load, sol_load = OptimalControlProgram.load(f"saved_iterations/{frame_to_init_from}_iter.bo")
@@ -275,8 +276,8 @@ if __name__ == "__main__":
     X_est[:, :X_est_init.shape[1]] = X_est_init
 
 
-    # for i in range(frame_to_init_from, 150):
-    for i in range(frame_to_init_from, ns_tot):
+    for i in range(0, frame_to_init_from+1):
+    # for i in range(frame_to_init_from, 200):
         q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
         define_new_objectives()
 
@@ -292,6 +293,7 @@ if __name__ == "__main__":
         U_est[:, i] = U_out
 
         ocp.save(sol, f"/saved_iterations/{i}_iter")  # you don't have to specify the extension ".bo"
+        np.save("X_est", X_est)
 
     np.save("X_est", X_est)
     np.save("U_est", U_est)
