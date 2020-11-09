@@ -98,6 +98,7 @@ def warm_start_nmpc(sol, shift=1):
     x_init[:, -shift:] = np.tile(np.array(x[:, -1])[:, np.newaxis], shift) # constant
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
     x_bounds[:, 0] = x_init[:, 0]
+    # x_bounds[:, 0] = x[:, 0]
     # x_bounds_prev = BoundsOption(QAndQDotBounds(biorbd_model))
     # x_bounds_prev[:, 0] = x0
     x_init=InitialGuessOption(x_init, interpolation=InterpolationType.EACH_FRAME)
@@ -139,9 +140,8 @@ def display_graphics_X_est():
         matplotlib.pyplot.show()
 
 def display_X_est_():
-    X_est_ = np.load('X_est_.npy')
     matplotlib.pyplot.suptitle('X_est')
-    matplotlib.pyplot.plot(X_est_[9, :], color="blue")
+    matplotlib.pyplot.plot(X_est[9, :], color="blue")
     matplotlib.pyplot.title(f"dof {9}")
     matplotlib.pyplot.show()
 
@@ -213,14 +213,14 @@ if __name__ == "__main__":
     violin = Violin("E")
     bow = Bow("frog")
 
-    np.save("bow_target_param", generate_up_and_down_bow_target(200)) #np.load("bow_target_param.npy")  # generate_up_and_down_bow_target(200)
+    # np.save("bow_target_param", generate_up_and_down_bow_target(200))
     bow_target_param = np.load("bow_target_param.npy")
     frame_to_init_from = 75
 
-    X_est = np.zeros((n_qdot + n_q , ns_tot+1))
-    U_est = np.zeros((n_tau, ns_tot))
+    X_est = np.zeros((n_qdot + n_q , 201))
+    U_est = np.zeros((n_tau, 201))
 
-    begin_at_first_iter = True
+    begin_at_first_iter = False
     if begin_at_first_iter == True :
         # Initial guess and bounds
         x0 = np.array(violin.initial_position()[bow.side] + [0] * n_qdot)
@@ -234,8 +234,9 @@ if __name__ == "__main__":
         # X_est_init = np.delete(X_est_init, np.s_[75:], axis=1)
         U_est_init = np.load('U_est.npy')[:, :frame_to_init_from+1]
         # U_est_init = np.delete(U_est_init, np.s_[75:], axis=1)
-        x0 = X_est_init[:, -1]
+        # x0 = X_est_init[:, -1]
         x_init = X_est_init[:, -(nb_shooting_pts_window+1):]
+        x0 = x_init[:, 0]
         u_init = U_est_init[:, -nb_shooting_pts_window:]
 
 
@@ -276,7 +277,7 @@ if __name__ == "__main__":
     X_est[:, :X_est_init.shape[1]] = X_est_init
 
 
-    for i in range(0, frame_to_init_from+1):
+    for i in range(frame_to_init_from, 200):
     # for i in range(frame_to_init_from, 200):
         q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
         define_new_objectives()
@@ -292,8 +293,8 @@ if __name__ == "__main__":
         X_est[:, i] = X_out
         U_est[:, i] = U_out
 
-        ocp.save(sol, f"/saved_iterations/{i}_iter")  # you don't have to specify the extension ".bo"
-        np.save("X_est", X_est)
+        ocp.save(sol, f"saved_iterations/{i}_iter")  # you don't have to specify the extension ".bo"
+        # np.save("X_est", X_est)
 
     np.save("X_est", X_est)
     np.save("U_est", U_est)

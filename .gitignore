@@ -122,3 +122,4 @@ BiorbdViz
 *.npy
 
 *sandbox
+/optimal_control_python/saved_iterations/
