@@ -139,7 +139,7 @@ def display_graphics_X_est():
         matplotlib.pyplot.title(f"dof {dof}")
         matplotlib.pyplot.show()
 
-def display_X_est_():
+def display_X_est():
     matplotlib.pyplot.suptitle('X_est')
     matplotlib.pyplot.plot(X_est[9, :], color="blue")
     matplotlib.pyplot.title(f"dof {9}")
@@ -215,10 +215,10 @@ if __name__ == "__main__":
 
     # np.save("bow_target_param", generate_up_and_down_bow_target(200))
     bow_target_param = np.load("bow_target_param.npy")
-    frame_to_init_from = 75
+    frame_to_init_from = 149
 
-    X_est = np.zeros((n_qdot + n_q , 201))
-    U_est = np.zeros((n_tau, 201))
+    X_est = np.zeros((n_qdot + n_q , 251))
+    U_est = np.zeros((n_tau, 251))
 
     begin_at_first_iter = False
     if begin_at_first_iter == True :
@@ -257,8 +257,8 @@ if __name__ == "__main__":
     t = np.linspace(0, 2, ns_tot)
     target_curve = curve_integral(bow_target_param, t)
     q_target = np.ndarray((n_q, nb_shooting_pts_window + 1))
-    target = np.ndarray((ns_tot * 2))
-    Nmax = 250
+    Nmax = 300
+    target = np.ndarray(Nmax)
     T = np.ndarray((Nmax))
     for i in range(Nmax):
         a=i % ns_tot
@@ -277,8 +277,8 @@ if __name__ == "__main__":
     X_est[:, :X_est_init.shape[1]] = X_est_init
 
 
-    for i in range(frame_to_init_from, 200):
-    # for i in range(frame_to_init_from, 200):
+    for i in range(frame_to_init_from, 250):
+    # for i in range(230, 250):
         q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
         define_new_objectives()
 
@@ -287,7 +287,7 @@ if __name__ == "__main__":
             solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10 ** (-10),
                             "bound_frac": 10 ** (-10)}  # , "bound_push": 10**(-10), "bound_frac": 10**(-10)}
         )
-        # sol = Simulate.from_controls_and_initial_states(ocp, x_init.initial_guess, u_init.initial_guess)
+        sol = Simulate.from_controls_and_initial_states(ocp, x_init.initial_guess, u_init.initial_guess)
         x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(sol=sol, shift=shift)
 
         X_est[:, i] = X_out
