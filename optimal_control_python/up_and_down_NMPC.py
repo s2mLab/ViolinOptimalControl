@@ -122,7 +122,7 @@ def define_new_objectives():
     new_objectives = ObjectiveList()
 
     new_objectives.add(
-        Objective.Lagrange.TRACK_STATE, instant=Instant.ALL, weight=1000, target=q_target, states_idx=bow.hair_idx,
+        Objective.Lagrange.TRACK_STATE, instant=Instant.ALL, weight=10000, target=q_target, states_idx=bow.hair_idx,
         idx=3
     )
     # new_objectives.add(Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE, instant=Instant.ALL, state_idx=bow.hair_idx,
@@ -135,12 +135,18 @@ def display_graphics_X_est():
     matplotlib.pyplot.suptitle('X_est')
     for dof in range(10):
         matplotlib.pyplot.subplot(2, 5, int(dof + 1))
+        if dof == 9:
+            matplotlib.pyplot.plot(target, color="red")
+            # matplotlib.pyplot.title(f"target")
         matplotlib.pyplot.plot(X_est[dof, :], color="blue")
         matplotlib.pyplot.title(f"dof {dof}")
         matplotlib.pyplot.show()
 
+
 def display_X_est():
-    matplotlib.pyplot.suptitle('X_est')
+    matplotlib.pyplot.suptitle('X_est and target')
+    matplotlib.pyplot.plot(target, color="red")
+    matplotlib.pyplot.title(f"target")
     matplotlib.pyplot.plot(X_est[9, :], color="blue")
     matplotlib.pyplot.title(f"dof {9}")
     matplotlib.pyplot.show()
@@ -215,10 +221,10 @@ if __name__ == "__main__":
 
     # np.save("bow_target_param", generate_up_and_down_bow_target(200))
     bow_target_param = np.load("bow_target_param.npy")
-    frame_to_init_from = 149
+    frame_to_init_from = 199
 
-    X_est = np.zeros((n_qdot + n_q , 251))
-    U_est = np.zeros((n_tau, 251))
+    X_est = np.zeros((n_qdot + n_q , 301))
+    U_est = np.zeros((n_tau, 301))
 
     begin_at_first_iter = False
     if begin_at_first_iter == True :
@@ -257,7 +263,7 @@ if __name__ == "__main__":
     t = np.linspace(0, 2, ns_tot)
     target_curve = curve_integral(bow_target_param, t)
     q_target = np.ndarray((n_q, nb_shooting_pts_window + 1))
-    Nmax = 300
+    Nmax = 350
     target = np.ndarray(Nmax)
     T = np.ndarray((Nmax))
     for i in range(Nmax):
@@ -277,8 +283,8 @@ if __name__ == "__main__":
     X_est[:, :X_est_init.shape[1]] = X_est_init
 
 
-    for i in range(frame_to_init_from, 250):
-    # for i in range(230, 250):
+    for i in range(frame_to_init_from, 300):
+    # for i in range(200, 300):
         q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
         define_new_objectives()
 
@@ -336,3 +342,20 @@ if __name__ == "__main__":
 # X_est.shape
 # (20, 91)
 #
+
+
+nb_shooting_pts_window=250
+ocp, x_bounds = prepare_generic_ocp(
+    biorbd_model_path=biorbd_model_path,
+    number_shooting_points=nb_shooting_pts_window,
+    final_time=2,
+    x_init=X_est,
+    u_init=U_est,
+    x0=x0,
+    )
+sol = ocp.solve(
+    show_online_optim=False,
+    solver_options={"max_iter": 0, "hessian_approximation": "exact", "bound_push": 10 ** (-10),
+                    "bound_frac": 10 ** (-10)}  # , "bound_push": 10**(-10), "bound_frac": 10**(-10)}
+    )
+ShowResult(ocp, sol).graphs()
