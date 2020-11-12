@@ -66,7 +66,6 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
                             # max_bound=1, # (j-4)/10 donne 21 itérations
                             first_marker_idx=Bow.contact_marker,
                             second_marker_idx=violin.bridge_marker, idx=j)
-    # ocp.update_constraints(new_constraints)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -92,29 +91,20 @@ def warm_start_nmpc(sol, shift=1):
     X_out = x[:, 0]
     U_out = u[:, 0]
     x_init = np.vstack([q, dq])
-
-    # x_init = np.zeros(x.shape)
     x_init[:, :-shift] = x[:, shift:]
     x_init[:, -shift:] = np.tile(np.array(x[:, -1])[:, np.newaxis], shift) # constant
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
     x_bounds[:, 0] = x_init[:, 0]
-    # x_bounds[:, 0] = x[:, 0]
-    # x_bounds_prev = BoundsOption(QAndQDotBounds(biorbd_model))
-    # x_bounds_prev[:, 0] = x0
     x_init=InitialGuessOption(x_init, interpolation=InterpolationType.EACH_FRAME)
     u_init = u[:, :-1]
-    u_init[:, :-shift] = u[:, shift+1:]  # [:, -1:]  # discard oldest estimate of the window
+    u_init[:, :-shift] = u[:, shift+1:]
     u_init[:, -shift:]= np.tile(np.array(u[:, -2])[:, np.newaxis], shift)
     u_init=InitialGuessOption(u_init, interpolation=InterpolationType.EACH_FRAME)
 
     ocp.update_initial_guess(x_init, u_init)
-
-    # x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-    # x_bounds[:, 0] = x0 # _init[:, 0]
-
     ocp.update_bounds(x_bounds=x_bounds)
 
-    return x_init, u_init, X_out, U_out, x_bounds, u # , x_bounds_prev
+    return x_init, u_init, X_out, U_out, x_bounds, u
 
 
 
@@ -131,21 +121,18 @@ def define_new_objectives():
     ocp.update_objectives(new_objectives)
 
 def display_graphics_X_est():
-
     matplotlib.pyplot.suptitle('X_est')
     for dof in range(10):
         matplotlib.pyplot.subplot(2, 5, int(dof + 1))
         if dof == 9:
-            matplotlib.pyplot.plot(target, color="red")
-            # matplotlib.pyplot.title(f"target")
+            matplotlib.pyplot.plot(target[:X_est.shape[1]], color="red")
         matplotlib.pyplot.plot(X_est[dof, :], color="blue")
         matplotlib.pyplot.title(f"dof {dof}")
         matplotlib.pyplot.show()
 
-
 def display_X_est():
     matplotlib.pyplot.suptitle('X_est and target')
-    matplotlib.pyplot.plot(target, color="red")
+    matplotlib.pyplot.plot(target[:X_est.shape[1]], color="red")
     matplotlib.pyplot.title(f"target")
     matplotlib.pyplot.plot(X_est[9, :], color="blue")
     matplotlib.pyplot.title(f"dof {9}")
@@ -161,48 +148,6 @@ def compare_target():
     matplotlib.pyplot.title(f"target_curve")
     matplotlib.pyplot.show()
 
-def display_graphics():
-    matplotlib.pyplot.figure(1)
-
-    data_sol = Data.get_data(ocp, sol, concatenate=False)
-
-    matplotlib.pyplot.suptitle('Q et x_init')
-    for dof in range(10):  # idx = degré de liberté
-        matplotlib.pyplot.subplot(2, 5, int(dof + 1))
-
-        matplotlib.pyplot.plot(data_sol[0]["q"][dof], color="blue")  # degré de liberté idx à tous les noeuds
-        matplotlib.pyplot.plot(data_sol_prev[0]["q"][dof], color="yellow")
-        matplotlib.pyplot.title(f"dof {dof}")
-        # matplotlib.pyplot.plot(x_init[dof, :], color="red")  # degré de liberté idx à tous les noeuds
-        # matplotlib.pyplot.plot(x_bounds_prev.min[dof, :], color="red")
-        # matplotlib.pyplot.plot(x_bounds_prev.max[dof, :], color="red")
-        matplotlib.pyplot.plot(x_bounds.min[dof, :], color="green")
-        matplotlib.pyplot.plot(x_bounds.max[dof, :], color="green")
-
-
-    matplotlib.pyplot.figure(2)
-    matplotlib.pyplot.suptitle('Qdot et x_init')
-
-    for dof in range(10):  # dof = degré de liberté
-        matplotlib.pyplot.subplot(2, 5, int(dof + 1))
-        matplotlib.pyplot.title(f"dof {dof}")
-        matplotlib.pyplot.plot(data_sol[0]["q_dot"][dof], color="blue")
-        matplotlib.pyplot.plot(data_sol_prev[0]["q_dot"][dof], color="yellow")
-        # matplotlib.pyplot.plot(x_init[dof + n_q, :], color="red")
-        matplotlib.pyplot.plot(x_bounds.min[dof + n_q, :], color="green")
-        matplotlib.pyplot.plot(x_bounds.max[dof + n_q, :], color="green")
-    matplotlib.pyplot.show()
-
-    matplotlib.pyplot.figure(3)
-    matplotlib.pyplot.suptitle('tau et u_init')
-    for dof in range(10):
-        matplotlib.pyplot.subplot(2, 5, int(dof + 1))
-        matplotlib.pyplot.title(f"dof {dof}")
-        matplotlib.pyplot.plot(data_sol[1]["tau"][dof], color="blue")
-        matplotlib.pyplot.plot(data_sol_prev[1]["tau"][dof], color="yellow")
-        # matplotlib.pyplot.plot(u_init[dof, :], color="red")
-    matplotlib.pyplot.show()
-
 
 if __name__ == "__main__":
     # Parameters
@@ -214,18 +159,18 @@ if __name__ == "__main__":
     n_muscles = biorbd_model.nbMuscles()
     final_time = 1/3  # duration of the simulation
     nb_shooting_pts_window = 15  # size of NMPC window
-    ns_tot = nb_shooting_pts_window* 10 # size of the entire optimization
+    ns_tot_up_and_down = nb_shooting_pts_window* 10 # size of the entire optimization
 
     violin = Violin("E")
     bow = Bow("frog")
 
     # np.save("bow_target_param", generate_up_and_down_bow_target(200))
     bow_target_param = np.load("bow_target_param.npy")
-    frame_to_init_from = 199
+    frame_to_init_from = 280
+    nb_shooting_pts_all_optim = 300
 
-    X_est = np.zeros((n_qdot + n_q , 301))
-    U_est = np.zeros((n_tau, 301))
-
+    X_est = np.zeros((n_qdot + n_q , nb_shooting_pts_all_optim))
+    U_est = np.zeros((n_tau, nb_shooting_pts_all_optim))
     begin_at_first_iter = False
     if begin_at_first_iter == True :
         # Initial guess and bounds
@@ -260,14 +205,14 @@ if __name__ == "__main__":
 
 
 
-    t = np.linspace(0, 2, ns_tot)
+    t = np.linspace(0, 2, ns_tot_up_and_down)
     target_curve = curve_integral(bow_target_param, t)
     q_target = np.ndarray((n_q, nb_shooting_pts_window + 1))
     Nmax = 350
     target = np.ndarray(Nmax)
     T = np.ndarray((Nmax))
     for i in range(Nmax):
-        a=i % ns_tot
+        a=i % ns_tot_up_and_down
         T[i]=t[a]
     target = curve_integral(bow_target_param, T)
 
@@ -276,14 +221,14 @@ if __name__ == "__main__":
 
 
     # Init from known position
-    ocp_load, sol_load = OptimalControlProgram.load(f"saved_iterations/{frame_to_init_from}_iter.bo")
+    ocp_load, sol_load = OptimalControlProgram.load(f"saved_iterations/{frame_to_init_from-1}_iter.bo")
     data_sol_prev = Data.get_data(ocp_load, sol_load, concatenate=False)
     x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(sol=sol_load, shift=shift)
     U_est[:, :U_est_init.shape[1]] = U_est_init
     X_est[:, :X_est_init.shape[1]] = X_est_init
 
 
-    for i in range(frame_to_init_from, 300):
+    for i in range(frame_to_init_from, nb_shooting_pts_all_optim):
     # for i in range(200, 300):
         q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
         define_new_objectives()
@@ -312,37 +257,8 @@ if __name__ == "__main__":
         #     solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10**(-10), "bound_frac": 10**(-10)}  #, "bound_push": 10**(-10), "bound_frac": 10**(-10)}
         # )
 
-        # display_graphics()
-
-        # ShowResult(ocp, sol).graphs()
-        # print(f"NUMERO DE LA FENETRE : {i}")
-        # data_sol = Data.get_data(ocp, sol, concatenate=False)
-
-    #     x_init, u_init, x0, u0 = warm_start_nmpc(data_sol)
-    #
-    #     X_est = x0
-    #     U_est = u0
-    #
-    # # --- Show results --- #
-    # # ocp.save_get_data(sol, "up_and_down_NMPC")
-    #
-    # np.save("results", X_est)
-    # bow_target_param = np.load("results.npy")
 
 ## Pour afficher mouvement global
-
-# X_est_75iter = np.load('X_est.npy')
-# U_est_75iter = np.load('U_est.npy')
-# x0 = X_est_75iter[:, -1]
-# x_init = X_est_75iter[:, -16:]
-# u_init = U_est_75iter[:, -16:]
-
-# x_init.shape
-# (20, 16)
-# X_est.shape
-# (20, 91)
-#
-
 
 nb_shooting_pts_window=250
 ocp, x_bounds = prepare_generic_ocp(
