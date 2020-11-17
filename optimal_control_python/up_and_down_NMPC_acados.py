@@ -21,9 +21,10 @@ from bioptim import (
     Data,
     ShowResult,
     Simulate,
+    Solver
 )
 
-def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u_init, x0, ):
+def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u_init, x0, useSX=True):
     biorbd_model = biorbd.Model(biorbd_model_path)
     n_tau = biorbd_model.nbGeneralizedTorque()
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -78,6 +79,7 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
         u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
+        use_SX=useSX
     ), x_bounds
 
 
@@ -90,8 +92,6 @@ def warm_start_nmpc(sol, shift=1):
     x = np.vstack([q, dq])
     X_out = x[:, 0]
     U_out = u[:, 0]
-    lam_g = sol['lam_g']
-    lam_x = sol['lam_x']
     x_init = np.vstack([q, dq])
     x_init[:, :-shift] = x[:, shift:]
     x_init[:, -shift:] = np.tile(np.array(x[:, -1])[:, np.newaxis], shift) # constant
@@ -106,7 +106,7 @@ def warm_start_nmpc(sol, shift=1):
     ocp.update_initial_guess(x_init, u_init)
     ocp.update_bounds(x_bounds=x_bounds)
 
-    return x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x
+    return x_init, u_init, X_out, U_out, x_bounds, u,
 
 
 
@@ -128,17 +128,17 @@ def display_graphics_X_est():
     for dof in range(10):
         matplotlib.pyplot.subplot(2, 5, int(dof + 1))
         if dof == 9:
-            matplotlib.pyplot.plot(target[:X_est.shape[1]], color="red")
-        matplotlib.pyplot.plot(X_est[dof, :], color="blue")
+            matplotlib.pyplot.plot(target[:X_est_acados.shape[1]], color="red")
+        matplotlib.pyplot.plot(X_est_acados[dof, :], color="blue")
         matplotlib.pyplot.title(f"dof {dof}")
         matplotlib.pyplot.show()
 
 def display_X_est():
     matplotlib.pyplot.suptitle('X_est and target')
-    matplotlib.pyplot.plot(target[:X_est.shape[1]], color="red")
+    matplotlib.pyplot.plot(target[:X_est_acados.shape[1]], color="red")
     matplotlib.pyplot.title(f"target")
-    matplotlib.pyplot.plot(X_est[bow.hair_idx, :], color="blue")
-    matplotlib.pyplot.title(f"dof {bow.hair_idx}")
+    matplotlib.pyplot.plot(X_est_acados[9, :], color="blue")
+    matplotlib.pyplot.title(f"dof {9}")
     matplotlib.pyplot.show()
 
 def compare_target():
@@ -169,12 +169,12 @@ if __name__ == "__main__":
 
     # np.save("bow_target_param", generate_up_and_down_bow_target(200))
     bow_target_param = np.load("bow_target_param.npy")
-    frame_to_init_from = 290
+    frame_to_init_from = 280
     nb_shooting_pts_all_optim = 300
 
-    X_est = np.zeros((n_qdot + n_q , nb_shooting_pts_all_optim))
-    U_est = np.zeros((n_tau, nb_shooting_pts_all_optim))
-    begin_at_first_iter = False
+    X_est_acados = np.zeros((n_qdot + n_q , nb_shooting_pts_all_optim))
+    U_est_acados = np.zeros((n_tau, nb_shooting_pts_all_optim))
+    begin_at_first_iter = True
     if begin_at_first_iter == True :
         # Initial guess and bounds
         x0 = np.array(violin.initial_position()[bow.side] + [0] * n_qdot)
@@ -184,9 +184,9 @@ if __name__ == "__main__":
         u_init = np.tile(np.array([0.5] * n_tau)[:, np.newaxis],
                          nb_shooting_pts_window)
     else:
-        X_est_init = np.load('X_est.npy')[:, :frame_to_init_from+1]
+        X_est_init = np.load('X_est_acados.npy')[:, :frame_to_init_from+1]
         # X_est_init = np.delete(X_est_init, np.s_[75:], axis=1)
-        U_est_init = np.load('U_est.npy')[:, :frame_to_init_from+1]
+        U_est_init = np.load('U_est_acados.npy')[:, :frame_to_init_from+1]
         # U_est_init = np.delete(U_est_init, np.s_[75:], axis=1)
         # x0 = X_est_init[:, -1]
         x_init = X_est_init[:, -(nb_shooting_pts_window+1):]
@@ -204,6 +204,7 @@ if __name__ == "__main__":
         x_init=x_init,
         u_init=u_init,
         x0=x0,
+        useSX=True,
     )
 
 
@@ -221,55 +222,43 @@ if __name__ == "__main__":
         T[i]=t[a]
     target = curve_integral(bow_target_param, T)
 
-
     shift = 1
 
 
     # Init from known position
-    ocp_load, sol_load = OptimalControlProgram.load(f"saved_iterations/{frame_to_init_from-1}_iter.bo")
-    data_sol_prev = Data.get_data(ocp_load, sol_load, concatenate=False)
-    x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x= warm_start_nmpc(sol=sol_load, shift=shift)
-    U_est[:, :U_est_init.shape[1]] = U_est_init
-    X_est[:, :X_est_init.shape[1]] = X_est_init
+    # ocp_load, sol_load = OptimalControlProgram.load(f"saved_iterations/{frame_to_init_from-1}_iter_acados.bo")
+    # data_sol_prev = Data.get_data(ocp_load, sol_load, concatenate=False)
+    # x_init, u_init, X_out, U_out, x_bounds, u,  = warm_start_nmpc(sol=sol_load, shift=shift)
+    # U_est_acados[:, :U_est_init.shape[1]] = U_est_init
+    # X_est_acados[:, :X_est_init.shape[1]] = X_est_init
 
 
     # for i in range(frame_to_init_from, nb_shooting_pts_all_optim):
-    # for i in range(1, nb_shooting_pts_all_optim):
-    for i in range(frame_to_init_from, nb_shooting_pts_all_optim):
+    for i in range(1, frame_to_init_from):
         q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
+        # q_target[bow.hair_idx, i] = target[i * shift]
+        # q_target[i] = target[i * shift]
         define_new_objectives()
 
         sol = ocp.solve(
             show_online_optim=False,
-            solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10 ** (-10),
-                            "bound_frac": 10 ** (-10), "warm_start_init_point":"yes",
-                            "warm_start_bound_push" : 10 ** (-16), "warm_start_bound_frac" : 10 ** (-16),
-                            "nlp_scaling_method": "none", "warm_start_mult_bound_push": 10 ** (-16),
-                            # "warm_start_slack_bound_push": 10 ** (-16)," warm_start_slack_bound_frac":10 ** (-16),
-                            } # "print_options_documentation": "yes"
+            solver=Solver.ACADOS
         )
         # sol = Simulate.from_controls_and_initial_states(ocp, x_init.initial_guess, u_init.initial_guess)
-        x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x = warm_start_nmpc(sol=sol, shift=shift)
+        x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(sol=sol, shift=shift)
+        # sol['lam_g']
+        # sol['lam_x']
+        X_est_acados[:, i] = X_out
+        U_est_acados[:, i] = U_out
 
-        X_est[:, i] = X_out
-        U_est[:, i] = U_out
-
-        ocp.save(sol, f"saved_iterations/{i}_iter")  # you don't have to specify the extension ".bo"
+        ocp.save(sol, f"saved_iterations/{i}_iter_acados")  # you don't have to specify the extension ".bo"
         # np.save("X_est", X_est)
 
-    np.save("X_est", X_est)
-    np.save("U_est", U_est)
-    np.load(U_est)
+    np.save("X_est_acados", X_est_acados)
+    np.save("U_est_acados", U_est_acados)
+    np.load(U_est_acados)
 
 
-        # sol = ocp.solve(
-        #     show_online_optim=False,
-        #     solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10**(-10), "bound_frac": 10**(-10)}  #, "bound_push": 10**(-10), "bound_frac": 10**(-10)}
-        # )
-
-
-# Besides setting an option, you need to pass the 'x0', 'lam_g0', 'lam_x0' inputs to have an effect.
-# Other relevant options to do warm-starting with ipopt: mu_init, warm_start_mult_bound_push, warm_start_slack_bound_push, warm_start_bound_push. Usually, you want to set these low.
 
 ## Pour afficher mouvement global
 
