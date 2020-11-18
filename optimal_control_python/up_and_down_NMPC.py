@@ -109,6 +109,32 @@ def warm_start_nmpc(sol, shift=1):
     return x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x
 
 
+def warm_start_nmpc_same_iter(sol, shift=0):
+    data_sol_prev = Data.get_data(ocp, sol, concatenate=False)
+    q = data_sol_prev[0]["q"]
+    dq = data_sol_prev[0]["q_dot"]
+    u = data_sol_prev[1]["tau"]
+    x = np.vstack([q, dq])
+    X_out = x[:, 0]
+    U_out = u[:, 0]
+    lam_g = sol['lam_g']
+    lam_x = sol['lam_x']
+    x_init = np.vstack([q, dq])
+    x_init[:, :] = x[:, :]
+    # x_init[:, -shift:] = np.tile(np.array(x[:, -1])[:, np.newaxis], shift) # constant
+    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds[:, 0] = x_init[:, 0]
+    x_init=InitialGuessOption(x_init, interpolation=InterpolationType.EACH_FRAME)
+    u_init = u[:, :-1]
+    # u_init[:, :] = u[:, :]
+    # u_init[:, -shift:]= np.tile(np.array(u[:, -2])[:, np.newaxis], shift)
+    u_init=InitialGuessOption(u_init, interpolation=InterpolationType.EACH_FRAME)
+
+    ocp.update_initial_guess(x_init, u_init)
+    ocp.update_bounds(x_bounds=x_bounds)
+
+    return x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x
+
 
 def define_new_objectives():
     new_objectives = ObjectiveList()
@@ -222,21 +248,24 @@ if __name__ == "__main__":
     target = curve_integral(bow_target_param, T)
 
 
-    shift = 1
+    shift = 0
 
 
     # Init from known position
     ocp_load, sol_load = OptimalControlProgram.load(f"saved_iterations/{frame_to_init_from-1}_iter.bo")
     data_sol_prev = Data.get_data(ocp_load, sol_load, concatenate=False)
-    x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x= warm_start_nmpc(sol=sol_load, shift=shift)
+    x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x= warm_start_nmpc_same_iter(sol=sol_load, shift=shift)
     U_est[:, :U_est_init.shape[1]] = U_est_init
     X_est[:, :X_est_init.shape[1]] = X_est_init
 
+    X_est_ = np.zeros((n_qdot + n_q , nb_shooting_pts_all_optim))
+    X_est_[:, :X_est_init.shape[1]]=X_est[:, :X_est_init.shape[1]]
+    U_est_ = np.zeros((n_q, nb_shooting_pts_all_optim))
+    U_est_[:, :U_est_init.shape[1]] = U_est[:, :U_est_init.shape[1]]
 
-    # for i in range(frame_to_init_from, nb_shooting_pts_all_optim):
-    # for i in range(1, nb_shooting_pts_all_optim):
+
     for i in range(frame_to_init_from, nb_shooting_pts_all_optim):
-        q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
+        q_target[bow.hair_idx, :] = target[290 * shift: nb_shooting_pts_window + (290 * shift) + 1]
         define_new_objectives()
 
         sol = ocp.solve(
@@ -249,17 +278,46 @@ if __name__ == "__main__":
                             } # "print_options_documentation": "yes"
         )
         # sol = Simulate.from_controls_and_initial_states(ocp, x_init.initial_guess, u_init.initial_guess)
-        x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x = warm_start_nmpc(sol=sol, shift=shift)
+        x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x = warm_start_nmpc_same_iter(sol=sol, shift=0)
 
-        X_est[:, i] = X_out
-        U_est[:, i] = U_out
+        X_est_[:, i] = X_out
+        U_est_[:, i] = U_out
 
-        ocp.save(sol, f"saved_iterations/{i}_iter")  # you don't have to specify the extension ".bo"
-        # np.save("X_est", X_est)
-
-    np.save("X_est", X_est)
-    np.save("U_est", U_est)
+    np.save("X_est_", X_est_)
+    np.save("U_est_", U_est_)
     np.load(U_est)
+
+
+
+
+
+    # # for i in range(frame_to_init_from, nb_shooting_pts_all_optim):
+    # # for i in range(1, nb_shooting_pts_all_optim):
+    # for i in range(frame_to_init_from, nb_shooting_pts_all_optim):
+    #     q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
+    #     define_new_objectives()
+    #
+    #     sol = ocp.solve(
+    #         show_online_optim=False,
+    #         solver_options={"max_iter": 1000, "hessian_approximation": "exact", "bound_push": 10 ** (-10),
+    #                         "bound_frac": 10 ** (-10), "warm_start_init_point":"yes",
+    #                         "warm_start_bound_push" : 10 ** (-16), "warm_start_bound_frac" : 10 ** (-16),
+    #                         "nlp_scaling_method": "none", "warm_start_mult_bound_push": 10 ** (-16),
+    #                         # "warm_start_slack_bound_push": 10 ** (-16)," warm_start_slack_bound_frac":10 ** (-16),
+    #                         } # "print_options_documentation": "yes"
+    #     )
+    #     # sol = Simulate.from_controls_and_initial_states(ocp, x_init.initial_guess, u_init.initial_guess)
+    #     x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x = warm_start_nmpc(sol=sol, shift=shift)
+    #
+    #     X_est[:, i] = X_out
+    #     U_est[:, i] = U_out
+    #
+    #     ocp.save(sol, f"saved_iterations/{i}_iter")  # you don't have to specify the extension ".bo"
+    #     # np.save("X_est", X_est)
+    #
+    # np.save("X_est", X_est)
+    # np.save("U_est", U_est)
+    # np.load(U_est)
 
 
         # sol = ocp.solve(

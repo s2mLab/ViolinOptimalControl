@@ -20,7 +20,6 @@ from bioptim import (
     InterpolationType,
     Data,
     ShowResult,
-    Simulate,
     Solver
 )
 
@@ -125,8 +124,8 @@ def define_new_objectives():
 
 def display_graphics_X_est():
     matplotlib.pyplot.suptitle('X_est')
-    for dof in range(10):
-        matplotlib.pyplot.subplot(2, 5, int(dof + 1))
+    for dof in range(10, 20):
+        matplotlib.pyplot.subplot(2, 5, int(dof + 1 -10))
         if dof == 9:
             matplotlib.pyplot.plot(target[:X_est_acados.shape[1]], color="red")
         matplotlib.pyplot.plot(X_est_acados[dof, :], color="blue")
@@ -169,7 +168,7 @@ if __name__ == "__main__":
 
     # np.save("bow_target_param", generate_up_and_down_bow_target(200))
     bow_target_param = np.load("bow_target_param.npy")
-    frame_to_init_from = 280
+    frame_to_init_from = 200
     nb_shooting_pts_all_optim = 300
 
     X_est_acados = np.zeros((n_qdot + n_q , nb_shooting_pts_all_optim))
@@ -234,25 +233,21 @@ if __name__ == "__main__":
 
 
     # for i in range(frame_to_init_from, nb_shooting_pts_all_optim):
-    for i in range(1, frame_to_init_from):
+    #for i in range(0, frame_to_init_from):
+    for i in range(0, frame_to_init_from):
         q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
-        # q_target[bow.hair_idx, i] = target[i * shift]
-        # q_target[i] = target[i * shift]
         define_new_objectives()
 
         sol = ocp.solve(
             show_online_optim=False,
             solver=Solver.ACADOS
         )
-        # sol = Simulate.from_controls_and_initial_states(ocp, x_init.initial_guess, u_init.initial_guess)
         x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(sol=sol, shift=shift)
-        # sol['lam_g']
-        # sol['lam_x']
         X_est_acados[:, i] = X_out
         U_est_acados[:, i] = U_out
 
         ocp.save(sol, f"saved_iterations/{i}_iter_acados")  # you don't have to specify the extension ".bo"
-        # np.save("X_est", X_est)
+        np.save("X_est_acados", X_est_acados)
 
     np.save("X_est_acados", X_est_acados)
     np.save("U_est_acados", U_est_acados)
@@ -264,10 +259,10 @@ if __name__ == "__main__":
 
 ocp, x_bounds = prepare_generic_ocp(
     biorbd_model_path=biorbd_model_path,
-    number_shooting_points=nb_shooting_pts_all_optim,
+    number_shooting_points=frame_to_init_from,
     final_time=2,
-    x_init=X_est,
-    u_init=U_est,
+    x_init=X_est_acados,
+    u_init=U_est_acados,
     x0=x0,
     )
 sol = ocp.solve(
