@@ -16,11 +16,12 @@ from bioptim import (
     BoundsOption,
     QAndQDotBounds,
     InitialGuessOption,
-    Instant,
+    Node,
     InterpolationType,
     Data,
     ShowResult,
-    Solver
+    Solver,
+    Simulate,
 )
 
 def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x_init, u_init, x0, useSX=True):
@@ -29,17 +30,17 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
     tau_min, tau_max, tau_init = -100, 100, 0
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, idx=0)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, list_index=0)
     objective_functions.add(
         Objective.Lagrange.ALIGN_SEGMENT_WITH_CUSTOM_RT,
-        weight=100,
+        weight=10,
         segment_idx=Bow.segment_idx,
         rt_idx=violin.rt_on_string,
-        idx=1
+        list_index=1
     )
     objective_functions.add(
-        Objective.Lagrange.MINIMIZE_TORQUE, instant=Instant.ALL, state_idx=bow.hair_idx,
-        weight=1, idx=2)  # permet de réduire le nombre d'itérations avant la convergence
+        Objective.Lagrange.MINIMIZE_TORQUE, node=Node.ALL, index=bow.hair_idx,
+        weight=0.1, list_index=2)  # permet de réduire le nombre d'itérations avant la convergence
 
 
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
@@ -54,18 +55,18 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
     constraints = ConstraintList()
     for j in range(1, 5):
         constraints.add(Constraint.ALIGN_MARKERS,
-                            instant=j,
+                            node=j,
                             min_bound=0,
                             max_bound=0,
                             first_marker_idx=Bow.contact_marker,
-                            second_marker_idx=violin.bridge_marker, idx=j)
+                            second_marker_idx=violin.bridge_marker, list_index=j)
     for j in range(5, nb_shooting_pts_window + 1):
         constraints.add(Constraint.ALIGN_MARKERS,
-                            instant=j,
-                            # min_bound=-1, #-10**(j-14) donne 25 itérations
-                            # max_bound=1, # (j-4)/10 donne 21 itérations
+                            node=j,
+                            min_bound=-1, #-10**(j-14) donne 25 itérations
+                            max_bound=1, # (j-4)/10 donne 21 itérations
                             first_marker_idx=Bow.contact_marker,
-                            second_marker_idx=violin.bridge_marker, idx=j)
+                            second_marker_idx=violin.bridge_marker, list_index=j)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -113,19 +114,19 @@ def define_new_objectives():
     new_objectives = ObjectiveList()
 
     new_objectives.add(
-        Objective.Lagrange.TRACK_STATE, instant=Instant.ALL, weight=10000, target=q_target[bow.hair_idx:bow.hair_idx+1 , :],
-        states_idx=bow.hair_idx,
-        idx=3
+        Objective.Lagrange.TRACK_STATE, node=Node.ALL, weight=10, target=q_target[bow.hair_idx:bow.hair_idx+1, :],
+        index=bow.hair_idx,
+        list_index=3
     )
-    # new_objectives.add(Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE, instant=Instant.ALL, state_idx=bow.hair_idx,
+    # new_objectives.add(Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE, node=Node.ALL, states_idx=bow.hair_idx,
     #                    # weight=1,
     #                    idx=4)  # rajoute des itérations et ne semble riuen changer au mouvement...
     ocp.update_objectives(new_objectives)
 
 def display_graphics_X_est():
     matplotlib.pyplot.suptitle('X_est')
-    for dof in range(10, 20):
-        matplotlib.pyplot.subplot(2, 5, int(dof + 1 -10))
+    for dof in range(10):
+        matplotlib.pyplot.subplot(2, 5, int(dof + 1))
         if dof == 9:
             matplotlib.pyplot.plot(target[:X_est_acados.shape[1]], color="red")
         matplotlib.pyplot.plot(X_est_acados[dof, :], color="blue")
@@ -159,16 +160,16 @@ if __name__ == "__main__":
     n_qdot = biorbd_model.nbQdot()
     n_tau = biorbd_model.nbGeneralizedTorque()
     n_muscles = biorbd_model.nbMuscles()
-    final_time = 1/3  # duration of the
-    nb_shooting_pts_window = 15  # size of NMPC window
-    ns_tot_up_and_down = nb_shooting_pts_window* 10 # size of the up_and_down gesture
+    window_time = 1/8  # duration of the window
+    nb_shooting_pts_window = 100  # size of NMPC window
+    ns_tot_up_and_down = 150 # size of the up_and_down gesture
 
     violin = Violin("E")
     bow = Bow("frog")
 
     # np.save("bow_target_param", generate_up_and_down_bow_target(200))
     bow_target_param = np.load("bow_target_param.npy")
-    frame_to_init_from = 200
+    frame_to_init_from = 35
     nb_shooting_pts_all_optim = 300
 
     X_est_acados = np.zeros((n_qdot + n_q , nb_shooting_pts_all_optim))
@@ -184,10 +185,7 @@ if __name__ == "__main__":
                          nb_shooting_pts_window)
     else:
         X_est_init = np.load('X_est_acados.npy')[:, :frame_to_init_from+1]
-        # X_est_init = np.delete(X_est_init, np.s_[75:], axis=1)
         U_est_init = np.load('U_est_acados.npy')[:, :frame_to_init_from+1]
-        # U_est_init = np.delete(U_est_init, np.s_[75:], axis=1)
-        # x0 = X_est_init[:, -1]
         x_init = X_est_init[:, -(nb_shooting_pts_window+1):]
         x0 = x_init[:, 0]
         u_init = U_est_init[:, -nb_shooting_pts_window:]
@@ -199,7 +197,7 @@ if __name__ == "__main__":
     ocp, x_bounds = prepare_generic_ocp(
         biorbd_model_path=biorbd_model_path,
         number_shooting_points=nb_shooting_pts_window,
-        final_time=final_time,
+        final_time=window_time,
         x_init=x_init,
         u_init=u_init,
         x0=x0,
@@ -211,9 +209,7 @@ if __name__ == "__main__":
     t = np.linspace(0, 2, ns_tot_up_and_down)
     target_curve = curve_integral(bow_target_param, t)
     q_target = np.ndarray((n_q, nb_shooting_pts_window + 1))
-    # q_target=np.ndarray(nb_shooting_pts_all_optim+1)
-    # q_target=np.zeros(nb_shooting_pts_all_optim+1)
-    Nmax = nb_shooting_pts_all_optim+50
+    Nmax = nb_shooting_pts_all_optim + 50
     target = np.ndarray(Nmax)
     T = np.ndarray((Nmax))
     for i in range(Nmax):
@@ -232,22 +228,27 @@ if __name__ == "__main__":
     # X_est_acados[:, :X_est_init.shape[1]] = X_est_init
 
 
-    # for i in range(frame_to_init_from, nb_shooting_pts_all_optim):
-    #for i in range(0, frame_to_init_from):
-    for i in range(0, frame_to_init_from):
+
+    # for i in range(frame_to_init_from, 200):
+    for i in range(0, 200):
         q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
         define_new_objectives()
-
-        sol = ocp.solve(
-            show_online_optim=False,
-            solver=Solver.ACADOS
-        )
+        if i==0:
+            sol = ocp.solve(
+                show_online_optim=False,
+                solver=Solver.ACADOS,
+                solver_options={"nlp_solver_max_iter": 10},
+            )
+        else:
+            sol = ocp.solve(
+                show_online_optim=False,
+                solver=Solver.ACADOS,
+            )
         x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(sol=sol, shift=shift)
         X_est_acados[:, i] = X_out
         U_est_acados[:, i] = U_out
 
         ocp.save(sol, f"saved_iterations/{i}_iter_acados")  # you don't have to specify the extension ".bo"
-        np.save("X_est_acados", X_est_acados)
 
     np.save("X_est_acados", X_est_acados)
     np.save("U_est_acados", U_est_acados)
@@ -265,9 +266,5 @@ ocp, x_bounds = prepare_generic_ocp(
     u_init=U_est_acados,
     x0=x0,
     )
-sol = ocp.solve(
-    show_online_optim=False,
-    solver_options={"max_iter": 0, "hessian_approximation": "exact", "bound_push": 10 ** (-10),
-                    "bound_frac": 10 ** (-10), "print_options_documentation": "yes"}  # , "bound_push": 10**(-10), "bound_frac": 10**(-10)}
-    )
+sol = Simulate.from_controls_and_initial_states(ocp, x_init.initial_guess, u_init.initial_guess)
 ShowResult(ocp, sol).graphs()
