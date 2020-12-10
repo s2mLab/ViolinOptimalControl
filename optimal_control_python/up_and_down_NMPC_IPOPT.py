@@ -186,7 +186,7 @@ def compare_target():
 
 if __name__ == "__main__":
     # Parameters
-    biorbd_model_path = "/home/carla/Documents/Programmation/ViolinOptimalControl/models/BrasViolon.bioMod"
+    biorbd_model_path = "../models/BrasViolon.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
