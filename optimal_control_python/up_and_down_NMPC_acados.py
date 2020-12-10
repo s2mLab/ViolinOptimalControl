@@ -13,6 +13,8 @@ from bioptim import (
     Node,
     Solver,
     Simulate,
+    OptimalControlProgram,
+    Data,
 )
 
 
@@ -24,21 +26,9 @@ def define_new_objectives(weight):
         list_index=3
     )
     new_objectives.add(
-        Objective.Lagrange.ALIGN_MARKERS, node=Node.ALL, weight=100000, first_marker_idx=Bow.contact_marker,
+        Objective.Lagrange.ALIGN_MARKERS, node=Node.ALL, weight=1000000, first_marker_idx=Bow.contact_marker,
         second_marker_idx=violin.bridge_marker, list_index=4)
 
-    # new_objectives.add(
-    #     Objective.Lagrange.TRACK_MARKERS, node=Node.ALL, weight=weight, marker_idx=Bow.contact_marker, target=q_target[bow.hair_idx:bow.hair_idx+1, :],
-    #     index=bow.hair_idx,
-    #     list_index=3
-    # )
-
-
-    # new_objectives.add(
-    #     Objective.Lagrange.TRACK_STATE, node=Node.ALL, weight=weight[i * shift: nb_shooting_pts_window + (i * shift) + 1], target=q_target[bow.hair_idx:bow.hair_idx+1, :],
-    #     index=bow.hair_idx,
-    #     list_index=3+i
-    # )
     # new_objectives.add(Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE, node=Node.ALL, states_idx=bow.hair_idx,
     #                    # weight=1,
     #                    idx=4)  # rajoute des itérations et ne semble riuen changer au mouvement...
@@ -80,14 +70,14 @@ if __name__ == "__main__":
 
     # np.save("bow_target_param", generate_up_and_down_bow_target(200))
     bow_target_param = np.load("bow_target_param.npy")
-    frame_to_init_from = 150
+    frame_to_init_from = nb_shooting_pts_window
     nb_shooting_pts_all_optim = 600
 
     Q_est_acados = np.zeros((n_q , nb_shooting_pts_all_optim))
     X_est_acados= np.zeros((n_q+n_qdot , nb_shooting_pts_all_optim))
     Qdot_est_acados = np.zeros((n_qdot , nb_shooting_pts_all_optim))
     U_est_acados = np.zeros((n_tau, nb_shooting_pts_all_optim))
-    begin_at_first_iter = True
+    begin_at_first_iter = False
     if begin_at_first_iter == True :
         # Initial guess and bounds
         x0 = np.array(violin.initial_position()[bow.side] + [0] * n_qdot)
@@ -97,8 +87,8 @@ if __name__ == "__main__":
         u_init = np.tile(np.array([0.5] * n_tau)[:, np.newaxis],
                          nb_shooting_pts_window)
     else:
-        X_est_init = np.load('X_est_acados.npy')[:, :frame_to_init_from+1]
-        U_est_init = np.load('U_est_acados.npy')[:, :frame_to_init_from+1]
+        X_est_init = np.load('X_est.npy')[:, :nb_shooting_pts_window+1]
+        U_est_init = np.load('U_est.npy')[:, :nb_shooting_pts_window+1]
         x_init = X_est_init[:, -(nb_shooting_pts_window+1):]
         x0 = x_init[:, 0]
         u_init = U_est_init[:, -nb_shooting_pts_window:]
@@ -113,7 +103,6 @@ if __name__ == "__main__":
         final_time=window_time,
         x_init=x_init,
         u_init=u_init,
-       #  constraint=constraint,
         x0=x0,
         acados=True,
         useSX=True,
@@ -126,11 +115,10 @@ if __name__ == "__main__":
     q_target = np.ndarray((n_q, nb_shooting_pts_window + 1))
     Nmax = nb_shooting_pts_all_optim + nb_shooting_pts_window
     target = np.ndarray(Nmax)
-    # weight = np.ndarray(Nmax)
     T = np.ndarray((Nmax))
     for i in range(Nmax):
         a=i % ns_tot_up_and_down
-        T[i]=t[a]
+        T[i] = t[a]
     target = curve_integral(bow_target_param, T)
     shift = 1
 
@@ -139,7 +127,8 @@ if __name__ == "__main__":
     # ocp_load, sol_load = OptimalControlProgram.load(f"saved_iterations/{frame_to_init_from-1}_iter_acados.bo")
     # data_sol_prev = Data.get_data(ocp_load, sol_load, concatenate=False)
     # x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(sol=sol_load, ocp=ocp,
-    # nb_shooting_pts_window=nb_shooting_pts_window, n_q, n_qdot, n_tau, biorbd_model, acados=True, shift=1)
+    # nb_shooting_pts_window=nb_shooting_pts_window, n_q=n_q, n_qdot=n_qdot, n_tau=n_tau, biorbd_model=biorbd_model,
+    #                                                             acados=True, shift=1)
     # U_est_acados[:, :U_est_init.shape[1]] = U_est_init
     # X_est_acados[:, :X_est_init.shape[1]] = X_est_init
     # Q_est_acados[:, :X_est_init.shape[1]]=X_est_init[:10]
@@ -148,14 +137,14 @@ if __name__ == "__main__":
 
 
     # for i in range(frame_to_init_from, 200):
-    for i in range(0, 200):
+    for i in range(0, 300):
         q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
-        # if target[i] < -0.45:
-        #     weight = 150
-        # if target[i] > -0.17:
-        #     weight = 150
-        # else:
-        weight = 10
+        if target[i] < -0.45: # but : mettre des poids plus lourds aux extremums de la target pour que les extremums
+            weight = 1500 # ne soient pas dépassés par le poids des des autres valeurs "itermédiaires" de la target
+        if target[i] > -0.17: # qui sont majoritaire dans la fenêtre
+            weight = 1500
+        else:
+            weight = 1000
         define_new_objectives(weight=weight)
         if i == 0:
             sol = ocp.solve(
@@ -174,7 +163,7 @@ if __name__ == "__main__":
                                                                     biorbd_model=biorbd_model,
                                                                     acados=True, shift=shift)
         Q_est_acados[:, i] = X_out[:10]
-        X_est_acados[:,i] = X_out
+        X_est_acados[:, i] = X_out
         Qdot_est_acados[:, i] = X_out[10:]
         U_est_acados[:, i] = U_out
 
@@ -186,25 +175,3 @@ if __name__ == "__main__":
     np.save("U_est_acados", U_est_acados)
     out = np.load("U_est_acados.npy")
 
-
-
-## Pour afficher mouvement global
-X_est_acados = np.load("X_est_acados.npy")# [:,:299]
-U__=U_est_acados[:,:X_est_acados.shape[1]]
-ocp, x_bounds = prepare_generic_ocp(
-    biorbd_model_path=biorbd_model_path,
-    number_shooting_points= X_est_acados.shape[1]-1,# X_est_acados.shape[1]-1,
-    final_time=2,
-    x_init=X_est_acados,
-    u_init=U__,
-    x0=x0,
-    )
-# x_init=X_est_acados
-# u_init=U__
-sol = ocp.solve(
-    show_online_optim=False,
-    solver=Solver.ACADOS,
-    # solver_options={"nlp_solver_max_iter": 10},
-)
-# sol = Simulate.from_controls_and_initial_states(ocp, x_init.initial_guess, u_init.initial_guess)
-# sol.animate(show_now=True)

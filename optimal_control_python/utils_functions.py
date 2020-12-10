@@ -30,41 +30,33 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
     violin = Violin("E")
     bow = Bow("frog")
     if acados == True:
-        weight1=10
-        weight2=0.1
-        # constraints = ConstraintList()
-        # for j in range(1, 5):
-        #     constraints.add(Constraint.ALIGN_MARKERS,
-        #                     node=j,
-        #                     min_bound=0,
-        #                     max_bound=0,
-        #                     first_marker_idx=Bow.contact_marker,
-        #                     second_marker_idx=violin.bridge_marker, list_index=j)
-        # for j in range(5, number_shooting_points + 1):
-        #     constraints.add(Constraint.ALIGN_MARKERS,
-        #                     node=j,
-        #                     min_bound=-10**(j-14), # donne 25 itérations
-        #                     max_bound=10**(j-14), # (j-4)/10 donne 21 itérations
-        #                     first_marker_idx=Bow.contact_marker,
-        #                     second_marker_idx=violin.bridge_marker, list_index=j)
+        weight1=1000
+        weight2=1
+
     else:
         weight1 = 100
         weight2 = 1
     constraints = ConstraintList()
-    for j in range(1, 5):
-        constraints.add(Constraint.ALIGN_MARKERS,
-                        node=j,
-                        min_bound=0,
-                        max_bound=0,
-                        first_marker_idx=Bow.contact_marker,
-                        second_marker_idx=violin.bridge_marker, list_index=j)
-    for j in range(5, number_shooting_points + 1):
-        constraints.add(Constraint.ALIGN_MARKERS,
-                        node=j,
-                        # min_bound=-1, #-10**(j-14) donne 25 itérations
-                        # max_bound=1, # (j-4)/10 donne 21 itérations
-                        first_marker_idx=Bow.contact_marker,
-                        second_marker_idx=violin.bridge_marker, list_index=j)
+    constraints.add(Constraint.ALIGN_MARKERS,
+                    node=Node.ALL,
+                    min_bound=0,
+                    max_bound=0,
+                    first_marker_idx=Bow.contact_marker,
+                    second_marker_idx=violin.bridge_marker, list_index=1)
+    # for j in range(1, 5):
+    #     constraints.add(Constraint.ALIGN_MARKERS,
+    #                     node=j,
+    #                     min_bound=0,
+    #                     max_bound=0,
+    #                     first_marker_idx=Bow.contact_marker,
+    #                     second_marker_idx=violin.bridge_marker, list_index=j)
+    # for j in range(5, number_shooting_points + 1):
+    #     constraints.add(Constraint.ALIGN_MARKERS,
+    #                     node=j,
+    #                     # min_bound=-1, #-10**(j-14) donne 25 itérations
+    #                     # max_bound=1, # (j-4)/10 donne 21 itérations
+    #                     first_marker_idx=Bow.contact_marker,
+    #                     second_marker_idx=violin.bridge_marker, list_index=j)
 
     objective_functions = ObjectiveList()
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, list_index=0)
@@ -100,7 +92,7 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
         x_bounds,
         u_bounds,
         objective_functions=objective_functions,
-        # constraints=constraints,
+        constraints=constraints,
         use_SX=useSX
     ), x_bounds
 
