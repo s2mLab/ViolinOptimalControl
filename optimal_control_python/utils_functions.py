@@ -37,12 +37,13 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
         weight1 = 100
         weight2 = 1
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS,
-                    node=Node.ALL,
-                    min_bound=0,
-                    max_bound=0,
-                    first_marker_idx=Bow.contact_marker,
-                    second_marker_idx=violin.bridge_marker, list_index=1)
+    for j in range(1, number_shooting_points + 1):
+        constraints.add(Constraint.ALIGN_MARKERS,
+                            node=j,
+                            min_bound=0,
+                            max_bound=0,
+                            first_marker_idx=Bow.contact_marker,
+                            second_marker_idx=violin.bridge_marker, list_index=j)
     # for j in range(1, 5):
     #     constraints.add(Constraint.ALIGN_MARKERS,
     #                     node=j,

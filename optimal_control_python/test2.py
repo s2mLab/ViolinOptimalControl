@@ -52,20 +52,20 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
     u_init = InitialGuessOption(u_init, interpolation=InterpolationType.EACH_FRAME)
 
     constraints = ConstraintList()
-    for j in range(1, 5):
+    for j in range(1, nb_shooting_pts_window + 1):
         constraints.add(Constraint.ALIGN_MARKERS,
                             node=j,
                             min_bound=0,
                             max_bound=0,
                             first_marker_idx=Bow.contact_marker,
                             second_marker_idx=violin.bridge_marker, list_index=j)
-    for j in range(5, nb_shooting_pts_window + 1):
-        constraints.add(Constraint.ALIGN_MARKERS,
-                            node=j,
-                            # min_bound=-1, #-10**(j-14) donne 25 itérations
-                            # max_bound=1, # (j-4)/10 donne 21 itérations
-                            first_marker_idx=Bow.contact_marker,
-                            second_marker_idx=violin.bridge_marker, list_index=j)
+    # for j in range(5, nb_shooting_pts_window + 1):
+    #     constraints.add(Constraint.ALIGN_MARKERS,
+    #                         node=j,
+    #                         min_bound=0, #-10**(j-14), #  donne 25 itérations
+    #                         max_bound=0, #1, # (j-4)/10 donne 21 itérations
+    #                         first_marker_idx=Bow.contact_marker,
+    #                         second_marker_idx=violin.bridge_marker, list_index=j)
 
     return OptimalControlProgram(
         biorbd_model,
