@@ -119,14 +119,16 @@ def warm_start_nmpc(sol, ocp, nb_shooting_pts_window, n_q, n_qdot, n_tau, biorbd
     ocp.update_initial_guess(x_init, u_init)
     ocp.update_bounds(x_bounds=x_bounds)
     if acados==False:
-        # lam_g = np.ndarray(((((n_qdot+n_q)+3)*nb_shooting_pts_window), 1))
-        lam_g = np.ndarray((((n_qdot+n_q)*nb_shooting_pts_window), 1)) # 20 états
-        # lam_g[:-((3*nb_shooting_pts_window)+(n_q+n_qdot)*shift)] = sol['lam_g'][(shift*(n_q+n_qdot)+(3*nb_shooting_pts_window)):] # shift 20 var, n_q + n_qdot
-        lam_g[:-((n_q + n_qdot) * shift)] = sol['lam_g'][(shift * (n_q + n_qdot) ):]
+        # lam_g = np.ndarray(((((n_qdot+n_q)+3)*nb_shooting_pts_window+1), 1)) # 345
+        lam_g = np.ndarray((((n_qdot + n_q) * nb_shooting_pts_window) + 3 * (nb_shooting_pts_window + 1), 1)) #348
+        # lam_g = np.ndarray((((n_qdot+n_q)*nb_shooting_pts_window), 1)) # 20 états
+        lam_g[:-((3*(nb_shooting_pts_window+1))+(n_q+n_qdot)*shift)] = sol['lam_g'][(shift*(n_q+n_qdot)+(3*(nb_shooting_pts_window+1))):] # shift 20 var, n_q + n_qdot
+        # lam_g[:-((n_q + n_qdot) * shift)] = sol['lam_g'][(shift * (n_q + n_qdot) ):]
         lam_g[-(n_q+n_qdot)*shift:] = sol['lam_g'][-(n_q+n_qdot)*shift:] # last 20 var are copied
         # lam_g[:-3*shift] = sol['lam_g'][3*shift:] # shift 3 etats
         # lam_g[-3*shift:] = sol['lam_g'][-3*shift:] #copied 3 last
         lam_x = np.ndarray(((n_qdot+n_q)*(nb_shooting_pts_window+1)+(n_tau*nb_shooting_pts_window), 1))
+        # lam_x=np.ndarray(((int(sol['lam_x'].shape[0]), 1)))
         lam_x[:-(3*n_tau*shift)] = sol['lam_x'][(3*n_tau*shift):] # shift 30 var, n_q + n_qdot
         lam_x[-(3*n_tau*shift):] = sol['lam_x'][-(3*n_tau*shift):] # last 30 var are copied
 

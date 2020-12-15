@@ -28,7 +28,10 @@ def define_new_objectives(weight):
     new_objectives.add(
         Objective.Lagrange.ALIGN_MARKERS, node=Node.ALL, weight=1000000, first_marker_idx=Bow.contact_marker,
         second_marker_idx=violin.bridge_marker, list_index=4)
-
+    new_objectives.add(
+        Objective.Lagrange.MINIMIZE_ALL_CONTROLS, node=Node.ALL, weight=10, list_index=5)
+    new_objectives.add(
+        Objective.Lagrange.MINIMIZE_STATE, node=Node.ALL, weight=10, list_index=6)
     # new_objectives.add(Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE, node=Node.ALL, states_idx=bow.hair_idx,
     #                    # weight=1,
     #                    idx=4)  # rajoute des itérations et ne semble riuen changer au mouvement...
@@ -137,20 +140,39 @@ if __name__ == "__main__":
 
 
     # for i in range(frame_to_init_from, 200):
-    for i in range(0, 300):
-        q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
-        if target[i] < -0.45: # but : mettre des poids plus lourds aux extremums de la target pour que les extremums
-            weight = 1500 # ne soient pas dépassés par le poids des des autres valeurs "itermédiaires" de la target
-        if target[i] > -0.17: # qui sont majoritaire dans la fenêtre
-            weight = 1500
+    for i in range(0, 150):
+        print(f"iteration:{i}")
+        if i < 300:
+            q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
+            new_objectives = ObjectiveList()
+            new_objectives.add(
+                Objective.Lagrange.ALIGN_MARKERS, node=Node.ALL, weight=100000, first_marker_idx=Bow.contact_marker,
+                second_marker_idx=violin.bridge_marker, list_index=1)
+            new_objectives.add(
+                Objective.Lagrange.MINIMIZE_ALL_CONTROLS, node=Node.ALL, weight=10, list_index=2)
+            new_objectives.add(
+                Objective.Lagrange.MINIMIZE_STATE, node=Node.ALL, weight=10, list_index=3)
+            new_objectives.add(
+                Objective.Lagrange.TRACK_STATE, node=Node.ALL, weight=100000,
+                target=q_target[bow.hair_idx:bow.hair_idx + 1, :],
+                index=bow.hair_idx,
+                list_index=4
+            )
+            ocp.update_objectives(new_objectives)
         else:
-            weight = 1000
-        define_new_objectives(weight=weight)
+            q_target[bow.hair_idx, :] = target[i-40 * shift: nb_shooting_pts_window + (i-40 * shift) + 1]
+            if target[i] < -0.45: # but : mettre des poids plus lourds aux extremums de la target pour que les extremums
+                weight = 1500 # ne soient pas dépassés par le poids des des autres valeurs "itermédiaires" de la target
+            if target[i] > -0.17: # qui sont majoritaire dans la fenêtre
+                weight = 1500
+            else:
+                weight = 1000
+            define_new_objectives(weight=weight)
         if i == 0:
             sol = ocp.solve(
                 show_online_optim=False,
                 solver=Solver.ACADOS,
-                solver_options={"nlp_solver_max_iter": 10},
+                solver_options={"nlp_solver_max_iter": 1000},
             )
         else:
             sol = ocp.solve(
@@ -167,7 +189,7 @@ if __name__ == "__main__":
         Qdot_est_acados[:, i] = X_out[10:]
         U_est_acados[:, i] = U_out
 
-        ocp.save(sol, f"saved_iterations/{i}_iter_acados")  # you don't have to specify the extension ".bo"
+        # ocp.save(sol, f"saved_iterations/{i}_iter_acados")  # you don't have to specify the extension ".bo"
 
     np.save("Q_est_acados", Q_est_acados)
     np.save("X_est_acados", X_est_acados)
