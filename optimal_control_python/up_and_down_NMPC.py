@@ -19,7 +19,7 @@ if __name__ == "__main__":
     n_tau = biorbd_model.nbGeneralizedTorque()
     n_muscles = biorbd_model.nbMuscles()
     final_time = 1/8  # duration of the
-    nb_shooting_pts_window = 20  # size of NMPC window
+    nb_shooting_pts_window = 15  # size of NMPC window
     ns_tot_up_and_down = 150 # size of the up_and_down gesture
 
     violin = Violin("E")
@@ -108,8 +108,17 @@ if __name__ == "__main__":
                                                                     acados=False, shift=shift) #, lam_g, lam_x
         # x_init, u_init, X_out, U_out, x_bounds, u= warm_start_nmpc_same_iter(sol=sol, ocp=ocp, biorbd_model=biorbd_model)
         # warm_start_nmpc(sol, ocp, nb_shooting_pts_window, n_q, n_qdot, n_tau, biorbd_model, acados, shift=1)
-        sol['lam_g'] = lam_g
-        sol['lam_x'] = lam_x
+        # A = lam_g
+        # sol['lam_g'] = lam_g
+        # # B = lam_x
+        # sol['lam_x'] = lam_x
+        for a in range(sol['lam_g'].shape[0]):
+            sol['lam_g'][a] = lam_g[a]
+        for a in range(sol['lam_x'].shape[0]):
+            sol['lam_x'][a] = lam_x[a]
+
+        # lam_g est un array et sol['lam_g'] est un DM, envoyer l'un dans l'autre est-t-il compatible ?
+        # Ne semble pas être la bonne solution initiale... Le shift est-il exact ? Pour passer d'une solution à la suivante ?
         Q_est[:, i] = X_out[:10]
         X_est[:, i] = X_out
         Qdot_est[:, i] = X_out[10:]
@@ -117,11 +126,11 @@ if __name__ == "__main__":
 
         ocp.save(sol, f"saved_iterations/{i}_iter_acados")  # you don't have to specify the extension ".bo"
 
-    np.save("Q_est__", Q_est)
-    np.save("X_est__", X_est)
-    np.save("Qdot_est__", Qdot_est)
-    np.save("U_est__", U_est)
-    np.save("U_est__", U_est)
+    np.save("Q_est_", Q_est)
+    np.save("X_est_", X_est)
+    np.save("Qdot_est_", Qdot_est)
+    np.save("U_est_", U_est)
+    np.save("U_est_", U_est)
 
 
 

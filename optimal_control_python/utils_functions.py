@@ -54,8 +54,8 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
     # for j in range(5, number_shooting_points + 1):
     #     constraints.add(Constraint.ALIGN_MARKERS,
     #                     node=j,
-    #                     # min_bound=-1, #-10**(j-14) donne 25 itérations
-    #                     # max_bound=1, # (j-4)/10 donne 21 itérations
+    #                     min_bound=-10**(j-14), #-10**(j-14) donne 25 itérations
+    #                     max_bound=10**(j-14), # (j-4)/10 donne 21 itérations
     #                     first_marker_idx=Bow.contact_marker,
     #                     second_marker_idx=violin.bridge_marker, list_index=j)
 
@@ -120,18 +120,22 @@ def warm_start_nmpc(sol, ocp, nb_shooting_pts_window, n_q, n_qdot, n_tau, biorbd
     ocp.update_initial_guess(x_init, u_init)
     ocp.update_bounds(x_bounds=x_bounds)
     if acados==False:
-        # lam_g = np.ndarray(((((n_qdot+n_q)+3)*nb_shooting_pts_window+1), 1)) # 345
-        lam_g = np.ndarray((((n_qdot + n_q) * nb_shooting_pts_window) + 3 * (nb_shooting_pts_window + 1), 1)) #348
-        # lam_g = np.ndarray((((n_qdot+n_q)*nb_shooting_pts_window), 1)) # 20 états
-        lam_g[:-((3*(nb_shooting_pts_window+1))+(n_q+n_qdot)*shift)] = sol['lam_g'][(shift*(n_q+n_qdot)+(3*(nb_shooting_pts_window+1))):] # shift 20 var, n_q + n_qdot
-        # lam_g[:-((n_q + n_qdot) * shift)] = sol['lam_g'][(shift * (n_q + n_qdot) ):]
-        lam_g[-(n_q+n_qdot)*shift:] = sol['lam_g'][-(n_q+n_qdot)*shift:] # last 20 var are copied
-        # lam_g[:-3*shift] = sol['lam_g'][3*shift:] # shift 3 etats
-        # lam_g[-3*shift:] = sol['lam_g'][-3*shift:] #copied 3 last
+
+
+        lam_g = np.ndarray(((((n_qdot + n_q) + 3) * nb_shooting_pts_window), 1))
+        lam_g[:((n_q + n_qdot) * shift) * (nb_shooting_pts_window - 1)] = sol['lam_g'][(shift*(n_q+n_qdot)):(n_qdot + n_q) * shift *nb_shooting_pts_window]
+        # shift n_q + n_qdot * shift var
+        lam_g[(n_q + n_qdot) * shift * (nb_shooting_pts_window - 1):(n_q + n_qdot) * shift * nb_shooting_pts_window] = sol['lam_g'][(n_q + n_qdot) * shift * (nb_shooting_pts_window - 1):(n_q + n_qdot) * shift * nb_shooting_pts_window]
+        # last 20 var are copied
+        lam_g[(n_q + n_qdot) * shift* nb_shooting_pts_window:-3*shift] = sol['lam_g'][((n_q + n_qdot) * nb_shooting_pts_window+ 3)*shift:]
+        # shift 3 etats (1 constraint ALIGN MARKERS)
+        lam_g[-3*shift:] = sol['lam_g'][-3*shift:]
+        # copied 3 last
         lam_x = np.ndarray(((n_qdot+n_q)*(nb_shooting_pts_window+1)+(n_tau*nb_shooting_pts_window), 1))
-        # lam_x=np.ndarray(((int(sol['lam_x'].shape[0]), 1)))
-        lam_x[:-(3*n_tau*shift)] = sol['lam_x'][(3*n_tau*shift):] # shift 30 var, n_q + n_qdot
-        lam_x[-(3*n_tau*shift):] = sol['lam_x'][-(3*n_tau*shift):] # last 30 var are copied
+
+        lam_x[:-((n_tau + n_q + n_qdot) * shift)] = sol['lam_x'][((n_tau + n_q + n_qdot) * shift):] # shift 30 var, n_tau + n_q + n_dot
+        lam_x[-((n_tau + n_q + n_qdot)*shift):] = sol['lam_x'][-((n_tau + n_q + n_qdot) * shift):]
+
 
         return x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x
     else:

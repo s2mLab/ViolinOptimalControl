@@ -19,7 +19,7 @@ if __name__ == "__main__":
     n_tau = biorbd_model.nbGeneralizedTorque()
     n_muscles = biorbd_model.nbMuscles()
     final_time = 1/8  # duration of the
-    nb_shooting_pts_window = 20  # size of NMPC window
+    nb_shooting_pts_window = 15  # size of NMPC window
     ns_tot_up_and_down = 150 # size of the up_and_down gesture
 
     violin = Violin("E")
@@ -108,8 +108,8 @@ if __name__ == "__main__":
         #                                                             acados=False, shift=shift) #, lam_g, lam_x
         x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x= warm_start_nmpc_same_iter(sol=sol, ocp=ocp, biorbd_model=biorbd_model)
         # warm_start_nmpc(sol, ocp, nb_shooting_pts_window, n_q, n_qdot, n_tau, biorbd_model, acados, shift=1)
-        sol['lam_g'] = lam_g
-        sol['lam_x'] = lam_x
+        # sol['lam_g'] = lam_g # pas utile en same iter...
+        # sol['lam_x'] = lam_x
         Q_est[:, i] = X_out[:10]
         X_est[:, i] = X_out
         Qdot_est[:, i] = X_out[10:]
