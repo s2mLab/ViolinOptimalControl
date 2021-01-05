@@ -14,7 +14,7 @@ n_qdot = biorbd_model.nbQdot()
 n_tau = biorbd_model.nbGeneralizedTorque()
 n_muscles = biorbd_model.nbMuscles()
 final_time = 1/8  # duration of the
-nb_shooting_pts_window = 15  # size of NMPC window
+window_len = 15  # size of NMPC window
 ns_tot_up_and_down = 150  # size of the up_and_down gesture
 
 violin = Violin("E")
@@ -23,7 +23,7 @@ bow = Bow("frog")
 if regenerate_bow_trajectory:
     np.save("bow_target_param", generate_bow_trajectory(200))
 bow_target_param = np.load("bow_target_param.npy")
-frame_to_init_from = nb_shooting_pts_window+1
+frame_to_init_from = window_len + 1
 nb_shooting_pts_all_optim = 300
 
 X_est = np.zeros((n_qdot + n_q, nb_shooting_pts_all_optim))
@@ -36,20 +36,20 @@ if begin_at_first_iter:
     x0 = np.array(violin.initial_position()[bow.side] + [0] * n_qdot)
 
     x_init = np.tile(np.array(violin.initial_position()[bow.side] + [0] * n_qdot)[:, np.newaxis],
-                     nb_shooting_pts_window+1)
+                     window_len + 1)
     u_init = np.tile(np.array([0.5] * n_tau)[:, np.newaxis],
-                     nb_shooting_pts_window)
+                     window_len)
 else:
     X_est_init = np.load('X_est.npy')[:, :frame_to_init_from+1]
     U_est_init = np.load('U_est.npy')[:, :frame_to_init_from+1]
-    x_init = X_est_init[:, -(nb_shooting_pts_window+1):]
+    x_init = X_est_init[:, -(window_len + 1):]
     x0 = x_init[:, 0]
-    u_init = U_est_init[:, -nb_shooting_pts_window:]
+    u_init = U_est_init[:, -window_len:]
 
 # position initiale de l'ocp
 ocp, x_bounds = prepare_generic_ocp(
     biorbd_model_path=biorbd_model_path,
-    number_shooting_points=nb_shooting_pts_window,
+    number_shooting_points=window_len,
     final_time=final_time,
     x_init=x_init,
     u_init=u_init,
@@ -61,7 +61,7 @@ ocp, x_bounds = prepare_generic_ocp(
 
 t = np.linspace(0, 2, ns_tot_up_and_down)
 target_curve = curve_integral(bow_target_param, t)
-q_target = np.ndarray((n_q, nb_shooting_pts_window + 1))
+q_target = np.ndarray((n_q, window_len + 1))
 Nmax = nb_shooting_pts_all_optim+50
 target = np.ndarray((Nmax, ))
 T = np.ndarray((Nmax, ))
@@ -79,7 +79,7 @@ shift = 1
 # x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x = warm_start_nmpc(
 #     sol=sol_load,
 #     ocp=ocp,
-#     pts_window=pts_window,
+#     window_len=window_len,
 #     n_q=n_q,
 #     n_qdot=n_qdot,
 #     n_tau=n_tau,
@@ -92,7 +92,7 @@ shift = 1
 
 for i in range(0, 30):
     print(f"iteration:{i}")
-    q_target[bow.hair_idx, :] = target[i * shift: nb_shooting_pts_window + (i * shift) + 1]
+    q_target[bow.hair_idx, :] = target[i * shift: window_len + (i * shift) + 1]
     define_new_objectives(weight=1000, ocp=ocp, q_target=q_target, bow=bow)
     sol = ocp.solve(
         show_online_optim=False,
@@ -106,7 +106,7 @@ for i in range(0, 30):
     # sol = Simulate.from_controls_and_initial_states(ocp, x_init.initial_guess, u_init.initial_guess)
     x_init, u_init, X_out, U_out, x_bounds, u, lam_g, lam_x = warm_start_nmpc(
         sol=sol, ocp=ocp,
-        pts_window=nb_shooting_pts_window,
+        window_len=window_len,
         n_q=n_q,
         n_qdot=n_qdot,
         n_tau=n_tau,
@@ -115,7 +115,7 @@ for i in range(0, 30):
         shift=shift
     )  # , lam_g, lam_x
     # x_init, u_init, X_out, U_out, x_bounds, u= warm_start_nmpc_same_iter(sol=sol, ocp=ocp, biorbd_model=biorbd_model)
-    # warm_start_nmpc(sol, ocp, pts_window, n_q, n_qdot, n_tau, biorbd_model, acados, shift=1)
+    # warm_start_nmpc(sol, ocp, window_len, n_q, n_qdot, n_tau, biorbd_model, acados, shift=1)
     # A = lam_g
     # sol['lam_g'] = lam_g
     # # B = lam_x

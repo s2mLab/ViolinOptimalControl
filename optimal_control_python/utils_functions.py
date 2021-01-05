@@ -96,7 +96,7 @@ def prepare_generic_ocp(biorbd_model_path, number_shooting_points, final_time, x
     ), x_bounds
 
 
-def warm_start_nmpc(sol, ocp, pts_window, n_q, n_qdot, n_tau, biorbd_model, acados, shift=1):
+def warm_start_nmpc(sol, ocp, window_len, n_q, n_qdot, n_tau, biorbd_model, acados, shift=1):
     data_sol_prev = Data.get_data(ocp, sol, concatenate=False)
     q = data_sol_prev[0]["q"]
     dq = data_sol_prev[0]["q_dot"]
@@ -118,18 +118,18 @@ def warm_start_nmpc(sol, ocp, pts_window, n_q, n_qdot, n_tau, biorbd_model, acad
     ocp.update_initial_guess(x_init, u_init)
     ocp.update_bounds(x_bounds=x_bounds)
     if not acados:
-        lam_g = np.ndarray(((((n_qdot + n_q) + 3) * pts_window), 1))
-        lam_g[:((n_q + n_qdot) * shift) * (pts_window - 1)] = \
-            sol['lam_g'][(shift*(n_q+n_qdot)):(n_qdot + n_q) * shift * pts_window]
+        lam_g = np.ndarray(((((n_qdot + n_q) + 3) * window_len), 1))
+        lam_g[:((n_q + n_qdot) * shift) * (window_len - 1)] = \
+            sol['lam_g'][(shift*(n_q+n_qdot)):(n_qdot + n_q) * shift * window_len]
         # shift n_q + n_qdot * shift var
-        lam_g[(n_q + n_qdot) * shift * (pts_window - 1):(n_q + n_qdot) * shift * pts_window] = \
-            sol['lam_g'][(n_q + n_qdot) * shift * (pts_window - 1):(n_q + n_qdot) * shift * pts_window]
+        lam_g[(n_q + n_qdot) * shift * (window_len - 1):(n_q + n_qdot) * shift * window_len] = \
+            sol['lam_g'][(n_q + n_qdot) * shift * (window_len - 1):(n_q + n_qdot) * shift * window_len]
         # last 20 var are copied
-        lam_g[(n_q + n_qdot) * shift * pts_window:-3 * shift] = sol['lam_g'][((n_q + n_qdot) * pts_window + 3) * shift:]
+        lam_g[(n_q + n_qdot) * shift * window_len:-3 * shift] = sol['lam_g'][((n_q + n_qdot) * window_len + 3) * shift:]
         # shift 3 etats (1 constraint ALIGN MARKERS)
         lam_g[-3*shift:] = sol['lam_g'][-3*shift:]
         # copied 3 last
-        lam_x = np.ndarray(((n_qdot+n_q) * (pts_window + 1) + (n_tau * pts_window), 1))
+        lam_x = np.ndarray(((n_qdot+n_q) * (window_len + 1) + (n_tau * window_len), 1))
 
         # shift 30 var, n_tau + n_q + n_dot
         lam_x[:-((n_tau + n_q + n_qdot) * shift)] = sol['lam_x'][((n_tau + n_q + n_qdot) * shift):]
