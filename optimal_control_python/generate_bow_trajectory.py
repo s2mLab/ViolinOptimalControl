@@ -42,7 +42,7 @@ def generate_bow_trajectory(n_points, bow_speed=10, bow_acceleration=0.5):
     # x[1]= 2 * pi / period
     def objective_function(x, t):
         y = curve(x, t)
-        integ = curve_integral(x,t)
+        integ = curve_integral(x, t)
         moy = (integ[int(n_points/2)-2] + integ[int(n_points/2)+2])/2
         return np.array((bow_acceleration - x[0], bow_speed - x[1], y[-1], y[0], (moy - max_bow) * 1000))
 
