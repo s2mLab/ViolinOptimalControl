@@ -125,4 +125,5 @@ BiorbdViz
 *sandbox
 /optimal_control_python/saved_iterations/
 /optimal_control_python/c_generated_code/
+/optimal_control_python/*.json
 /optimal_control_python/sandbox/
