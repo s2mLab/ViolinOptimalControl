@@ -17,4 +17,3 @@ for string_key in rt_on_string.keys():
     b = biorbd.Vector3d(force_target.to_array()[0], force_target.to_array()[1], force_target.to_array()[2])
     b.applyRT(biorbd.RotoTrans(biorbd_model.RT(np.zeros(biorbd_model.nbDof()), rt_on_string[string_key]).rot()))
     print(f"Moment/Force for {string_key} string = {np.concatenate((np.array([0, 0, 0]), b.to_array()))}")
-

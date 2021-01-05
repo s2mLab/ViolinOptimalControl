@@ -49,8 +49,10 @@ def prepare_nlp(biorbd_model_path="../models/Bras.bioMod"):
     X_bounds[biorbd_model.nbQ() :, 2] = -1.5
 
     muscle_states_bounds = BoundsOption(
-        [[muscle_states_ratio_min] * biorbd_model.nbMuscleTotal() * 3,
-        [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal() * 3,]
+        [
+            [muscle_states_ratio_min] * biorbd_model.nbMuscleTotal() * 3,
+            [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal() * 3,
+        ]
     )
     muscle_states_bounds.min[:, 0] = (
         [muscle_activated_init] * biorbd_model.nbMuscleTotal()
@@ -66,12 +68,19 @@ def prepare_nlp(biorbd_model_path="../models/Bras.bioMod"):
     X_bounds.bounds.concatenate(muscle_states_bounds.bounds)
 
     U_bounds = BoundsOption(
-        [[torque_min] * biorbd_model.nbGeneralizedTorque() + [muscle_states_ratio_min] * biorbd_model.nbMuscleTotal(),
-        [torque_max] * biorbd_model.nbGeneralizedTorque() + [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal(),]
+        [
+            [torque_min] * biorbd_model.nbGeneralizedTorque()
+            + [muscle_states_ratio_min] * biorbd_model.nbMuscleTotal(),
+            [torque_max] * biorbd_model.nbGeneralizedTorque()
+            + [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal(),
+        ]
     )
 
     # --- Initial guess --- #
-    X_init = InitialConditionsOption([0] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot(), InterpolationType.CONSTANT,)
+    X_init = InitialConditionsOption(
+        [0] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot(),
+        InterpolationType.CONSTANT,
+    )
     U_init = InitialConditionsOption(
         [torque_init] * biorbd_model.nbGeneralizedTorque() + [muscle_activated_init] * biorbd_model.nbMuscleTotal(),
         InterpolationType.CONSTANT,

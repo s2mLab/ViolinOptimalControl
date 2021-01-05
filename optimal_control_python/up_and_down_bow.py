@@ -149,9 +149,9 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
 
         # Start and finish with zero velocity
         if idx_phase == 0:
-            x_bounds[idx_phase][n_q :, 0] = 0
+            x_bounds[idx_phase][n_q:, 0] = 0
         if idx_phase == nb_phases - 1:
-            x_bounds[idx_phase][n_q :, -1] = 0
+            x_bounds[idx_phase][n_q:, -1] = 0
 
         muscle_states_bounds = Bounds(
             [muscle_states_min] * n_mus * 3,
@@ -159,8 +159,8 @@ def prepare_ocp(biorbd_model_path="../models/BrasViolon.bioMod"):
         )
         if idx_phase == 0:
             # fatigued_fibers = activated_fibers = 0 and resting_fibers = 1 at start
-            muscle_states_bounds[:2 * n_mus, 0] = 0
-            muscle_states_bounds[2 * n_mus:, 0] = 1
+            muscle_states_bounds[: 2 * n_mus, 0] = 0
+            muscle_states_bounds[2 * n_mus :, 0] = 1
         x_bounds[idx_phase].concatenate(muscle_states_bounds)
 
         u_bounds.add(

@@ -19,9 +19,9 @@ def define_new_objectives(weight):
         Objective.Lagrange.TRACK_STATE,
         node=Node.ALL,
         weight=weight,
-        target=q_target[bow.hair_idx:bow.hair_idx+1, :],
+        target=q_target[bow.hair_idx : bow.hair_idx + 1, :],
         index=bow.hair_idx,
-        list_index=3
+        list_index=3,
     )
     new_objectives.add(
         Objective.Lagrange.ALIGN_MARKERS,
@@ -29,7 +29,8 @@ def define_new_objectives(weight):
         weight=1000000,
         first_marker_idx=Bow.contact_marker,
         second_marker_idx=violin.bridge_marker,
-        list_index=4)
+        list_index=4,
+    )
     new_objectives.add(Objective.Lagrange.MINIMIZE_ALL_CONTROLS, node=Node.ALL, weight=10, list_index=5)
     new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, node=Node.ALL, weight=10, list_index=6)
     # new_objectives.add(  # rajoute des itérations et ne semble riuen changer au mouvement...
@@ -50,7 +51,7 @@ n_q = biorbd_model.nbQ()
 n_qdot = biorbd_model.nbQdot()
 n_tau = biorbd_model.nbGeneralizedTorque()
 n_muscles = biorbd_model.nbMuscles()
-window_time = 1/8  # duration of the window
+window_time = 1 / 8  # duration of the window
 window_len = 80  # size of NMPC window
 ns_tot_up_and_down = 150  # size of the up_and_down gesture
 
@@ -64,7 +65,7 @@ frame_to_init_from = window_len
 nb_shooting_pts_all_optim = 600
 
 Q_est_acados = np.zeros((n_q, nb_shooting_pts_all_optim))
-X_est_acados = np.zeros((n_q+n_qdot, nb_shooting_pts_all_optim))
+X_est_acados = np.zeros((n_q + n_qdot, nb_shooting_pts_all_optim))
 Qdot_est_acados = np.zeros((n_qdot, nb_shooting_pts_all_optim))
 U_est_acados = np.zeros((n_tau, nb_shooting_pts_all_optim))
 begin_at_first_iter = False
@@ -75,9 +76,9 @@ if begin_at_first_iter:
     x_init = np.tile(np.array(violin.initial_position()[bow.side] + [0] * n_qdot)[:, np.newaxis], window_len + 1)
     u_init = np.tile(np.array([0.5] * n_tau)[:, np.newaxis], window_len)
 else:
-    X_est_init = np.load('X_est.npy')[:, :window_len + 1]
-    U_est_init = np.load('U_est.npy')[:, :window_len + 1]
-    x_init = X_est_init[:, -(window_len + 1):]
+    X_est_init = np.load("X_est.npy")[:, : window_len + 1]
+    U_est_init = np.load("U_est.npy")[:, : window_len + 1]
+    x_init = X_est_init[:, -(window_len + 1) :]
     x0 = x_init[:, 0]
     u_init = U_est_init[:, -window_len:]
 
@@ -97,8 +98,8 @@ t = np.linspace(0, 2, ns_tot_up_and_down)
 target_curve = curve_integral(bow_target_param, t)
 q_target = np.ndarray((n_q, window_len + 1))
 Nmax = nb_shooting_pts_all_optim + window_len
-target = np.ndarray((Nmax, ))
-T = np.ndarray((Nmax, ))
+target = np.ndarray((Nmax,))
+T = np.ndarray((Nmax,))
 for i in range(Nmax):
     a = i % ns_tot_up_and_down
     T[i] = t[a]
@@ -121,7 +122,7 @@ shift = 1
 for i in range(0, 150):
     print(f"iteration:{i}")
     if i < 300:
-        q_target[bow.hair_idx, :] = target[i * shift: window_len + (i * shift) + 1]
+        q_target[bow.hair_idx, :] = target[i * shift : window_len + (i * shift) + 1]
         new_objectives = ObjectiveList()
         new_objectives.add(
             Objective.Lagrange.ALIGN_MARKERS,
@@ -129,20 +130,21 @@ for i in range(0, 150):
             weight=100000,
             first_marker_idx=Bow.contact_marker,
             second_marker_idx=violin.bridge_marker,
-            list_index=1)
+            list_index=1,
+        )
+        new_objectives.add(Objective.Lagrange.MINIMIZE_ALL_CONTROLS, node=Node.ALL, weight=10, list_index=2)
+        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, node=Node.ALL, weight=10, list_index=3)
         new_objectives.add(
-            Objective.Lagrange.MINIMIZE_ALL_CONTROLS, node=Node.ALL, weight=10, list_index=2)
-        new_objectives.add(
-            Objective.Lagrange.MINIMIZE_STATE, node=Node.ALL, weight=10, list_index=3)
-        new_objectives.add(
-            Objective.Lagrange.TRACK_STATE, node=Node.ALL, weight=100000,
-            target=q_target[bow.hair_idx:bow.hair_idx + 1, :],
+            Objective.Lagrange.TRACK_STATE,
+            node=Node.ALL,
+            weight=100000,
+            target=q_target[bow.hair_idx : bow.hair_idx + 1, :],
             index=bow.hair_idx,
-            list_index=4
+            list_index=4,
         )
         ocp.update_objectives(new_objectives)
     else:
-        q_target[bow.hair_idx, :] = target[i-40 * shift: window_len + (i - 40 * shift) + 1]
+        q_target[bow.hair_idx, :] = target[i - 40 * shift : window_len + (i - 40 * shift) + 1]
         if target[i] < -0.45:  # but : mettre des poids plus lourds aux extremums de la target pour que les extremums
             weight = 1500  # ne soient pas dépassés par le poids des des autres valeurs "itermédiaires" de la target
         if target[i] > -0.17:  # qui sont majoritaire dans la fenêtre
@@ -161,11 +163,17 @@ for i in range(0, 150):
             show_online_optim=False,
             solver=Solver.ACADOS,
         )
-    x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(sol=sol, ocp=ocp,
-                                                                window_len=window_len,
-                                                                n_q=n_q, n_qdot=n_qdot, n_tau=n_tau,
-                                                                biorbd_model=biorbd_model,
-                                                                acados=True, shift=shift)
+    x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(
+        sol=sol,
+        ocp=ocp,
+        window_len=window_len,
+        n_q=n_q,
+        n_qdot=n_qdot,
+        n_tau=n_tau,
+        biorbd_model=biorbd_model,
+        acados=True,
+        shift=shift,
+    )
     Q_est_acados[:, i] = X_out[:10]
     X_est_acados[:, i] = X_out
     Qdot_est_acados[:, i] = X_out[10:]

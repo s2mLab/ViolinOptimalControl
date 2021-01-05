@@ -23,7 +23,7 @@ def curve(x, t):
         elif (1 - (period / 4)) < t[i] < (1 + (period / 4)):
             y[i] = x[0] * np.sin((t[i] - 1 - period / 2) * x[1])
         elif (1 + (period / 4)) < t[i] < (2 - (period / 4)):
-            y[i] = - x[0]
+            y[i] = -x[0]
         else:
             y[i] = x[0] * np.sin((t[i] - 2) * x[1])
     return y
@@ -32,8 +32,8 @@ def curve(x, t):
 def curve_integral(x, t):
     integ = np.ndarray((t.shape[0],))
     integ[0] = 0
-    for i in range(t.shape[0]-1):
-        integ[i+1] = integrate.quad(lambda t: curve(x, t), 0, t[i+1])[0]
+    for i in range(t.shape[0] - 1):
+        integ[i + 1] = integrate.quad(lambda t: curve(x, t), 0, t[i + 1])[0]
     return integ + min_bow
 
 
@@ -43,7 +43,7 @@ def generate_bow_trajectory(n_points, bow_speed=10, bow_acceleration=0.5):
     def objective_function(x, t):
         y = curve(x, t)
         integ = curve_integral(x, t)
-        moy = (integ[int(n_points/2)-2] + integ[int(n_points/2)+2])/2
+        moy = (integ[int(n_points / 2) - 2] + integ[int(n_points / 2) + 2]) / 2
         return np.array((bow_acceleration - x[0], bow_speed - x[1], y[-1], y[0], (moy - max_bow) * 1000))
 
     t = np.linspace(0, 2, n_points)
@@ -62,6 +62,6 @@ if __name__ == "__main__":
 
     n_points = 50
     t = np.linspace(0, 2, n_points)
-    plt.plot(t, curve(x, t), 'k.')
+    plt.plot(t, curve(x, t), "k.")
 
     plt.show()
