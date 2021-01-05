@@ -1,13 +1,11 @@
 import biorbd
 import numpy as np
 import matplotlib
-from optimal_control_python.generate_up_and_down_bow_target import generate_up_and_down_bow_target
-from optimal_control_python.generate_up_and_down_bow_target import curve_integral
+from optimal_control_python.generate_bow_trajectory import generate_bow_trajectory, curve_integral
 from optimal_control_python.utils import Bow, Violin
 from optimal_control_python.utils_functions import prepare_generic_ocp, warm_start_nmpc, define_new_objectives, \
     display_graphics_X_est, display_X_est, compare_target, warm_start_nmpc_same_iter
 from bioptim import OptimalControlProgram, Data
-
 
 
 if __name__ == "__main__":
@@ -25,7 +23,7 @@ if __name__ == "__main__":
     violin = Violin("E")
     bow = Bow("frog")
 
-    # np.save("bow_target_param", generate_up_and_down_bow_target(200))
+    # np.save("bow_target_param", generate_bow_trajectory(200))
     bow_target_param = np.load("bow_target_param.npy")
     frame_to_init_from = nb_shooting_pts_window+1
     nb_shooting_pts_all_optim = 300

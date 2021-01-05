@@ -1,8 +1,7 @@
 import biorbd
 import numpy as np
 import matplotlib
-from optimal_control_python.generate_up_and_down_bow_target import generate_up_and_down_bow_target
-from optimal_control_python.generate_up_and_down_bow_target import curve_integral
+from optimal_control_python.generate_bow_trajectory import generate_bow_trajectory, curve_integral
 from optimal_control_python.utils import Bow, Violin
 
 from bioptim import (
