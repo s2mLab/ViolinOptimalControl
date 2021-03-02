@@ -7,13 +7,13 @@ from biorbd_optim import (
     DynamicsTypeOption,
     ObjectiveList,
     Objective,
-    BoundsOption,
+    Bounds,
     QAndQDotBounds,
     InitialConditionsOption,
     ShowResult,
 )
 
-from utils import xia as xia
+from violin_ocp import xia as xia
 
 
 def prepare_nlp(biorbd_model_path="../models/Bras.bioMod"):
@@ -32,27 +32,25 @@ def prepare_nlp(biorbd_model_path="../models/Bras.bioMod"):
     number_shooting_points = 30
     final_time = 0.5
 
-    # --- Objective --- #
+    # --- ObjectiveFcn --- #
     objective_functions = ObjectiveList()
-    # objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10)
-    # objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1)
+    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10)
+    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=1)
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE, weight=100)
-    # objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, controls_idx=[0, 1, 2, 3], weight=2000)
+    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, controls_idx=[0, 1, 2, 3], weight=2000)
 
     # --- Dynamics --- #
     dynamics = DynamicsTypeOption(xia.xia_model_configuration, dynamic_function=xia.xia_model_dynamic)
 
     # --- Path constraints --- #
-    X_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    X_bounds = QAndQDotBounds(biorbd_model)
 
     X_bounds[biorbd_model.nbQ() :, 0] = 0
     X_bounds[biorbd_model.nbQ() :, 2] = -1.5
 
-    muscle_states_bounds = BoundsOption(
-        [
-            [muscle_states_ratio_min] * biorbd_model.nbMuscleTotal() * 3,
-            [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal() * 3,
-        ]
+    muscle_states_bounds = Bounds(
+        [muscle_states_ratio_min] * biorbd_model.nbMuscleTotal() * 3,
+        [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal() * 3,
     )
     muscle_states_bounds.min[:, 0] = (
         [muscle_activated_init] * biorbd_model.nbMuscleTotal()
@@ -67,13 +65,9 @@ def prepare_nlp(biorbd_model_path="../models/Bras.bioMod"):
 
     X_bounds.bounds.concatenate(muscle_states_bounds.bounds)
 
-    U_bounds = BoundsOption(
-        [
-            [torque_min] * biorbd_model.nbGeneralizedTorque()
-            + [muscle_states_ratio_min] * biorbd_model.nbMuscleTotal(),
-            [torque_max] * biorbd_model.nbGeneralizedTorque()
-            + [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal(),
-        ]
+    U_bounds = Bounds(
+        [torque_min] * biorbd_model.nbGeneralizedTorque() + [muscle_states_ratio_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * biorbd_model.nbGeneralizedTorque() + [muscle_states_ratio_max] * biorbd_model.nbMuscleTotal(),
     )
 
     # --- Initial guess --- #

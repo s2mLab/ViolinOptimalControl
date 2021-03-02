@@ -1,107 +1,73 @@
 import biorbd
 import numpy as np
-from optimal_control_python.generate_bow_trajectory import generate_bow_trajectory, curve_integral
-from optimal_control_python.utils import Bow, Violin
-from optimal_control_python.utils_functions import prepare_generic_ocp, warm_start_nmpc
+from bioptim import ObjectiveFcn, ObjectiveList, Node, Solver
+
+from violin_ocp import Bow, Violin, Optim
+from violin_ocp.bow_trajectory import generate_bow_trajectory, curve_integral
 
 
-from bioptim import (
-    Objective,
-    ObjectiveList,
-    Node,
-    Solver,
-)
-
-
-def define_new_objectives(weight):
-    new_objectives = ObjectiveList()
-    new_objectives.add(
-        Objective.Lagrange.TRACK_STATE,
-        node=Node.ALL,
-        weight=weight,
-        target=q_target[bow.hair_idx : bow.hair_idx + 1, :],
-        index=bow.hair_idx,
-        list_index=3,
-    )
-    new_objectives.add(
-        Objective.Lagrange.ALIGN_MARKERS,
-        node=Node.ALL,
-        weight=1000000,
-        first_marker_idx=Bow.contact_marker,
-        second_marker_idx=violin.bridge_marker,
-        list_index=4,
-    )
-    new_objectives.add(Objective.Lagrange.MINIMIZE_ALL_CONTROLS, node=Node.ALL, weight=10, list_index=5)
-    new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, node=Node.ALL, weight=10, list_index=6)
-    # new_objectives.add(  # rajoute des itérations et ne semble riuen changer au mouvement...
-    #     Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE,
-    #     node=Node.ALL,
-    #     states_idx=bow.hair_idx,
-    #     # weight=1,
-    #     idx=4
-    # )
-    ocp.update_objectives(new_objectives)
-
-
-# Parameters
+# Options
 biorbd_model_path = "../models/BrasViolon.bioMod"
+begin_at_first_iter = True
 regenerate_bow_trajectory = False
+ns_all_optim = 600
+ns_one_cycle = 150  # size of the up_and_down gesture
+window_time = 1 / 8  # duration of the window
+window_len = 80  # size of NMPC window
+violin = Violin("E")
+bow = Bow("frog")
+
+# Aliases
 biorbd_model = biorbd.Model(biorbd_model_path)
 n_q = biorbd_model.nbQ()
 n_qdot = biorbd_model.nbQdot()
 n_tau = biorbd_model.nbGeneralizedTorque()
 n_muscles = biorbd_model.nbMuscles()
-window_time = 1 / 8  # duration of the window
-window_len = 80  # size of NMPC window
-ns_tot_up_and_down = 150  # size of the up_and_down gesture
-
-violin = Violin("E")
-bow = Bow("frog")
 
 if regenerate_bow_trajectory:
-    np.save("bow_target_param", generate_bow_trajectory(200))
-bow_target_param = np.load("bow_target_param.npy")
+    bow_target_param = generate_bow_trajectory(200)
+    np.save("bow_target_param", bow_target_param)
+else:
+    bow_target_param = np.load("bow_target_param.npy")
 frame_to_init_from = window_len
-nb_shooting_pts_all_optim = 600
 
-Q_est_acados = np.zeros((n_q, nb_shooting_pts_all_optim))
-X_est_acados = np.zeros((n_q + n_qdot, nb_shooting_pts_all_optim))
-Qdot_est_acados = np.zeros((n_qdot, nb_shooting_pts_all_optim))
-U_est_acados = np.zeros((n_tau, nb_shooting_pts_all_optim))
-begin_at_first_iter = False
+Q_est_acados = np.zeros((n_q, ns_all_optim))
+X_est_acados = np.zeros((n_q + n_qdot, ns_all_optim))
+Qdot_est_acados = np.zeros((n_qdot, ns_all_optim))
+U_est_acados = np.zeros((n_tau, ns_all_optim))
 if begin_at_first_iter:
     # Initial guess and bounds
-    x0 = np.array(violin.initial_position()[bow.side] + [0] * n_qdot)
+    x0 = np.array(violin.q()[bow.side] + [0] * n_qdot)
 
-    x_init = np.tile(np.array(violin.initial_position()[bow.side] + [0] * n_qdot)[:, np.newaxis], window_len + 1)
+    x_init = np.tile(np.array(violin.q()[bow.side] + [0] * n_qdot)[:, np.newaxis], window_len + 1)
     u_init = np.tile(np.array([0.5] * n_tau)[:, np.newaxis], window_len)
 else:
-    X_est_init = np.load("X_est.npy")[:, : window_len + 1]
-    U_est_init = np.load("U_est.npy")[:, : window_len + 1]
+    X_est_init = np.load("x_est.npy")[:, : window_len + 1]
+    U_est_init = np.load("u_est.npy")[:, : window_len + 1]
     x_init = X_est_init[:, -(window_len + 1) :]
     x0 = x_init[:, 0]
     u_init = U_est_init[:, -window_len:]
 
 # position initiale de l'ocp
-ocp, x_bounds = prepare_generic_ocp(
+ocp, x_bounds = Optim.prepare_generic_ocp(
     biorbd_model_path=biorbd_model_path,
-    number_shooting_points=window_len,
+    nb_shooting=window_len,
     final_time=window_time,
     x_init=x_init,
     u_init=u_init,
     x0=x0,
-    acados=True,
+    is_acados=True,
     use_sx=True,
 )
 
-t = np.linspace(0, 2, ns_tot_up_and_down)
+t = np.linspace(0, 2, ns_one_cycle)
 target_curve = curve_integral(bow_target_param, t)
 q_target = np.ndarray((n_q, window_len + 1))
-Nmax = nb_shooting_pts_all_optim + window_len
+Nmax = ns_all_optim + window_len
 target = np.ndarray((Nmax,))
 T = np.ndarray((Nmax,))
 for i in range(Nmax):
-    a = i % ns_tot_up_and_down
+    a = i % ns_one_cycle
     T[i] = t[a]
 target = curve_integral(bow_target_param, T)
 shift = 1
@@ -125,17 +91,17 @@ for i in range(0, 150):
         q_target[bow.hair_idx, :] = target[i * shift : window_len + (i * shift) + 1]
         new_objectives = ObjectiveList()
         new_objectives.add(
-            Objective.Lagrange.ALIGN_MARKERS,
+            ObjectiveFcn.Lagrange.SUPERIMPOSE_MARKERS,
             node=Node.ALL,
             weight=100000,
             first_marker_idx=Bow.contact_marker,
             second_marker_idx=violin.bridge_marker,
             list_index=1,
         )
-        new_objectives.add(Objective.Lagrange.MINIMIZE_ALL_CONTROLS, node=Node.ALL, weight=10, list_index=2)
-        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, node=Node.ALL, weight=10, list_index=3)
+        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_ALL_CONTROLS, node=Node.ALL, weight=10, list_index=2)
+        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, node=Node.ALL, weight=10, list_index=3)
         new_objectives.add(
-            Objective.Lagrange.TRACK_STATE,
+            ObjectiveFcn.Lagrange.TRACK_STATE,
             node=Node.ALL,
             weight=100000,
             target=q_target[bow.hair_idx : bow.hair_idx + 1, :],
@@ -151,7 +117,7 @@ for i in range(0, 150):
             weight = 1500
         else:
             weight = 1000
-        define_new_objectives(weight=weight)
+        Optim.update_target_objective(ocp, bow, q_target, weight)
     if i == 0:
         sol = ocp.solve(
             show_online_optim=False,
@@ -163,7 +129,7 @@ for i in range(0, 150):
             show_online_optim=False,
             solver=Solver.ACADOS,
         )
-    x_init, u_init, X_out, U_out, x_bounds, u = warm_start_nmpc(
+    x_init, u_init, X_out, U_out, x_bounds = Optim.warm_start_nmpc(
         sol=sol,
         ocp=ocp,
         window_len=window_len,
