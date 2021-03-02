@@ -1,7 +1,7 @@
 from up_and_down_bow import prepare_ocp
 from utils import Bow, Violin, Muscles
 
-from biorbd_optim import InitialConditions, Simulate, ShowResult, InterpolationType, OptimalControlProgram
+from bioptim import InitialConditions, Simulate, ShowResult, InterpolationType, OptimalControlProgram
 
 ocp = prepare_ocp()
 

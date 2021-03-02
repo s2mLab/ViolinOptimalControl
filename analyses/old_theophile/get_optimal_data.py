@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 import sys
 
-from biorbd_optim import OptimalControlProgram, ShowResult, Data, Simulate
+from bioptim import OptimalControlProgram, ShowResult, Data, Simulate
 from up_and_down_bow import xia_model_dynamic, xia_model_configuration, xia_model_fibers, xia_initial_fatigue_at_zero
 
 file_path = "/home/theophile/Documents/programmation/ViolinOptimalControl/optimal_control_python/results/xia align segment in obj 1 phase/2020_7_30_upDown.bo"

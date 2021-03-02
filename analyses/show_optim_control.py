@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import biorbd
-from BiorbdViz import BiorbdViz
+from bioviz import Viz
 
 import analyses.utils as utils
 
@@ -130,8 +130,8 @@ if m.nbMuscleTotal() > 0:
 plt.show()
 
 # Animate the model
-b = BiorbdViz(loaded_model=m, markers_size=0.003)
-# b = BiorbdViz(loaded_model=m)
+b = Viz(loaded_model=m, markers_size=0.003)
+# b = Viz(loaded_model=m)
 b.load_movement(q_interp)
 b.exec()
 

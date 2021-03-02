@@ -1,6 +1,6 @@
 from casadi import MX, vertcat, if_else, lt, gt
 import biorbd
-from biorbd_optim import Problem, CustomPlot, PlotType
+from bioptim import Problem, CustomPlot, PlotType
 
 
 class Xia:
