@@ -2,7 +2,7 @@ import time
 import sys
 import pickle
 
-from biorbd_optim import OptimalControlProgram, ShowResult, Data, Simulate
+from bioptim import OptimalControlProgram, ShowResult, Data, Simulate
 from up_and_down_bow import xia_model_dynamic, xia_model_configuration, xia_model_fibers, xia_initial_fatigue_at_zero
 
 file_path = "results/xia 5 phases/2020_7_25_upDown.bo"

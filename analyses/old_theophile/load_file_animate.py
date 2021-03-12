@@ -2,7 +2,7 @@ import time
 import pickle
 import sys
 
-from BiorbdViz import BiorbdViz
+from bioviz import Viz
 
 file_path = 0
 
@@ -18,7 +18,7 @@ with open(file_path, "rb") as file:
 
 data_interpolate, _ = data["data"]
 
-b = BiorbdViz(
+b = Viz(
     "../models/BrasViolon.bioMod",
     markers_size=0.0002,
     show_segments_center_of_mass=False,

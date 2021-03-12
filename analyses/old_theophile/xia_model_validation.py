@@ -1,7 +1,7 @@
 from up_and_down_bow import prepare_ocp
 from utils import Bow, Violin, Muscles
 
-from biorbd_optim import InitialConditions, Simulate, ShowResult, InterpolationType, OptimalControlProgram
+from bioptim import InitialConditions, Simulate, ShowResult, InterpolationType, OptimalControlProgram
 
 ocp = prepare_ocp()
 
@@ -12,7 +12,7 @@ violon_string = Violin("G")
 inital_bow_side = Bow("frog")
 
 X = InitialConditions(
-    violon_string.initial_position()[inital_bow_side.side] + [0] * ocp.nlp[0]["nbQdot"], InterpolationType.CONSTANT,
+    violon_string.q()[inital_bow_side.side] + [0] * ocp.nlp[0]["nbQdot"], InterpolationType.CONSTANT,
 )
 U = InitialConditions(
     [torque_init] * ocp.nlp[0]["nbTau"] + [command] * ocp.nlp[0]["model"].nbMuscles(), InterpolationType.CONSTANT,

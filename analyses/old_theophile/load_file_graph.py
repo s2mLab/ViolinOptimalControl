@@ -1,7 +1,7 @@
 import time
 import sys
 
-from biorbd_optim import OptimalControlProgram, ShowResult, Data
+from bioptim import OptimalControlProgram, ShowResult, Data
 from up_and_down_bow import xia_model_dynamic, xia_model_configuration, xia_model_fibers, xia_initial_fatigue_at_zero
 
 file_path = "/home/theophile/Documents/programmation/ViolinOptimalControl/optimal_control_python/results/2020_7_29_upDown.bo"

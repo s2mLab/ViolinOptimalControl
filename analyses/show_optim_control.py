@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import biorbd
-from BiorbdViz import BiorbdViz
+from bioviz import Viz
 
 import analyses.utils as utils
 
@@ -74,7 +74,7 @@ q_interp = q_interp[:, :m.nbQ()]
 cost = np.sum(all_q**2 * (t[1] - t[0]))*objective_weight[0] + \
        np.sum(all_u[:m.nbMuscleTotal(), :-1]**2 * (t[1] - t[0]))*objective_weight[1] + \
        np.sum(all_u[m.nbMuscleTotal():, :-1]**2 * (t[1] - t[0]))*objective_weight[2]
-print(f"Objective function = {cost}")
+print(f"ObjectiveFcn function = {cost}")
 
 plt.figure("States and torques res")
 for i in range(m.nbQ()):
@@ -88,7 +88,7 @@ for i in range(m.nbQ()):
     plt.plot(t_interp, qdot_interp[:, i])
     plt.plot(t_integrate, q_integrate[m.nbQ() + i, :])
     plt.plot(t_final, all_qdot[i, :])
-    # plt.plot(t_interp, utils.derive(q_interp, t_interp), '--')
+    # plt.plot(t_interp, violin_ocp.derive(q_interp, t_interp), '--')
     plt.title("Qdot %i" % i)
 
 for i in range(m.nbGeneralizedTorque()):
@@ -130,8 +130,8 @@ if m.nbMuscleTotal() > 0:
 plt.show()
 
 # Animate the model
-b = BiorbdViz(loaded_model=m, markers_size=0.003)
-# b = BiorbdViz(loaded_model=m)
+b = Viz(loaded_model=m, markers_size=0.003)
+# b = Viz(loaded_model=m)
 b.load_movement(q_interp)
 b.exec()
 
