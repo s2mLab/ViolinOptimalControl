@@ -16,18 +16,27 @@ class Bow:
     Contains references from useful markers.
     """
 
-    def __init__(self):
+    def __init__(self, model):
         """
         Contains the side of the bow.
         """
 
-        # TODO find these number from a model
-        self.segment_idx: int = 8
-        self.hair_idx: int = 9
-        self.hair_limits: list = [-0.07, -0.55]
-        self.contact_marker: int = 19
-        self.frog_marker: int = 16
-        self.tip_marker: int = 18
+        if model == "BrasViolon":
+            self.segment_idx: int = 8
+            self.hair_idx: int = 9
+            self.hair_limits: list = [-0.07, -0.55]
+            self.contact_marker: int = 19
+            self.frog_marker: int = 16
+            self.tip_marker: int = 18
+        elif model == "WuViolin":
+            self.segment_idx: int = 12
+            self.hair_idx: int = 11
+            self.hair_limits: list = [-0.07, -0.55]
+            self.contact_marker: int = 2
+            self.frog_marker: int = 0
+            self.tip_marker: int = 1
+        else:
+            raise ValueError("Wrong model")
 
 
 class BowTrajectory:

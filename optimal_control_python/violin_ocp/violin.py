@@ -19,52 +19,77 @@ class Violin:
 
     segment_idx = 17
 
-    def __init__(self, string: ViolinString):
+    def __init__(self, model: str, string: ViolinString):
+        self.model = model
         self.string = string
 
     def q(self, bow_position: BowPosition):
-        return {
-            "E": {
-                "frog": [-0.08296722,  0.09690602,  0.79205348,  0.6544504 ,  1.48280029, 0.08853452,  0.53858613, -0.39647921, -0.57508712, -0.0699],
-                "tip": [0.05540307, -0.29949352,  0.45207956,  0.47107735,  0.34250652, 0.43996516,  0.32375985,  0.26179933,  0.36437326, -0.54957409],
-            },
-            "A": {
-                "frog": [-0.1569, -0.5216, 0.5900, 1.1063, 1.4728, 0.0393, 0.3143, -0.3959, -0.4446, -0.07],
-                "tip": [0.0305, -0.6904, 0.3695, 0.8809, 0.1557, 0.2997, 0.2071, 0.1471, 0.5546, -0.55],
-            },
-            "D": {
-                "frog": [-0.1259, -0.4520, 0.5822, 1.1106, 1.4595, 0.1194, 0.5033, -0.4040, -0.4567, -0.07],
-                "tip": [0.0378, -0.7034, 0.2345, 0.947, 0.1111, 0.4134, 0.2470, 0.2606, 0.4842, -0.55],
-            },
-            "G": {
-                "frog": [-0.2697, -0.3733, 0.5529, 1.1676, 1.5453, 0.0877, 0.6603, -0.5842, -0.6424, -0.07],
-                "tip": [-0.0182, -1.3112, 0.1928, 0.6092, 0.7065, -0.0755, 0.1720, 0.1136, 0.2626, -0.55],
-            },
-        }[self.string.value][bow_position.value]
+        if self.model == "BrasViolon":
+            return {
+                "E": {
+                    "frog": [-0.08296722,  0.09690602,  0.79205348,  0.6544504 ,  1.48280029, 0.08853452,  0.53858613, -0.39647921, -0.57508712, -0.0699],
+                    "tip": [0.05540307, -0.29949352,  0.45207956,  0.47107735,  0.34250652, 0.43996516,  0.32375985,  0.26179933,  0.36437326, -0.54957409],
+                },
+                "A": {"frog": [], "tip": []},
+                "D": {"frog": [], "tip": []},
+                "G": {"frog": [], "tip": []},
+            }[self.string.value][bow_position.value]
+        elif self.model == "WuViolin":
+            return {"E": {
+                    # "frog": [-0.0074097,  -0.04981297, -1.13992577, -0.01850539,  1.54368652,  1.94669549, -0.57947399, -0.01585989, -0.62831847,  0.2999757,  -0.55596039, -0.07009973],
+                    # "tip": [-0.04576854330479148,0.08788361931714705,-1.045677642218223,0.35423606425999055,0.6328980896927536,1.0786544563166194,0.014769110852579427,0.08540932865751079,0.2593371701174382,-0.028357802445061028,0.15143857769331404,-0.5499854529262697],
+                    "tip": [0.09999949, -0.2168231,   0.10165738, -0.93642161,  0.437812,    0.46148012, 1.18559391, -0.07407561,  0.01744575,  0.17294441,  0.18155531, -0.55099826]
+                },
+                "A": {"frog": [], "tip": []},
+                "D": {"frog": [], "tip": []},
+                "G": {"frog": [], "tip": []},
+            }[self.string.value][bow_position.value]
+        else:
+            raise ValueError("Wrong model")
 
     @property
     def bridge_marker(self):
         """
         :return: Marker number on the bridge, associate to the string.
         """
-        return {
-            "E": 35,
-            "A": 37,
-            "D": 39,
-            "G": 41,
-        }[self.string.value]
+        if self.model == "BrasViolon":
+            return {
+                "E": 35,
+                "A": 37,
+                "D": 39,
+                "G": 41,
+            }[self.string.value]
+        elif self.model == "WuViolin":
+            return {
+                "E": 3,
+                "A": 5,
+                "D": 7,
+                "G": 9,
+            }[self.string.value]
+        else:
+            raise ValueError("Wrong model")
 
     @property
     def neck_marker(self):
         """
         :return: Marker number on the neck of the violin, associate to the string.
         """
-        return {
-            "E": 36,
-            "A": 38,
-            "D": 40,
-            "G": 42,
-        }[self.string.value]
+        if self.model == "BrasViolon":
+            return {
+                "E": 36,
+                "A": 38,
+                "D": 40,
+                "G": 42,
+            }[self.string.value]
+        elif self.model == "WuViolin":
+            return {
+                "E": 4,
+                "A": 6,
+                "D": 8,
+                "G": 10,
+            }[self.string.value]
+        else:
+            raise ValueError("Wrong model")
 
     @property
     def rt_on_string(self):

@@ -1,4 +1,6 @@
 from matplotlib import pyplot as plt
+from bioptim import PlotType, OptimalControlProgram
+from casadi import MX, Function
 
 
 def display_graphics_x_est(target, x_est):
@@ -32,3 +34,29 @@ def compare_target(target, target_curve):
     plt.show()
 
 
+def online_muscle_torque(ocp: OptimalControlProgram):
+    nlp = ocp.nlp[0]
+
+    states = MX.sym("x", nlp.nx, 1)
+    controls = MX.sym("u", nlp.nu, 1)
+    parameters = MX.sym("u", nlp.np, 1)
+
+    nq = nlp.mapping["q"].to_first.len
+    q = nlp.mapping["q"].to_second.map(states[:nq])
+    qdot = nlp.mapping["qdot"].to_second.map(states[nq:])
+
+    muscles_states = nlp.model.stateSet()
+    muscles_activations = controls[nlp.shape["tau"] :]
+    for k in range(nlp.shape["muscle"]):
+        muscles_states[k].setActivation(muscles_activations[k])
+    muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
+    muscle_tau_func = Function("muscle_tau", [states, controls, parameters], [muscles_tau]).expand()
+
+    def muscle_tau_callback(s, c, p):
+        return muscle_tau_func(s, c, p)
+
+    ocp.add_plot(
+        "muscle_torque",
+        muscle_tau_callback,
+        plot_type=PlotType.STEP,
+    )

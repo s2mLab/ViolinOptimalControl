@@ -20,11 +20,12 @@ from bioptim import (
     InitialGuess,
     Node,
     InterpolationType,
-    Solution
+    Solution,
 )
 
 from .violin import Violin
-from .bow import Bow, BowTrajectory, BowPosition
+from .bow import Bow, BowPosition
+from .viz import online_muscle_torque
 
 
 class ViolinOcp:
@@ -59,7 +60,8 @@ class ViolinOcp:
         self.model = biorbd.Model(self.model_path)
         self.n_q = self.model.nbQ()
         self.n_tau = self.model.nbGeneralizedTorque()
-        self.n_mus = self.model.nbMuscles() if use_muscles else 0
+        self.use_muscles = use_muscles
+        self.n_mus = self.model.nbMuscles() if self.use_muscles else 0
 
         self.violin = violin
         self.bow = bow
@@ -73,7 +75,7 @@ class ViolinOcp:
 
         self.solver = solver
         self.n_threads = n_threads
-        if use_muscles:
+        if self.use_muscles:
             self.dynamics = Dynamics(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
         else:
             self.dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -93,22 +95,23 @@ class ViolinOcp:
         self._set_generic_constraints()
 
         self._set_generic_ocp()
+        online_muscle_torque(self.ocp)
 
     def _set_generic_objective_functions(self):
         weight_align_rt = 1000  # 1000 if self.solver == Solver.ACADOS else 100
 
         # Regularization objectives
         self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_ALL_CONTROLS, weight=0.01, list_index=0)
-        if self.n_mus == 0:
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=1, list_index=1)
-        else:
+        if self.use_muscles:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_TORQUE,
-                index=range(0, 6),
+                index=range(0, 7),
                 weight=1,
                 list_index=1
             )
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=1, list_index=2)
+            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10, list_index=2)
+        else:
+            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=1, list_index=1)
         self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE_DERIVATIVE, weight=1, list_index=3)
 
         # Keep the bow align at 90 degrees with the violin
@@ -130,6 +133,7 @@ class ViolinOcp:
             list_index=5,
         )
         self.ocp.update_objectives(new_objectives)
+
         new_constraint = Constraint(
             ConstraintFcn.TRACK_STATE,
             node=Node.ALL,
@@ -160,14 +164,16 @@ class ViolinOcp:
         # for j in range(5, nb_shooting + 1):
         #     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS,
         #                     node=j,
-        #                     min_bound=-10**(j-14), #-10**(j-14) donne 25 itérations
-        #                     max_bound=10**(j-14), # (j-4)/10 donne 21 itérations
+        #                     min_bound=-10**(j-14), #-10**(j-14) gives 25 iterations
+        #                     max_bound=10**(j-14), # (j-4)/10 gives 21 iterations
         #                     first_marker_idx=Bow.contact_marker,
         #                     second_marker_idx=violin.bridge_marker, list_index=j)
-        if self.n_mus != 0:
+        if self.use_muscles:
             self.constraints.add(
                 ConstraintFcn.TRACK_TORQUE,
-                index=range(0, 6),
+                index=range(0, 7),
+                min_bound=-15,
+                max_bound=15,
                 node=Node.ALL,
             )
 
@@ -175,6 +181,8 @@ class ViolinOcp:
         self.x_bounds = QAndQDotBounds(self.model)
         self.x_bounds[:self.n_q, 0] = self.violin.q(self.bow_starting)
         self.x_bounds[self.n_q:, 0] = 0
+        self.x_bounds.min[:self.n_q, -1] = np.array(self.violin.q(self.bow_starting)) - 0.01
+        self.x_bounds.max[:self.n_q, -1] = np.array(self.violin.q(self.bow_starting)) + 0.01
 
         u_min = [self.tau_min] * self.n_tau + [0] * self.n_mus
         u_max = [self.tau_max] * self.n_tau + [1] * self.n_mus
@@ -216,14 +224,17 @@ class ViolinOcp:
     def load(file_path: str):
         return OptimalControlProgram.load(file_path)
 
-    def save(self, sol: Solution):
+    def save(self, sol: Solution, stand_alone: bool = False):
         try:
             os.mkdir("results")
         except FileExistsError:
             pass
 
         t = time.localtime(time.time())
-        self.ocp.save(sol, f"results/{t.tm_year}_{t.tm_mon}_{t.tm_mday}.bo")
+        if stand_alone:
+            self.ocp.save(sol, f"results/{t.tm_year}_{t.tm_mon}_{t.tm_mday}_out.bo", stand_alone=True)
+        else:
+            self.ocp.save(sol, f"results/{t.tm_year}_{t.tm_mon}_{t.tm_mday}.bo", stand_alone=False)
 
     #
     # @staticmethod
