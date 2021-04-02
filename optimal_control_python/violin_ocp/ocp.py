@@ -105,7 +105,7 @@ class ViolinOcp:
         if self.use_muscles:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_TORQUE,
-                index=range(0, 7),
+                index=self.violin.virtual_tau,
                 weight=1,
                 list_index=1
             )
@@ -169,13 +169,22 @@ class ViolinOcp:
         #                     first_marker_idx=Bow.contact_marker,
         #                     second_marker_idx=violin.bridge_marker, list_index=j)
         if self.use_muscles:
-            self.constraints.add(
-                ConstraintFcn.TRACK_TORQUE,
-                index=range(0, 7),
-                min_bound=-15,
-                max_bound=15,
-                node=Node.ALL,
-            )
+            if self.n_cycles >= 3:
+                self.constraints.add(
+                    ConstraintFcn.TRACK_TORQUE,
+                    index=self.violin.virtual_tau,
+                    min_bound=-3,
+                    max_bound=3,
+                    node=list(range(self.n_shooting_per_cycle, self.n_shooting - self.n_shooting_per_cycle + 1)),
+                )
+            else:
+                self.constraints.add(
+                    ConstraintFcn.TRACK_TORQUE,
+                    index=self.violin.virtual_tau,
+                    min_bound=-15,
+                    max_bound=15,
+                    node=Node.ALL,
+                )
 
     def _set_bounds(self):
         self.x_bounds = QAndQDotBounds(self.model)

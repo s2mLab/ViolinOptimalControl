@@ -30,7 +30,7 @@ class Bow:
             self.tip_marker: int = 18
         elif model == "WuViolin":
             self.segment_idx: int = 12
-            self.hair_idx: int = 11
+            self.hair_idx: int = 12
             self.hair_limits: list = [-0.07, -0.55]
             self.contact_marker: int = 2
             self.frog_marker: int = 0

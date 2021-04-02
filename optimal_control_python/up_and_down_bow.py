@@ -9,8 +9,8 @@ if __name__ == "__main__":
     bow = Bow(model_name)
 
     # --- Solve the program --- #
-    # ocp, sol = ViolinOcp.load("results/2021_3_12.bo")
-    ocp = ViolinOcp(f"../models/{model_name}.bioMod", violin, bow, 1, BowPosition.TIP, use_muscles=True)
+    # ocp, sol = ViolinOcp.load("results/5_cycles_34_muscles/2021_3_12.bo")
+    ocp = ViolinOcp(f"../models/{model_name}.bioMod", violin, bow, 3, BowPosition.TIP, use_muscles=True)
 
     lim = bow.hair_limits if ocp.bow_starting == BowPosition.FROG else [bow.hair_limits[1], bow.hair_limits[0]]
     bow_trajectory = BowTrajectory(lim, ocp.n_shooting_per_cycle + 1)
@@ -29,6 +29,5 @@ if __name__ == "__main__":
     ocp.save(sol)
     ocp.save(sol, stand_alone=True)
 
-    # sol.print()
-    # sol.graphs()
+    sol.print()
     sol.animate(show_meshes=False)

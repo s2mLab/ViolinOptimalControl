@@ -23,20 +23,21 @@ segment thorax
         1.4745	0.000000	0.000000
         0.000000	0.7555	0.000000
         0.000000	0.000000	1.4314
-    meshfile Geometry/thorax.vtp
+    // meshfile Geometry/thorax.vtp
 endsegment
 
 segment spine
 	parent	thorax
-    meshfile Geometry/hat_spine.vtp
+    // meshfile Geometry/hat_spine.vtp
 endsegment
 
 segment clavicle_effector_right
     parent thorax
     // rotations xyz  // This correspond to a YXZ sequence
-    rotations x
+    rotations xy
     ranges
         -0.1 0.1
+        -0.15 0.3
     RTinmatrix 1
     RT
         0.015299995323 -0.994472543667 -0.103812017405   0.006325
@@ -60,7 +61,7 @@ endsegment
 segment scapula_effector_right
     parent clavicle_right
     // rotations xyz  // This correspond to a ZYX sequence
-    rotations xz  
+    rotations xz
     ranges
         -0.5  0.1
         -0.05 0.5
@@ -91,6 +92,7 @@ segment humerus_right
         0 0 0.013409
     meshfile Geometry/humerus.vtp
 endsegment
+
 
 segment ulna_effector_right
     parent humerus_right
@@ -184,7 +186,7 @@ segment bow
 		0.000000	0.00000048	0.000000
 		0.000000	0.000000	0.00117637
 	com	0 -0.335 0
-	meshfile Geometry/Bow.obj
+	// meshfile Geometry/Bow.obj
 endsegment
 segment bow_hair
     parent bow
@@ -228,7 +230,7 @@ segment clavicle_left
         0                   0                    0                   1
     mass 0.2
     com -0.0127205 0.00849541 -0.0659846
-    meshfile Geometry/clavicle_left.vtp
+    // meshfile Geometry/clavicle_left.vtp
 endsegment
 
 
@@ -242,7 +244,7 @@ segment scapula_left
     RT -0.52 0.52 0 xyz 0 0 0
     mass 0.5
     com -0.072 -0.039 0.065
-    meshfile Geometry/scapula_left.vtp
+    // meshfile Geometry/scapula_left.vtp
 endsegment
 
 
@@ -261,7 +263,7 @@ segment humerus_rotation_left
     // This segment is created so one can choose if the dof exists or not
     // rotations yzy
     RT 0.25 0.8 0 yzy 0 0 0
-    meshfile Geometry/humerus_left.vtp
+    // meshfile Geometry/humerus_left.vtp
 endsegment
 
 
@@ -294,7 +296,7 @@ segment ulna_left
         0.002962 0 0
         0 0.000618 0
         0 0 0.003213
-    meshfile Geometry/ulna_left.vtp
+    // meshfile Geometry/ulna_left.vtp
 endsegment
 
 
@@ -327,7 +329,7 @@ segment radius_left
         0.002962 0 0
         0 0.000618 0
         0 0 0.003213
-    meshfile Geometry/radius_left.vtp
+    // meshfile Geometry/radius_left.vtp
 endsegment
 
 
@@ -354,7 +356,7 @@ segment violin
 	    0.000000	0.00000048	0.000000
 	    0.000000	0.000000	0.00117637
     com	-0.003 -0.325 0
-    meshfile Geometry/Violin.obj
+    // meshfile Geometry/Violin.obj
 endsegment
 
 
@@ -402,7 +404,7 @@ endsegment
         parent violin
         position 0.0190 -0.284 -0.039
     endmarker
-    
+
     customRT bowOnGString
         fromMarkers
         parent violin
@@ -460,7 +462,7 @@ musclegroup thorax_to_humerus
 endmusclegroup 	
 
 	muscle	PECM2
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		thorax_to_humerus
 		originPosition		0.0248658 -0.0475832 0.0174664
 		insertionPosition	0.016 -0.0354957 0.005
@@ -479,7 +481,7 @@ endmusclegroup
 
 
 	muscle	PECM3
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		thorax_to_humerus
 		originPosition		0.0626543 -0.147759 0.0220602
 		insertionPosition	0.016 -0.03 0.005
@@ -496,6 +498,33 @@ endmusclegroup
             position 		0.0432682 -0.093061 0.082833
 		endviapoint
 
+    muscle	LAT
+        // REMOVED WRAPPING
+		type 				Thelen
+		musclegroup 		thorax_to_humerus
+		originPosition		-0.094702 -0.160998 0.000512144
+		insertionPosition	0.00991752 -0.0223337 -0.008822
+		optimalLength		0.2317
+		maximalForce		1129.7
+		tendonSlackLength 	0.077
+		pennationAngle		0.331612557879
+	endmuscle
+
+		viapoint via1
+		    // ADDED TO ACCOUNT FOR THE REMOVED WRAPPING OBJECT
+			parent 		thorax
+			muscle 		LAT
+            musclegroup 	thorax_to_humerus
+            position 		-0.1 -0.08 0.08
+		endviapoint
+
+		viapoint via2
+			parent 		humerus_right
+			muscle 		LAT
+            musclegroup 	thorax_to_humerus
+            position 		0.00202133 -0.0188908 -0.0214651
+		endviapoint
+
 
 musclegroup scapula_to_humerus
 	originParent		scapula_right
@@ -503,7 +532,7 @@ musclegroup scapula_to_humerus
 endmusclegroup
 
     muscle	DELT2
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.0275294 -0.0032022 0.00142634
 		insertionPosition	0.00455911 -0.103949 0.00775516
@@ -527,7 +556,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	DELT3
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.0590625 -0.00156871 -0.0384606
 		insertionPosition	-0.00455911 -0.103949 0.00775516
@@ -549,10 +578,10 @@ endmusclegroup
 			musclegroup 	scapula_to_humerus
 			position 		-0.0185845 -0.049702 0.00590064
 		endviapoint
-		
+
 	muscle	INFSP
 	    // WRAPPING REMOVED
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.087985 -0.0545528 -0.0693532
 		insertionPosition	-0.00509757 0.00804087 0.0263967
@@ -578,7 +607,7 @@ endmusclegroup
 
 	muscle	SUPSP
 	    // WRAPPING REMOVED
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.0670398 -0.0115895 -0.0644974
 		insertionPosition	0.0142549 0.0168443 0.0209438
@@ -602,7 +631,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	SUBSC
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.072 -0.039 -0.065
 		insertionPosition	0.0199995 -0.00831173 -0.00174873
@@ -625,6 +654,61 @@ endmusclegroup
 			position 		 0.00743143 0.0103746 -0.0226855
 		endviapoint
 
+	muscle	TMIN
+		type 				Thelen
+		musclegroup 		scapula_to_humerus
+		originPosition		-0.0820004 -0.0674811 -0.0409306
+		insertionPosition	0.00655633 -0.00365417 0.0216781
+		optimalLength		0.0453
+		maximalForce		605.4
+		tendonSlackLength 	0.1038
+		pennationAngle		0.418879020479
+	endmuscle
+
+		viapoint via1
+			parent 		    scapula_right
+			muscle 		    TMIN
+			musclegroup 	scapula_to_humerus
+			position 		 -0.0750189 -0.0526508 -0.0102678
+		endviapoint
+
+		viapoint via2
+			parent 		    humerus_right
+			muscle 		    TMIN
+			musclegroup 	scapula_to_humerus
+			position 		 -0.00847731 -0.0141768 0.0268849
+		endviapoint
+
+	muscle	TMAJ
+		type 				Thelen
+		musclegroup 		scapula_to_humerus
+		originPosition		-0.104709 -0.107757 -0.0711555
+		insertionPosition	0.003699 -0.045 -0.00676304
+		optimalLength		0.1388
+		maximalForce		234.9
+		tendonSlackLength 	0.0537
+		pennationAngle		0.279252680319
+	endmuscle
+
+		viapoint via1
+			parent 		    scapula_right
+			muscle 		    TMAJ
+			musclegroup 	scapula_to_humerus
+			position 		 -0.0453519 -0.106216 -0.00247153
+		endviapoint
+
+	muscle	CORB
+	    // REMOVED WRAPPING
+		type 				Thelen
+		musclegroup 		scapula_to_humerus
+		originPosition		0.0125 -0.04127 -0.02652
+		insertionPosition	0 -0.128 -0.0116594
+		optimalLength		0.0832
+		maximalForce		306.9
+		tendonSlackLength 	0.0615
+		pennationAngle		0.0
+	endmuscle
+
 
 musclegroup scapula_to_ulna
 	originParent		scapula_right
@@ -632,17 +716,17 @@ musclegroup scapula_to_ulna
 endmusclegroup 
 
 	muscle	TRIlong
-	    // WRAPPING REMOVED
-		type 				ThelenActive
+	    // REMOVED WRAPPING
+		type 				Thelen
 		musclegroup 		scapula_to_ulna
 		originPosition		-0.04565 -0.04073 -0.01377
-		insertionPosition	-0.02190  0.01046 -0.00078
+		insertionPosition	-0.03  0.01046 -0.00078 // -0.02190  0.01046 -0.00078
 		optimalLength		0.13400
 		maximalForce		798.520
 		tendonSlackLength 	0.14300
 		pennationAngle		0.2094
 	endmuscle
-	
+
 		viapoint via1
 			parent 		humerus_right
 			muscle 		TRIlong
@@ -659,8 +743,23 @@ endmusclegroup
 			parent 		humerus_right
 			muscle 		TRIlong
 			musclegroup 	scapula_to_ulna
-			position 		-0.01743 -0.26757 -0.01208
+			position 		-0.02743 -0.275757 -0.01208 // -0.01743 -0.26757 -0.01208
 		endviapoint
+
+        /*
+        wrapping TRI
+            // parent humerus_right
+            parent ulna_right
+            type halfcylinder
+            musclegroup scapula_to_ulna
+            muscle TRIlong
+            // RT -0.14015 -0.00628 -0.155 xyz 0.0028 -0.2919 -0.0119
+            RT 0 0 pi/2+pi/4 xyz 0 0 0
+            // radius 0.016
+            radius 0.018
+            length 0.04
+        endwrapping
+        */
 
 
 musclegroup humerus_to_ulna
@@ -669,10 +768,11 @@ musclegroup humerus_to_ulna
 endmusclegroup  	
 
 	muscle	TRIlat
-		type 				ThelenActive
+	    // WRAPPING REMOVED
+		type 				Thelen
 		musclegroup 		humerus_to_ulna
 		originPosition		-0.00599 -0.12646  0.00428
-		insertionPosition	-0.02190  0.01046 -0.00078
+		insertionPosition	-0.03  0.01046 -0.00078 // -0.02190  0.01046 -0.00078
 		optimalLength		0.11380
 		maximalForce		624.300
 		tendonSlackLength 	0.09800
@@ -695,14 +795,15 @@ endmusclegroup
 			  parent 		humerus_right
 			  muscle 		TRIlat
 			  musclegroup 	humerus_to_ulna
-			  position 		-0.01743 -0.26757 -0.01208
+			position 		-0.02743 -0.275757 -0.01208 // -0.01743 -0.26757 -0.01208
 		endviapoint
 
 	muscle	TRImed
-		type 				ThelenActive
+	    // WRAPPING REMOVED
+		type 				Thelen
 		musclegroup 		humerus_to_ulna
 		originPosition		-0.00838 -0.13695 -0.00906
-		insertionPosition	-0.02190  0.01046 -0.00078
+		insertionPosition	-0.03  0.01046 -0.00078 // -0.02190  0.01046 -0.00078
 		optimalLength		0.11380
 		maximalForce		624.300
 		tendonSlackLength 	0.09080
@@ -725,17 +826,71 @@ endmusclegroup
 			parent 		humerus_right
 			muscle 		TRImed
 			musclegroup 	humerus_to_ulna
-			position 		-0.01743 -0.26757 -0.01208
+			position 		-0.02743 -0.275757 -0.01208 // -0.01743 -0.26757 -0.01208
+		endviapoint
+
+	muscle	ANC
+	    // WRAPPING REMOVED
+		type 				Thelen
+		musclegroup 		humerus_to_ulna
+		originPosition		-0.00744 -0.28359  0.00979
+		insertionPosition	-0.02532 -0.00124  0.00600
+		optimalLength		0.02700
+		maximalForce		350.000
+		tendonSlackLength 	0.01800
+		pennationAngle		0.0
+	endmuscle
+
+	muscle	BRA
+		type 				Thelen
+		musclegroup 		humerus_to_ulna
+		originPosition		0.00680 -0.17390 -0.00360
+		insertionPosition	-0.00320 -0.02390  0.00090
+		optimalLength		0.08580
+		maximalForce		987.260
+		tendonSlackLength 	0.05350
+		pennationAngle		0.0
+	endmuscle
+
+		viapoint via1
+		    // ADDED TO ACCOUNT FOR REMOVED RANGE DEPENDENT VALUES
+			parent 		humerus_right
+			muscle 		BRA
+			musclegroup 	humerus_to_ulna
+			position 		0.018680 -0.26390 -0.00360
+		endviapoint
+
+musclegroup humerus_to_radius
+	originParent		humerus_right
+	insertionParent		radius_right
+endmusclegroup
+
+	muscle	BRD
+		type 				Thelen
+		musclegroup 		humerus_to_radius
+		originPosition		-0.00980 -0.19963  0.00223
+		insertionPosition	0.04190 -0.22100  0.02240
+		optimalLength		0.17260
+		maximalForce		261.330
+		tendonSlackLength 	0.13300
+		pennationAngle		0.0
+	endmuscle
+
+		viapoint via1
+			parent 		radius_right
+			muscle 		BRD
+			musclegroup 	humerus_to_radius
+			position 		0.03577 -0.12742  0.02315
 		endviapoint
 
 
 musclegroup clavicle_to_humerus
 	originParent		clavicle_right
 	insertionParent		humerus_right
-endmusclegroup 	
+endmusclegroup
 
 	muscle	PECM1
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		clavicle_to_humerus
 		originPosition		0.00110542 0.00608334 0.0513213
 		insertionPosition	0.016 -0.0404957 0.005
@@ -754,7 +909,7 @@ endmusclegroup
 
 
 	muscle	DELT1
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		clavicle_to_humerus
 		originPosition		-0.0241685 0.0192842 0.099015
 		insertionPosition	0.00455911 -0.103949 0.00775516
@@ -779,7 +934,7 @@ endmusclegroup
 
 	muscle	BIClong
 	    // TWO VIA POINTS WERE REMOVED AND THE WRAPPING
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		scapula_to_radius
 		originPosition		-0.03123 -0.02353 -0.01305
 		insertionPosition	-0.00200 -0.03750 -0.00200
@@ -835,7 +990,7 @@ endmusclegroup
 
 	muscle	BICshort
 	    // TWO VIA POINTS WERE REMOVED AND THE WRAPPING
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		scapula_to_radius
 		originPosition		0.01268 -0.03931 -0.02625
 		insertionPosition	0.00200 -0.03750 -0.00200
@@ -878,7 +1033,7 @@ endmusclegroup
 
 	muscle	TRP1
 	    // WRAPPING REMOVED
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		thorax_to_clavicle
 		originPosition		-0.0589601 0.0968498 0.00192477
 		insertionPosition	-0.0305978 0.0248459 0.0982569
@@ -888,15 +1043,37 @@ endmusclegroup
 		pennationAngle		0.000
 	endmuscle
 
+	muscle	SBCL
+		type 				Thelen
+		musclegroup 		thorax_to_clavicle
+		originPosition		-0.000927862 -0.013199 0.0391262
+		insertionPosition	-0.0157477 0.00908546 0.0757093
+		optimalLength		0.0241381470743638
+		maximalForce		195.807648942742
+		tendonSlackLength 	0.0440109273092905
+		pennationAngle		0.000
+	endmuscle
+
 
 musclegroup thorax_to_scapula
 	originParent		thorax
 	insertionParent		scapula_right
 endmusclegroup
 
+    muscle LVS
+		type 				Thelen
+		musclegroup 		thorax_to_scapula
+		originPosition      -0.037263 0.0944378 0.0225438
+		insertionPosition   -0.0676471 0.000672336 -0.0956535
+		optimalLength       0.1475443579843
+		maximalForce        169.956397255998
+		tendonSlackLength   0.0052168109293535
+		pennationAngle      0.0
+    endmuscle
+
 	muscle	TRP2
 	    // WRAPPING REMOVED
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		thorax_to_scapula
 		originPosition		-0.0774721 0.0314578 0.00356913
 		insertionPosition	-0.039 -0.0025817 -0.01
@@ -915,7 +1092,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	TRP3
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		thorax_to_scapula
 		originPosition		-0.0921656 -0.0154049 0.00250602
 		insertionPosition	-0.058344 -0.00650954 -0.0444157
@@ -935,7 +1112,7 @@ endmusclegroup
 
 	muscle	TRP4
 	    // WRAPPING REMOVED
-		type 				ThelenActive
+		type 				Thelen
 		musclegroup 		thorax_to_scapula
 		originPosition		-0.115981 -0.105564 0.000683625
 		insertionPosition	-0.0791919 -0.0129439 -0.0789001
@@ -952,3 +1129,110 @@ endmusclegroup
 			musclegroup 	thorax_to_scapula
 			position 		-0.095 -0.04 -0.10
 		endviapoint
+
+    muscle RMN
+        // WRAPPING REMOVED
+		type 				Thelen
+		musclegroup 		thorax_to_scapula
+		originPosition      -0.063 0.0559617 0.003
+		insertionPosition   -0.079057 -0.0131532 -0.100259
+		optimalLength       0.107281716756964
+		maximalForce        301.617061455788
+		tendonSlackLength   0.0229727635666195
+		pennationAngle      0.0
+    endmuscle
+
+    muscle RMJ1
+        // WRAPPING REMOVED
+		type 				Thelen
+		musclegroup 		thorax_to_scapula
+		originPosition      -0.0790589 0.00944004 0.00143378
+		insertionPosition   -0.0903423 -0.0422644 -0.104178
+		optimalLength       0.0885512252908181
+		maximalForce        185.935898822876
+		tendonSlackLength   0.0243830278041587
+		pennationAngle      0.0
+    endmuscle
+
+    muscle RMJ2
+        // WRAPPING REMOVED
+		type 				Thelen
+		musclegroup 		thorax_to_scapula
+		originPosition      -0.087 -0.025 0.00143378
+		insertionPosition   -0.1 -0.099 -0.097
+		optimalLength       0.0881643693075764
+		maximalForce        111.570078855478
+		tendonSlackLength   0.0459926540829346
+		pennationAngle      0.0
+    endmuscle
+
+    muscle SRA1
+        // WRAPPING REMOVED
+		type 				Thelen
+		musclegroup 		thorax_to_scapula
+		originPosition      -0.000944031 -0.0561663 0.119819
+		insertionPosition   -0.0878498 -0.0472465 -0.0985756
+		optimalLength       0.0852089719457094
+		maximalForce        365.117753355088
+		tendonSlackLength   0.0698006197929219
+		pennationAngle      0.0
+    endmuscle
+
+		viapoint via1
+		    // MANUALLY ADDED TO ACCOUNT FOR THE REMOVED WRAPPING
+			parent 		scapula_right
+			muscle 		SRA1
+			musclegroup 	thorax_to_scapula
+			position 		-0.0578498 -0.0572465 -0.0485756
+		endviapoint
+
+    muscle SRA2
+        // WRAPPING REMOVED
+		type 				Thelen
+		musclegroup 		thorax_to_scapula
+		originPosition      -0.000625923 -0.102011 0.137825
+		insertionPosition   -0.0931001 -0.0622901 -0.0985183
+		optimalLength       0.128056473096221
+		maximalForce        179.962605324004
+		tendonSlackLength   0.0420987196613924
+		pennationAngle      0.0
+    endmuscle
+
+		viapoint via1
+		    // MANUALLY ADDED TO ACCOUNT FOR THE REMOVED WRAPPING
+			parent 		scapula_right
+			muscle 		SRA2
+			musclegroup 	thorax_to_scapula
+			position 		-0.0578498 -0.0772465 -0.0485756
+		endviapoint
+
+    muscle SRA3
+        // WRAPPING REMOVED
+		type 				Thelen
+		musclegroup 		thorax_to_scapula
+		originPosition      -0.0113734 -0.161817 0.148868
+		insertionPosition   -0.0968835 -0.0774188 -0.0982424
+		optimalLength       0.133140371515546
+		maximalForce        377.921664337259
+		tendonSlackLength   0.00875846483939288
+		pennationAngle      0.0
+    endmuscle
+
+		viapoint via1
+		    // MANUALLY ADDED TO ACCOUNT FOR THE REMOVED WRAPPING
+			parent 		scapula_right
+			muscle 		SRA3
+			musclegroup 	thorax_to_scapula
+			position 		-0.0578498 -0.0972465 -0.0485756
+		endviapoint
+
+    muscle PMN
+		type 				Thelen
+		musclegroup 		thorax_to_scapula
+		originPosition      0.032445 -0.0750782 0.0894181
+		insertionPosition   0.012 -0.04127 -0.02652
+		optimalLength       0.11506965743681
+		maximalForce        218.722935306591
+		tendonSlackLength   0.005
+		pennationAngle      0.0
+    endmuscle
