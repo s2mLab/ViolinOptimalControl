@@ -42,7 +42,7 @@ class Bow:
 class BowTrajectory:
     # TODO Allow to start from FROG
 
-    def __init__(self, bow_range: list[float], n_points: int, bow_speed: float = 10, bow_acceleration: float = 0.5):
+    def __init__(self, bow_range: list, n_points: int, bow_speed: float = 10, bow_acceleration: float = 0.5):
         # x[0] = amplitude
         # x[1]= 2 * pi / period
         def objective_function(x, t):
