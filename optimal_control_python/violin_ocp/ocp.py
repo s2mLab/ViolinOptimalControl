@@ -6,6 +6,7 @@ import biorbd
 import numpy as np
 from bioptim import (
     Solver,
+    MovingHorizonEstimator,
     OptimalControlProgram,
     Objective,
     ObjectiveFcn,
@@ -13,7 +14,6 @@ from bioptim import (
     DynamicsFcn,
     Dynamics,
     ConstraintFcn,
-    Constraint,
     ConstraintList,
     Bounds,
     QAndQDotBounds,
@@ -48,7 +48,7 @@ class ViolinOcp:
             violin: Violin,
             bow: Bow,
             n_cycles: int,
-            bow_starting: BowPosition.FROG,
+            bow_starting: BowPosition.TIP,
             init_file: str = None,
             use_muscles: bool = True,
             time_per_cycle: float = 1,
@@ -241,7 +241,7 @@ class ViolinOcp:
 
     @staticmethod
     def load(file_path: str):
-        return OptimalControlProgram.load(file_path)
+        return MovingHorizonEstimator.load(file_path)
 
     def save(self, sol: Solution, stand_alone: bool = False):
         try:
@@ -277,3 +277,49 @@ class ViolinOcp:
     #     ocp.update_initial_guess(x_init, u_init)
     #     ocp.update_bounds(x_bounds=x_bounds)
     #     return x_init, u_init, x[:, 0], u[:, 0], x_bounds
+
+
+class ViolinNMPC(ViolinOcp):
+    def __init__(
+            self,
+            model_path: str,
+            violin: Violin,
+            bow: Bow,
+            bow_starting: BowPosition.TIP,
+            use_muscles: bool = False,
+            window_duration: float = 1,
+            window_len: int = 30,
+            solver: Solver = Solver.ACADOS,
+            n_threads: int = 8,
+    ):
+        super(ViolinNMPC, self).__init__(
+            model_path=model_path,
+            violin=violin,
+            bow=bow,
+            n_cycles=1,
+            bow_starting=bow_starting,
+            use_muscles=use_muscles,
+            time_per_cycle=window_duration,
+            n_shooting_per_cycle=window_len,
+            solver=solver,
+            n_threads=n_threads,
+        )
+
+    def _set_generic_ocp(self):
+        self.ocp = MovingHorizonEstimator(
+                biorbd_model=self.model,
+                dynamics=self.dynamics,
+                window_length=self.n_shooting,
+                window_duration=self.time,
+                x_init=self.x_init,
+                u_init=self.u_init,
+                x_bounds=self.x_bounds,
+                u_bounds=self.u_bounds,
+                objective_functions=self.objective_functions,
+                constraints=self.constraints,
+                use_sx=self.solver == Solver.ACADOS,
+                n_threads=self.n_threads,
+            )
+
+    def solve(self, update_function, **opts: Any) -> Solution:
+        return self.ocp.solve(update_function, solver=self.solver, **opts)
