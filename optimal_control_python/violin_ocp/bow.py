@@ -30,7 +30,7 @@ class Bow:
             self.tip_marker: int = 18
         elif model == "WuViolin":
             self.segment_idx: int = 12
-            self.hair_idx: int = 11
+            self.hair_idx: int = 12
             self.hair_limits: list = [-0.07, -0.55]
             self.contact_marker: int = 2
             self.frog_marker: int = 0
@@ -42,7 +42,7 @@ class Bow:
 class BowTrajectory:
     # TODO Allow to start from FROG
 
-    def __init__(self, bow_range: list[float], n_points: int, bow_speed: float = 10, bow_acceleration: float = 0.5):
+    def __init__(self, bow_range: list, n_points: int, bow_speed: float = 10, bow_acceleration: float = 0.5):
         # x[0] = amplitude
         # x[1]= 2 * pi / period
         def objective_function(x, t):
