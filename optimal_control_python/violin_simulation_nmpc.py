@@ -10,10 +10,10 @@ if __name__ == "__main__":
     bow = Bow(model_name)
 
     # --- Solve the program --- #
-    window = 7
+    window = 30
     full_cycle = 30
     cycle_time = 1
-    n_cycles = 3
+    n_cycles = 30
     solver = Solver.ACADOS
     ocp_violin = ViolinNMPC(
         model_path=f"../models/{model_name}.bioMod",
@@ -31,6 +31,8 @@ if __name__ == "__main__":
     bow_trajectory = BowTrajectory(lim, full_cycle + 1)
 
     def nmpc_update_function(ocp, t, sol):
+        if t % full_cycle == 0:
+            print(f"Optimizing cycle {int(t / full_cycle)}..")
         target_time_index = [i % full_cycle for i in range(t, t + window + 1)]
         ocp_violin.set_bow_target_objective(bow_trajectory.target[:, target_time_index])
         return t < n_cycles * full_cycle

@@ -110,7 +110,7 @@ class ViolinOcp:
             )
             self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10, list_index=2)
         else:
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=0.001, list_index=1)
+            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=0.01, list_index=1)
         self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=0.01, list_index=3)
 
         # Keep the bow align at 90 degrees with the violin
@@ -209,17 +209,6 @@ class ViolinOcp:
         )
         self.ocp.update_objectives(new_objectives)
 
-        # if self.solver == Solver.IPOPT:
-        #     new_constraint = Constraint(
-        #         ConstraintFcn.TRACK_STATE,
-        #         node=Node.ALL,
-        #         target=bow_target,
-        #         min_bound=-0.05,
-        #         max_bound=0.05,
-        #         index=self.bow.hair_idx,
-        #     )
-        #     self.ocp.update_constraints(new_constraint)
-
     def _set_generic_ocp(self):
         self.ocp = OptimalControlProgram(
                 biorbd_model=self.model,
@@ -309,7 +298,7 @@ class ViolinNMPC(ViolinOcp):
         self.ocp = MovingHorizonEstimator(
                 biorbd_model=self.model,
                 dynamics=self.dynamics,
-                window_length=self.n_shooting,
+                window_len=self.n_shooting,
                 window_duration=self.time,
                 x_init=self.x_init,
                 u_init=self.u_init,
