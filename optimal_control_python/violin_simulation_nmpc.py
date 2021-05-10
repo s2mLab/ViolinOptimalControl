@@ -21,6 +21,7 @@ if __name__ == "__main__":
         bow=bow,
         bow_starting=BowPosition.TIP,
         use_muscles=False,
+        fatigable=True,
         solver=solver,
         window_len=window,
         window_duration=cycle_time,
