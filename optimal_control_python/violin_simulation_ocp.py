@@ -12,19 +12,22 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     n_shoot_per_cycle = 30
     cycle_time = 1
-    n_cycles = 3
+    n_cycles = 1
     solver = Solver.IPOPT
+    n_threads = 2
     ocp = ViolinOcp(
         model_path=f"../models/{model_name}.bioMod",
         violin=violin,
         bow=bow,
-        n_cycles=3,
+        n_cycles=n_cycles,
         bow_starting=BowPosition.TIP,
         init_file=None,
         use_muscles=False,
+        fatigable=True,
         time_per_cycle=cycle_time,
         n_shooting_per_cycle=n_shoot_per_cycle,
         solver=solver,
+        n_threads=n_threads
     )
     # ocp, sol = ViolinOcp.load("results/5_cycles_34_muscles/2021_3_12.bo")
 
@@ -36,7 +39,7 @@ if __name__ == "__main__":
 
     sol = ocp.solve(
         show_online_optim=True,
-        solver_options={"max_iter": 1000, "hessian_approximation": "exact", "linear_solver": "ma57"},
+        solver_options={"max_iter": 1000, "hessian_approximation": "limited-memory", "linear_solver": "ma57"},
     )
     ocp.save(sol)
     ocp.save(sol, stand_alone=True)
