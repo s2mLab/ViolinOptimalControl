@@ -1,9 +1,11 @@
 import os
 import time
-from typing import Any
+from typing import Any, Union
+import matplotlib.pyplot as plt
 
 import biorbd
 import numpy as np
+from casadi import MX, SX, if_else, vertcat, horzcat, lt, gt
 from bioptim import (
     Solver,
     MovingHorizonEstimator,
@@ -12,6 +14,8 @@ from bioptim import (
     ObjectiveFcn,
     ObjectiveList,
     DynamicsFcn,
+    DynamicsFunctions,
+    DynamicsList,
     Dynamics,
     ConstraintFcn,
     ConstraintList,
@@ -19,8 +23,11 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     Node,
+    NonLinearProgram,
+    PlotType,
     InterpolationType,
     Solution,
+    Problem,
 )
 
 from .violin import Violin
@@ -31,7 +38,114 @@ LD = 100
 LR = 100
 F = 0.9
 R = 0.01
+
 tau_min, tau_max, tau_init = -100, 100, 0
+global_tau = [[], []]
+n_tau = 13
+for i in range(n_tau):
+    global_tau[0].append(tau_min)
+    global_tau[1].append(tau_max)
+
+def custom_dynamic(states: Union[MX, SX], controls: Union[MX, SX], parameters: Union[MX, SX], nlp: NonLinearProgram
+) -> tuple:
+
+    DynamicsFunctions.apply_parameters(parameters, nlp)
+    q, qdot = DynamicsFunctions.dispatch_q_qdot_data(states, controls, nlp)
+    n_tau = int(nlp.shape["tau"] / 2)
+    tau = controls
+
+    fatigue = []
+    for i in range(n_tau):
+        fatigue.append(states[2 * n_tau + 6 * i: 2 * n_tau + 6 * (i + 1)])
+
+    def fatigue_dot_func(TL, param):
+        ma = param[0]
+        mr = param[1]
+        mf = param[2]
+        c = if_else(lt(ma, TL), if_else(gt(mr, TL - ma), LD * (TL - ma), LD * mr), LR * (TL - ma))
+        madot = c - F * ma
+        mrdot = -c + R * mf
+        mfdot = F * ma - R * mf
+        return vertcat(madot, mrdot, mfdot)
+
+    fatigue_dot = []
+    tau_current = []
+    n_fatigue_param = 3
+    for i in range(n_tau):
+        TL_pos = tau[i] / global_tau[1][i]
+        TL_neg = tau[i + n_tau] / global_tau[0][i]
+        fatigue_dot.append(fatigue_dot_func(TL_pos, fatigue[i][:n_fatigue_param]))
+        fatigue_dot.append(fatigue_dot_func(TL_neg, fatigue[i][n_fatigue_param:]))
+        ma_pos, ma_neg = fatigue[i][0], fatigue[i][n_fatigue_param]
+        tau_current.append(ma_pos * global_tau[1][i] + ma_neg * global_tau[0][i])
+
+    qddot = nlp.model.ForwardDynamics(q, qdot, vertcat(*tau_current)).to_mx()
+
+    return qdot, qddot, vertcat(*fatigue_dot)
+
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+    Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
+
+    # Configure states (ma_pos, mr_pos, mf_pos)
+    dof_names = [n.to_string() for n in nlp.model.nameDof()]
+    nlp.shape["tau"] = nlp.model.nbGeneralizedTorque() * 2
+    n_tau = int(nlp.shape["tau"] / 2)
+    m_names = ["ma", "mr", "mf"]
+    m_sides = ["pos", "neg"]
+    name_fatigable_states = []
+    for i in range(n_tau):
+        for side in m_sides:
+            for name in m_names:
+                name_fatigable_states.append(f"{name}_{side}_{dof_names[i]}")
+
+    fatigable = []
+    for name in name_fatigable_states:
+        fatigable.append(nlp.cx.sym(name, 1, 1))
+    nlp.x = vertcat(nlp.x, *fatigable)
+
+    nlp.nx = nlp.x.rows()
+    nlp.var_states["fatigue"] = len(name_fatigable_states)
+    ocp.add_plot("states ma mr mf", lambda x, u, p: x[2 * n_tau:, :], plot_type=PlotType.PLOT,
+                 legend=name_fatigable_states)
+
+    # Configure controls (tau)
+    tau_mx = MX()
+    all_tau = [nlp.cx() for _ in range(nlp.control_type.value)]
+
+    for i in range(n_tau):
+        for side in m_sides:
+            for j in range(len(all_tau)):
+                all_tau[j] = vertcat(all_tau[j], nlp.cx.sym(f"Tau_{side}_{dof_names[i]}_{j}", 1, 1))
+
+    for i, _ in enumerate(nlp.mapping["q"].to_second.map_idx):
+        for side in m_sides:
+            tau_mx = vertcat(tau_mx, MX.sym(f"Tau_{side}_{dof_names[i]}", 1, 1))
+
+    nlp.tau = MX()
+    for i in range(n_tau):
+        nlp.tau = vertcat(nlp.tau, tau_mx[i])
+
+    nlp.u = vertcat(nlp.u, horzcat(*all_tau))
+    nlp.var_controls["tau"] = nlp.shape["tau"]
+
+    legend_fatigable_tau = []
+    for i in range(n_tau):
+        for side in m_sides:
+            legend_fatigable_tau.append(f"Tau_{side}_{dof_names[i]}")
+        legend_fatigable_tau.append(f"sum_{dof_names[i]}")
+
+    ocp.add_plot("tau",
+                 lambda x, u, p: np.concatenate(np.concatenate([[u[2 * i:2 * i + 1, :],
+                                                                 -u[2 * i + 1:2 * (i + 1), :],
+                                                                 np.sum(u[2 * i:2 * (i + 1), :], axis=0,
+                                                                        keepdims=True)] for i in range(n_tau)])),
+                 plot_type=PlotType.STEP,
+                 legend=legend_fatigable_tau)
+
+    nlp.nx = nlp.x.rows()
+    nlp.nu = nlp.u.rows()
+
+    Problem.configure_dynamics_function(ocp, nlp, custom_dynamic)
 
 class ViolinOcp:
 
@@ -78,17 +192,14 @@ class ViolinOcp:
         self.time_per_cycle = time_per_cycle
         self.time = self.time_per_cycle * self.n_cycles
 
-        self.global_tau = [[], []]
-        for i in range(self.n_tau):
-            self.global_tau[0].append(tau_min)
-            self.global_tau[1].append(tau_max)
-
         self.solver = solver
         self.n_threads = n_threads
         if self.use_muscles:
             self.dynamics = Dynamics(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
         else:
-            self.dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+            # self.dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+            self.dynamics = DynamicsList()
+            self.dynamics.add(custom_configure, dynamic_function=custom_dynamic)
 
         self.x_bounds = Bounds()
         self.u_bounds = Bounds()
@@ -203,8 +314,8 @@ class ViolinOcp:
 
         for dof in range(self.n_tau):
             self.u_bounds[0].append(0)
-            self.u_bounds[0].append(self.global_tau[0][dof])
-            self.u_bounds[1].append(self.global_tau[1][dof])
+            self.u_bounds[0].append(global_tau[0][dof])
+            self.u_bounds[1].append(global_tau[1][dof])
             self.u_bounds[1].append(0)
 
         self.u_bounds[0] += [0] * self.n_mus
@@ -217,7 +328,7 @@ class ViolinOcp:
             x_init = np.zeros((self.n_q * 2 + 6 * self.n_tau, 1))
             x_init[:self.n_q, 0] = self.violin.q(self.bow_starting)
             x_init[2 * self.n_q:, 0] = [0, 1, 0, 0, 1, 0] * self.n_tau
-            u_init = np.zeros((self.n_tau + self.n_mus, 2))
+            u_init = np.zeros((self.n_tau * 2 + self.n_mus, 1))
             self.x_init = InitialGuess(x_init)
             self.u_init = InitialGuess(u_init)
 
