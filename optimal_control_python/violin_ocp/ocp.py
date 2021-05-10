@@ -191,9 +191,26 @@ class ViolinOcp:
         # self.x_bounds.min[:self.n_q, -1] = np.array(self.violin.q(self.bow_starting)) - 0.01
         # self.x_bounds.max[:self.n_q, -1] = np.array(self.violin.q(self.bow_starting)) + 0.01
 
-        u_min = [self.tau_min] * self.n_tau + [0] * self.n_mus
-        u_max = [self.tau_max] * self.n_tau + [1] * self.n_mus
-        self.u_bounds = Bounds(u_min, u_max)
+        ma_bounds = [[0.5, 0, 0], [0.5, 1, 1]]
+        mr_bounds = [[0.5, 0, 0], [0.5, 1, 1]]
+        mf_bounds = [[0, 0, 0], [0, 1, 1]]
+        for dof in range(self.n_tau * 2):
+            self.x_bounds.concatenate(Bounds([ma_bounds[0]], [ma_bounds[1]]))
+            self.x_bounds.concatenate(Bounds([mr_bounds[0]], [mr_bounds[1]]))
+            self.x_bounds.concatenate(Bounds([mf_bounds[0]], [mf_bounds[1]]))
+
+        self.u_bounds = [[], []]
+
+        for dof in range(self.n_tau):
+            self.u_bounds[0].append(0)
+            self.u_bounds[0].append(self.global_tau[0][dof])
+            self.u_bounds[1].append(self.global_tau[1][dof])
+            self.u_bounds[1].append(0)
+
+        self.u_bounds[0] += [0] * self.n_mus
+        self.u_bounds[1] += [1] * self.n_mus
+
+        self.u_bounds = Bounds(self.u_bounds[0], self.u_bounds[1])
 
     def _set_initial_guess(self, init_file):
         if init_file is None:
