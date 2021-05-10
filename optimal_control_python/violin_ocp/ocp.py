@@ -27,6 +27,11 @@ from .violin import Violin
 from .bow import Bow, BowPosition
 from .viz import online_muscle_torque
 
+LD = 100
+LR = 100
+F = 0.9
+R = 0.01
+tau_min, tau_max, tau_init = -100, 100, 0
 
 class ViolinOcp:
 
@@ -72,6 +77,11 @@ class ViolinOcp:
         self.n_shooting = self.n_shooting_per_cycle * self.n_cycles
         self.time_per_cycle = time_per_cycle
         self.time = self.time_per_cycle * self.n_cycles
+
+        self.global_tau = [[], []]
+        for i in range(self.n_tau):
+            self.global_tau[0].append(tau_min)
+            self.global_tau[1].append(tau_max)
 
         self.solver = solver
         self.n_threads = n_threads
