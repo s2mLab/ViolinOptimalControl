@@ -214,9 +214,10 @@ class ViolinOcp:
 
     def _set_initial_guess(self, init_file):
         if init_file is None:
-            x_init = np.zeros((self.n_q * 2, 1))
+            x_init = np.zeros((self.n_q * 2 + 6 * self.n_tau, 1))
             x_init[:self.n_q, 0] = self.violin.q(self.bow_starting)
-            u_init = np.zeros((self.n_tau + self.n_mus, 1))
+            x_init[2 * self.n_q:, 0] = [0, 1, 0, 0, 1, 0] * self.n_tau
+            u_init = np.zeros((self.n_tau + self.n_mus, 2))
             self.x_init = InitialGuess(x_init)
             self.u_init = InitialGuess(u_init)
 
