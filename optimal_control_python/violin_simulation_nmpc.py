@@ -13,7 +13,7 @@ if __name__ == "__main__":
     window = 30
     full_cycle = 30
     cycle_time = 1
-    n_cycles = 30
+    n_cycles = 10
     solver = Solver.ACADOS
     ocp_violin = ViolinNMPC(
         model_path=f"../models/{model_name}.bioMod",
