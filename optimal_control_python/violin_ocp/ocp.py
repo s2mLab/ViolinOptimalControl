@@ -270,7 +270,6 @@ class ViolinOcp:
             return vertcat(madot, mrdot, mfdot)
 
         fatigue_dot = []
-        tau_current = []
         n_fatigue_param = 3
         for i in range(n_tau):
             TL_neg = tau[i] / tau_bounds[0][i]
@@ -279,11 +278,7 @@ class ViolinOcp:
             TL_pos = tau[i + n_tau] / tau_bounds[1][i]
             fatigue_dot.append(fatigue_dot_func(TL_pos, fatigue[i][n_fatigue_param:]))
 
-            # ma_neg, ma_pos = fatigue[i][0], fatigue[i][n_fatigue_param]
-            # tau_current.append(ma_neg * tau_bounds[0][i] + ma_pos * tau_bounds[1][i])
-            tau_current.append(tau[i] + tau[i + n_tau])
-
-        qddot = nlp.model.ForwardDynamics(q, qdot, vertcat(*tau_current)).to_mx()
+        qddot = nlp.model.ForwardDynamics(q, qdot, tau[:n_tau] + tau[n_tau:]).to_mx()
 
         return qdot, qddot, vertcat(*fatigue_dot)
 
@@ -360,7 +355,6 @@ class ViolinOcp:
         # Todo: fix the legend
         ocp.add_plot("tau", tau_plot, direction=0, plot_type=PlotType.STEP, legend=legend_fatigable_tau, color='black')
         ocp.add_plot("tau", tau_plot, direction=-1, plot_type=PlotType.STEP, color='red')
-        ocp.add_plot("tau", tau_plot, direction=1, plot_type=PlotType.STEP, color='green')
         ocp.add_plot("tau", tau_plot, direction=1, plot_type=PlotType.STEP, color='green')
 
         nlp.nx = nlp.x.rows()
