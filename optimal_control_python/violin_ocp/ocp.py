@@ -159,8 +159,6 @@ class ViolinOcp:
         self.x_bounds[self.n_q:, 0] = 0
 
         if self.fatigable:
-            # Todo:   could you test (using single shooting) what happens if the sum at first node is not equal to 1?
-            # todo    Does it converge to 1 anyway?
             ma_bounds = [[0, 0, 0], [0, 1, 1]]
             mr_bounds = [[1, 0, 0], [1, 1, 1]]
             mf_bounds = [[0, 0, 0], [0, 1, 1]]
@@ -298,6 +296,9 @@ class ViolinOcp:
             for side in m_sides:
                 for name in m_names:
                     name_fatigable_states.append(f"{name}_{side}_{dof_names[i]}")
+        legend_fatigable_states = []
+        for name in dof_names:
+             legend_fatigable_states.append(f"fatigable_{name}")
 
         fatigable = []
         for name in name_fatigable_states:
@@ -309,8 +310,7 @@ class ViolinOcp:
         def plot_fatigue(x, u, p, mul, offset):
             return mul * x[2*n_q + offset::6, :]
 
-        # Todo: fix the legend
-        ocp.add_plot("states ma mr mf", plot_fatigue, mul=0, offset=0, color='black', legend=name_fatigable_states)
+        ocp.add_plot("states ma mr mf", plot_fatigue, mul=0, offset=0, color='black', legend=legend_fatigable_states)
         ocp.add_plot("states ma mr mf", plot_fatigue, mul=-1, offset=0, plot_type=PlotType.INTEGRATED, color='blue')
         ocp.add_plot("states ma mr mf", plot_fatigue, mul=-1, offset=1, plot_type=PlotType.INTEGRATED, color='green')
         ocp.add_plot("states ma mr mf", plot_fatigue, mul=-1, offset=2, plot_type=PlotType.INTEGRATED, color='red')
@@ -338,12 +338,6 @@ class ViolinOcp:
         nlp.u = vertcat(nlp.u, horzcat(*all_tau))
         nlp.var_controls["tau"] = nlp.shape["tau"]
 
-        legend_fatigable_tau = []
-        for i in range(n_tau):
-            for side in m_sides:
-                legend_fatigable_tau.append(f"Tau_{side}_{dof_names[i]}")
-            legend_fatigable_tau.append(f"sum_{dof_names[i]}")
-
         def tau_plot(x, u, p, direction):
             if direction < 0:
                 return u[:n_tau, :]
@@ -352,7 +346,10 @@ class ViolinOcp:
             else:
                 return np.sum((u[:n_tau, :], u[n_tau:, :]), axis=0)
 
-        # Todo: fix the legend
+        legend_fatigable_tau = []
+        for name in dof_names:
+            legend_fatigable_tau.append(f"Tau_{name}")
+
         ocp.add_plot("tau", tau_plot, direction=0, plot_type=PlotType.STEP, legend=legend_fatigable_tau, color='black')
         ocp.add_plot("tau", tau_plot, direction=-1, plot_type=PlotType.STEP, color='red')
         ocp.add_plot("tau", tau_plot, direction=1, plot_type=PlotType.STEP, color='green')
