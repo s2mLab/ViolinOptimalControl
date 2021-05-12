@@ -32,7 +32,7 @@ class Bow:
             self.segment_idx: int = 12
             self.hair_idx: int = 12
             self.hair_limits: list = [-0.07, -0.55]
-            self.contact_marker: int = 2
+            self.contact_marker: str = "bow_contact"
             self.frog_marker: int = 0
             self.tip_marker: int = 1
         else:

@@ -129,7 +129,7 @@ class ViolinOcp:
         self.objective_functions.add(
             ObjectiveFcn.Lagrange.TRACK_SEGMENT_WITH_CUSTOM_RT,
             weight=1000,
-            segment_idx=self.bow.segment_idx,
+            segment=self.bow.segment_idx,
             rt_idx=self.violin.rt_on_string,
             list_index=4
         )
@@ -140,15 +140,15 @@ class ViolinOcp:
             self.constraints.add(
                 ConstraintFcn.SUPERIMPOSE_MARKERS,
                 node=Node.ALL,
-                first_marker_idx=self.bow.contact_marker,
-                second_marker_idx=self.violin.bridge_marker,
+                first_marker=self.bow.contact_marker,
+                second_marker=self.violin.bridge_marker,
             )
         else:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.SUPERIMPOSE_MARKERS,
                 node=Node.ALL,
-                first_marker_idx=self.bow.contact_marker,
-                second_marker_idx=self.violin.bridge_marker,
+                first_marker=self.bow.contact_marker,
+                second_marker=self.violin.bridge_marker,
                 list_index=6,
                 weight=1000,
             )
