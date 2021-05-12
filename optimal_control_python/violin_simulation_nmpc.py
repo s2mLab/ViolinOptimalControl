@@ -14,6 +14,7 @@ if __name__ == "__main__":
     full_cycle = 30
     cycle_time = 1
     n_cycles = 10
+    n_threads = 2
     solver = Solver.ACADOS
     ocp_violin = ViolinNMPC(
         model_path=f"../models/{model_name}.bioMod",
@@ -25,6 +26,7 @@ if __name__ == "__main__":
         solver=solver,
         window_len=window,
         window_duration=cycle_time,
+        n_threads=n_threads
     )
 
     # Generate a full cycle target
