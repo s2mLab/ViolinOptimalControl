@@ -43,10 +43,6 @@ class ViolinOcp:
 
     # TODO add external forces?
 
-    # TODO Warm starting when updating the objective_bow_target
-
-    # TODO All the logic from NMPC
-
     # TODO include the muscle fatigue dynamics, constraints and objectives
     # dynamics.add(xia.xia_model_configuration, dynamic_function=xia.xia_model_dynamic)
 
@@ -249,8 +245,9 @@ class ViolinOcp:
         return self.ocp.solve(solver=self.solver, **opts)
 
     @staticmethod
-    def fatigue_dynamics(states: Union[MX, SX], controls: Union[MX, SX], parameters: Union[MX, SX], nlp: NonLinearProgram
-                       ) -> tuple:
+    def fatigue_dynamics(
+            states: Union[MX, SX], controls: Union[MX, SX], parameters: Union[MX, SX], nlp: NonLinearProgram
+    ) -> tuple:
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot = DynamicsFunctions.dispatch_q_qdot_data(states, controls, nlp)
