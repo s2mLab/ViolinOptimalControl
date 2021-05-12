@@ -24,6 +24,7 @@ from bioptim import (
     Node,
     NonLinearProgram,
     PlotType,
+    PenaltyNode,
     InterpolationType,
     Solution,
     Problem,
@@ -110,20 +111,29 @@ class ViolinOcp:
         if use_muscles:
             online_muscle_torque(self.ocp)
 
+    @staticmethod
+    def minimize_fatigue(pn: PenaltyNode) -> MX:
+        nq = pn.nlp.shape["q"]
+        nqdot = pn.nlp.shape["qdot"]
+        fatigable_states = pn.x[nq + nqdot + 2::3, :]
+        return fatigable_states
+
     def _set_generic_objective_functions(self):
         # Regularization objectives
         self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=0.01, list_index=0)
+        self.objective_functions.add(self.minimize_fatigue, custom_type=ObjectiveFcn.Lagrange, weight=10, list_index=1)
+
         if self.use_muscles:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_TORQUE,
                 index=self.violin.virtual_tau,
                 weight=0.01,
-                list_index=1
+                list_index=2
             )
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10, list_index=2)
+            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10, list_index=3)
         else:
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=0.01, list_index=1)
-        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=0.01, list_index=3)
+            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=0.01, list_index=2)
+        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=0.01, list_index=4)
 
         # Keep the bow align at 90 degrees with the violin
         self.objective_functions.add(
@@ -131,7 +141,7 @@ class ViolinOcp:
             weight=1000,
             segment_idx=self.bow.segment_idx,
             rt_idx=self.violin.rt_on_string,
-            list_index=4
+            list_index=5
         )
 
     def _set_generic_constraints(self):
@@ -142,6 +152,7 @@ class ViolinOcp:
                 node=Node.ALL,
                 first_marker_idx=self.bow.contact_marker,
                 second_marker_idx=self.violin.bridge_marker,
+                list_index=0,
             )
         else:
             self.objective_functions.add(
@@ -159,9 +170,9 @@ class ViolinOcp:
         self.x_bounds[self.n_q:, 0] = 0
 
         if self.fatigable:
-            ma_bounds = [[0, 0, 0], [0, 1, 1]]
-            mr_bounds = [[1, 0, 0], [1, 1, 1]]
-            mf_bounds = [[0, 0, 0], [0, 1, 1]]
+            ma_bounds = [[0, 0, 0], [1, 1, 1]]
+            mr_bounds = [[0, 0, 0], [1, 1, 1]]
+            mf_bounds = [[0, 0, 0], [1, 1, 1]]
             for dof in range(self.n_tau * 2):
                 self.x_bounds.concatenate(Bounds([ma_bounds[0]], [ma_bounds[1]]))
                 self.x_bounds.concatenate(Bounds([mr_bounds[0]], [mr_bounds[1]]))
@@ -202,7 +213,7 @@ class ViolinOcp:
             weight=weight,
             target=bow_target,
             index=self.bow.hair_idx,
-            list_index=5,
+            list_index=7,
         )
         self.ocp.update_objectives(new_objectives)
 
@@ -214,6 +225,7 @@ class ViolinOcp:
                 min_bound=-0.05,
                 max_bound=0.05,
                 index=self.bow.hair_idx,
+                list_index=1,
             )
             self.ocp.update_constraints(new_constraint)
 
@@ -263,11 +275,12 @@ class ViolinOcp:
             mf = param[2]
             c = if_else(lt(ma, TL), if_else(gt(mr, TL - ma), LD * (TL - ma), LD * mr), LR * (TL - ma))
             madot = c - F * ma
-            mrdot = -c + R * mf
+            mrdot = -c + R * mf + 100 * (1 - (ma + mr + mf))
             mfdot = F * ma - R * mf
             return vertcat(madot, mrdot, mfdot)
 
         fatigue_dot = []
+        tau_current = []
         n_fatigue_param = 3
         for i in range(n_tau):
             TL_neg = tau[i] / tau_bounds[0][i]
@@ -276,7 +289,10 @@ class ViolinOcp:
             TL_pos = tau[i + n_tau] / tau_bounds[1][i]
             fatigue_dot.append(fatigue_dot_func(TL_pos, fatigue[i][n_fatigue_param:]))
 
-        qddot = nlp.model.ForwardDynamics(q, qdot, tau[:n_tau] + tau[n_tau:]).to_mx()
+            ma_neg, ma_pos = fatigue[i][0], fatigue[i][n_fatigue_param]
+            tau_current.append(ma_neg * tau_bounds[0][i] + ma_pos * tau_bounds[1][i])
+
+        qddot = nlp.model.ForwardDynamics(q, qdot, vertcat(*tau_current)).to_mx()
 
         return qdot, qddot, vertcat(*fatigue_dot)
 
