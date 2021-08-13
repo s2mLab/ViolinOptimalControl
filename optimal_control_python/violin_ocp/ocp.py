@@ -1,10 +1,9 @@
 import os
 import time
-from typing import Any, Union
+from typing import Any
 
-import biorbd
+import biorbd_casadi as biorbd
 import numpy as np
-from casadi import MX, SX, if_else, vertcat, horzcat, lt, gt
 from bioptim import (
     Solver,
     MovingHorizonEstimator,
@@ -13,7 +12,6 @@ from bioptim import (
     ObjectiveFcn,
     ObjectiveList,
     DynamicsFcn,
-    DynamicsFunctions,
     Dynamics,
     Constraint,
     ConstraintFcn,
@@ -22,12 +20,12 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     Node,
-    NonLinearProgram,
-    PlotType,
-    PenaltyNode,
     InterpolationType,
     Solution,
-    Problem,
+    OdeSolver,
+    FatigueList,
+    XiaFatigue,
+    XiaTauFatigue,
 )
 
 from .violin import Violin
@@ -39,28 +37,28 @@ class ViolinOcp:
 
     # TODO Get these values from a better method
     tau_min, tau_max, tau_init = -100, 100, 0
-    LD, LR, F, R = 100, 100, 0.9, 0.01
+    LD, LR, F, R = 100, 100, 0.4, 0.2
 
     # TODO add external forces?
 
-    # TODO include the muscle fatigue dynamics, constraints and objectives
-    # dynamics.add(xia.xia_model_configuration, dynamic_function=xia.xia_model_dynamic)
-
     def __init__(
-            self,
-            model_path: str,
-            violin: Violin,
-            bow: Bow,
-            n_cycles: int,
-            bow_starting: BowPosition.TIP,
-            init_file: str = None,
-            use_muscles: bool = True,
-            fatigable: bool = False,
-            time_per_cycle: float = 1,
-            n_shooting_per_cycle: int = 30,
-            solver: Solver = Solver.IPOPT,
-            n_threads: int = 8,
+        self,
+        model_path: str,
+        violin: Violin,
+        bow: Bow,
+        n_cycles: int,
+        bow_starting: BowPosition.TIP,
+        init_file: str = None,
+        use_muscles: bool = True,
+        fatigable: bool = False,
+        time_per_cycle: float = 1,
+        n_shooting_per_cycle: int = 30,
+        solver: Solver = Solver.IPOPT,
+        n_threads: int = 8,
+        ode_solver: OdeSolver = OdeSolver.RK4(),
+        multi_thread_objective: bool = True,
     ):
+        self.ode_solver = ode_solver
         self.model_path = model_path
         self.model = biorbd.Model(self.model_path)
         self.n_q = self.model.nbQ()
@@ -81,13 +79,26 @@ class ViolinOcp:
 
         self.solver = solver
         self.n_threads = n_threads
+        self.multi_thread_obj = multi_thread_objective
+
+        self.fatigue_dynamics = None
+        if self.fatigable:
+            self.fatigue_dynamics = FatigueList()
+            for i in range(self.n_tau):
+                self.fatigue_dynamics.add(
+                    XiaTauFatigue(
+                        XiaFatigue(LD=10, LR=10, F=5, R=10, scale=self.tau_min),
+                        XiaFatigue(LD=10, LR=10, F=5, R=10, scale=self.tau_max),
+                    ),
+                    state_only=True,
+                )
+            for i in range(self.n_mus):
+                self.fatigue_dynamics.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=True)
+
         if self.use_muscles:
-            self.dynamics = Dynamics(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
+            self.dynamics = Dynamics(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True, fatigue=self.fatigue_dynamics)
         else:
-            if self.fatigable:
-                self.dynamics = Dynamics(self.fatigue_configure, dynamic_function=self.fatigue_dynamics)
-            else:
-                self.dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+            self.dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=self.fatigue_dynamics)
 
         self.x_bounds = Bounds()
         self.u_bounds = Bounds()
@@ -107,37 +118,33 @@ class ViolinOcp:
         if use_muscles:
             online_muscle_torque(self.ocp)
 
-    @staticmethod
-    def minimize_fatigue(pn: PenaltyNode) -> MX:
-        nq = pn.nlp.shape["q"]
-        nqdot = pn.nlp.shape["qdot"]
-        fatigable_states = pn.x[nq + nqdot + 2::3, :]
-        return fatigable_states
-
     def _set_generic_objective_functions(self):
         # Regularization objectives
-        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=0.01, list_index=0)
-        self.objective_functions.add(self.minimize_fatigue, custom_type=ObjectiveFcn.Lagrange, weight=10, list_index=1)
+        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.01, list_index=0, multi_thread=self.multi_thread_obj)
+        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.01, list_index=1, multi_thread=self.multi_thread_obj)
+        if self.fatigable:
+            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="muscles", weight=10, list_index=2, multi_thread=self.multi_thread_obj)
 
         if self.use_muscles:
             self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_TORQUE,
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau",
                 index=self.violin.virtual_tau,
                 weight=0.01,
-                list_index=2
+                list_index=3, multi_thread=self.multi_thread_obj
             )
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10, list_index=3)
+            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=10, list_index=4, multi_thread=self.multi_thread_obj)
         else:
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=0.01, list_index=2)
-        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=0.01, list_index=4)
+            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=0.01, list_index=5, multi_thread=self.multi_thread_obj)
+        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=10, list_index=6, multi_thread=self.multi_thread_obj)
+        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=10, list_index=7, multi_thread=self.multi_thread_obj, derivative=True)
 
         # Keep the bow align at 90 degrees with the violin
         self.objective_functions.add(
             ObjectiveFcn.Lagrange.TRACK_SEGMENT_WITH_CUSTOM_RT,
             weight=1000,
             segment=self.bow.segment_idx,
-            rt_idx=self.violin.rt_on_string,
-            list_index=5
+            rt=self.violin.rt_on_string,
+            list_index=8, multi_thread=self.multi_thread_obj
         )
 
     def _set_generic_constraints(self):
@@ -148,7 +155,7 @@ class ViolinOcp:
                 node=Node.ALL,
                 first_marker=self.bow.contact_marker,
                 second_marker=self.violin.bridge_marker,
-                list_index=0,
+                list_index=0, multi_thread=self.multi_thread_obj
             )
         else:
             self.objective_functions.add(
@@ -156,8 +163,8 @@ class ViolinOcp:
                 node=Node.ALL,
                 first_marker=self.bow.contact_marker,
                 second_marker=self.violin.bridge_marker,
-                list_index=6,
-                weight=1000,
+                list_index=9,
+                weight=1000, multi_thread=self.multi_thread_obj
             )
 
     def _set_bounds(self):
@@ -205,172 +212,71 @@ class ViolinOcp:
     def set_bow_target_objective(self, bow_target: np.ndarray, weight: float = 10000, sol: Solution = None):
         new_objectives = Objective(
             ObjectiveFcn.Lagrange.TRACK_STATE,
+            key="q",
             node=Node.ALL,
             weight=weight,
             target=bow_target,
             index=self.bow.hair_idx,
-            list_index=7,
+            list_index=10, multi_thread=self.multi_thread_obj
         )
         self.ocp.update_objectives(new_objectives)
 
         if self.solver == Solver.IPOPT:
             new_constraint = Constraint(
                 ConstraintFcn.TRACK_STATE,
+                key="q",
                 node=Node.ALL,
                 target=bow_target,
                 min_bound=-0.05,
                 max_bound=0.05,
                 index=self.bow.hair_idx,
-                list_index=1,
+                list_index=1, multi_thread=self.multi_thread_obj
             )
             self.ocp.update_constraints(new_constraint)
 
     def _set_generic_ocp(self):
         self.ocp = OptimalControlProgram(
-                biorbd_model=self.model,
-                dynamics=self.dynamics,
-                n_shooting=self.n_shooting,
-                phase_time=self.time,
-                x_init=self.x_init,
-                u_init=self.u_init,
-                x_bounds=self.x_bounds,
-                u_bounds=self.u_bounds,
-                objective_functions=self.objective_functions,
-                constraints=self.constraints,
-                use_sx=self.solver == Solver.ACADOS,
-                n_threads=self.n_threads,
+            biorbd_model=self.model,
+            dynamics=self.dynamics,
+            n_shooting=self.n_shooting,
+            phase_time=self.time,
+            x_init=self.x_init,
+            u_init=self.u_init,
+            x_bounds=self.x_bounds,
+            u_bounds=self.u_bounds,
+            objective_functions=self.objective_functions,
+            constraints=self.constraints,
+            use_sx=self.solver == Solver.ACADOS,
+            n_threads=self.n_threads,
+            ode_solver=self.ode_solver,
+        )
+
+    def solve(self, limit_memory_max_iter, exact_max_iter, load_path=None, force_no_graph=False):
+
+        sol = None
+        if limit_memory_max_iter > 0:
+            sol = self.ocp.solve(
+                show_online_optim=exact_max_iter == 0 and not force_no_graph,
+                solver_options={
+                    "hessian_approximation": "limited-memory",
+                    "max_iter": limit_memory_max_iter,
+                    "linear_solver": "ma57"
+                },
+            )
+        if limit_memory_max_iter > 0 and exact_max_iter > 0:
+            self.ocp.set_warm_start(sol)
+        if exact_max_iter > 0:
+            sol = self.ocp.solve(
+                show_online_optim=True and not force_no_graph,
+                solver_options={
+                    "hessian_approximation": "exact",
+                    "max_iter": exact_max_iter,
+                    "warm_start_init_point": "yes",
+                    "linear_solver": "ma57",
+                },
             )
 
-    def solve(self, **opts: Any) -> Solution:
-        return self.ocp.solve(solver=self.solver, **opts)
-
-    @staticmethod
-    def fatigue_dynamics(
-            states: Union[MX, SX], controls: Union[MX, SX], parameters: Union[MX, SX], nlp: NonLinearProgram
-    ) -> tuple:
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot = DynamicsFunctions.dispatch_q_qdot_data(states, controls, nlp)
-        n_tau = int(nlp.shape["tau"] / 2)
-        tau = controls
-
-        tau_bounds = [[], []]
-        for i in range(n_tau):
-            tau_bounds[0].append(ViolinOcp.tau_min)
-            tau_bounds[1].append(ViolinOcp.tau_max)
-
-        LD, LR, F, R = ViolinOcp.LD, ViolinOcp.LR, ViolinOcp.F, ViolinOcp.R
-
-        fatigue = []
-        for i in range(n_tau):  # Get fatigable states
-            fatigue.append(states[2 * n_tau + 6 * i: 2 * n_tau + 6 * (i + 1)])
-
-        def fatigue_dot_func(TL, param):
-            # Implementation of Xia dynamics
-            ma = param[0]
-            mr = param[1]
-            mf = param[2]
-            c = if_else(lt(ma, TL), if_else(gt(mr, TL - ma), LD * (TL - ma), LD * mr), LR * (TL - ma))
-            madot = c - F * ma
-            mrdot = -c + R * mf + 100 * (1 - (ma + mr + mf))
-            mfdot = F * ma - R * mf
-            return vertcat(madot, mrdot, mfdot)
-
-        fatigue_dot = []
-        tau_current = []
-        n_fatigue_param = 3
-        for i in range(n_tau):
-            TL_neg = tau[i] / tau_bounds[0][i]
-            fatigue_dot.append(fatigue_dot_func(TL_neg, fatigue[i][:n_fatigue_param]))
-
-            TL_pos = tau[i + n_tau] / tau_bounds[1][i]
-            fatigue_dot.append(fatigue_dot_func(TL_pos, fatigue[i][n_fatigue_param:]))
-
-            ma_neg, ma_pos = fatigue[i][0], fatigue[i][n_fatigue_param]
-            tau_current.append(ma_neg * tau_bounds[0][i] + ma_pos * tau_bounds[1][i])
-
-        qddot = nlp.model.ForwardDynamics(q, qdot, vertcat(*tau_current)).to_mx()
-
-        return qdot, qddot, vertcat(*fatigue_dot)
-
-    @staticmethod
-    def fatigue_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
-        Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
-
-        # Configure fatigable states
-        dof_names = [n.to_string() for n in nlp.model.nameDof()]
-        n_q = nlp.model.nbQ()
-        nlp.shape["tau"] = nlp.model.nbGeneralizedTorque() * 2
-        n_tau = int(nlp.shape["tau"] / 2)
-        m_names = ["ma", "mr", "mf"]
-        m_sides = ["neg", "pos"]
-        name_fatigable_states = []
-        for i in range(n_tau):
-            for side in m_sides:
-                for name in m_names:
-                    name_fatigable_states.append(f"{name}_{side}_{dof_names[i]}")
-        legend_fatigable_states = []
-        for name in dof_names:
-             legend_fatigable_states.append(f"fatigable_{name}")
-
-        fatigable = []
-        for name in name_fatigable_states:
-            fatigable.append(nlp.cx.sym(name, 1, 1))
-        nlp.x = vertcat(nlp.x, *fatigable)
-
-        nlp.var_states["fatigue"] = len(name_fatigable_states)
-
-        def plot_fatigue(x, u, p, mul, offset):
-            return mul * x[2*n_q + offset::6, :]
-
-        ocp.add_plot("states ma mr mf", plot_fatigue, mul=0, offset=0, color='black', legend=legend_fatigable_states)
-        ocp.add_plot("states ma mr mf", plot_fatigue, mul=-1, offset=0, plot_type=PlotType.INTEGRATED, color='blue')
-        ocp.add_plot("states ma mr mf", plot_fatigue, mul=-1, offset=1, plot_type=PlotType.INTEGRATED, color='green')
-        ocp.add_plot("states ma mr mf", plot_fatigue, mul=-1, offset=2, plot_type=PlotType.INTEGRATED, color='red')
-        ocp.add_plot("states ma mr mf", plot_fatigue, mul=1, offset=3, plot_type=PlotType.INTEGRATED, color='blue')
-        ocp.add_plot("states ma mr mf", plot_fatigue, mul=1, offset=4, plot_type=PlotType.INTEGRATED, color='green')
-        ocp.add_plot("states ma mr mf", plot_fatigue, mul=1, offset=5, plot_type=PlotType.INTEGRATED, color='red')
-
-        # Configure controls (tau)
-        tau_mx = MX()
-        all_tau = [nlp.cx() for _ in range(nlp.control_type.value)]
-
-        for i in range(n_tau):
-            for side in m_sides:
-                for j in range(len(all_tau)):
-                    all_tau[j] = vertcat(all_tau[j], nlp.cx.sym(f"Tau_{side}_{dof_names[i]}_{j}", 1, 1))
-
-        for i, _ in enumerate(nlp.mapping["q"].to_second.map_idx):
-            for side in m_sides:
-                tau_mx = vertcat(tau_mx, MX.sym(f"Tau_{side}_{dof_names[i]}", 1, 1))
-
-        nlp.tau = MX()
-        for i in range(n_tau):
-            nlp.tau = vertcat(nlp.tau, tau_mx[i])
-
-        nlp.u = vertcat(nlp.u, horzcat(*all_tau))
-        nlp.var_controls["tau"] = nlp.shape["tau"]
-
-        def tau_plot(x, u, p, direction):
-            if direction < 0:
-                return u[:n_tau, :]
-            elif direction > 0:
-                return u[n_tau:, :]
-            else:
-                return np.sum((u[:n_tau, :], u[n_tau:, :]), axis=0)
-
-        legend_fatigable_tau = []
-        for name in dof_names:
-            legend_fatigable_tau.append(f"Tau_{name}")
-
-        ocp.add_plot("tau", tau_plot, direction=0, plot_type=PlotType.STEP, legend=legend_fatigable_tau, color='black')
-        ocp.add_plot("tau", tau_plot, direction=-1, plot_type=PlotType.STEP, color='red')
-        ocp.add_plot("tau", tau_plot, direction=1, plot_type=PlotType.STEP, color='green')
-
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
-
-        Problem.configure_dynamics_function(ocp, nlp, ViolinOcp.fatigue_dynamics)
+        return sol
 
     @staticmethod
     def load(file_path: str):
@@ -415,6 +321,7 @@ class ViolinNMPC(ViolinOcp):
             n_shooting_per_cycle=window_len,
             solver=solver,
             n_threads=n_threads,
+            multi_thread_objective=False
         )
 
     def _set_generic_ocp(self):

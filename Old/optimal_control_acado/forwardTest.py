@@ -1,4 +1,4 @@
-import biorbd
+import biorbd_casadi as biorbd
 from bioviz import Viz
 from scipy import integrate
 import numpy as np

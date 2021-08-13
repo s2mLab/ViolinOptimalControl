@@ -1,18 +1,24 @@
-import biorbd
+import biorbd_casadi as biorbd
 import bioviz
 from bioptim import ObjectiveFcn, BiMapping
+from bioptim.optimization.optimization_variable import OptimizationVariableList
 from scipy import optimize
 import numpy as np
 from casadi import MX, Function
 
 
 class DummyPenalty:
+    class DummyState:
+        def __init__(self, mx):
+            self.mx = mx
+            self.cx = mx
+
     class DummyNlp:
         def __init__(self, m):
             self.model = m
-            self.q = MX.sym("q", m.nbQ(), 1)
-            self.casadi_func = {}
-            self.mapping = {"q": BiMapping(range(self.model.nbQ()), range(self.model.nbQ()))}
+            self.states = OptimizationVariableList()
+            self.states.append("q", [MX.sym("q", m.nbQ(), 1)], MX.sym("q", m.nbQ(), 1), BiMapping(range(self.model.nbQ()), range(self.model.nbQ())))
+            self.casadi_func = dict()
 
     class DummyPen:
         @staticmethod
@@ -22,9 +28,9 @@ class DummyPenalty:
     def __init__(self, m):
         self.ocp = []
         self.nlp = DummyPenalty.DummyNlp(m)
-        self.x = [self.nlp.q]
         self.type = DummyPenalty.DummyPen()
-        self.val = None
+        self.quadratic = True
+        self.rows = None
 
     @staticmethod
     def add_to_penalty(ocp, nlp, val, penalty):
@@ -82,10 +88,10 @@ bounds = (bound_min, bound_max)
 
 
 pn = DummyPenalty(m)
-ObjectiveFcn.Lagrange.TRACK_SEGMENT_WITH_CUSTOM_RT.value[0](pn, pn, idx_segment_bow_hair, rt_on_string)
-custom_rt = Function("custom_rt", [pn.nlp.q], [pn.val]).expand()
-ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS.value[0](pn, pn, tag_bow_contact, tag_violin)
-superimpose = Function("superimpose", [pn.nlp.q], [pn.val]).expand()
+val = ObjectiveFcn.Lagrange.TRACK_SEGMENT_WITH_CUSTOM_RT.value[0](pn, pn, idx_segment_bow_hair, rt_on_string)
+custom_rt = Function("custom_rt", [pn.nlp.states["q"].cx], [val]).expand()
+val = ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS.value[0](pn, pn, first_marker=tag_bow_contact, second_marker=tag_violin)
+superimpose = Function("superimpose", [pn.nlp.states["q"].cx], [val]).expand()
 
 
 def objective_function(x, *args, **kwargs):
@@ -95,7 +101,7 @@ def objective_function(x, *args, **kwargs):
     return out
 
 
-b = bioviz.Viz(loaded_model=m, markers_size=0.003, show_markers=True, show_meshes=False)
+b = bioviz.Viz(m.path().absolutePath().to_string(), markers_size=0.003, show_markers=True)
 x0 = np.zeros(m.nbDof(), )
 if bow_place == "frog":
     bounds[0][-1] = -0.0701

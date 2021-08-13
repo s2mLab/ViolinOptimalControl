@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioviz import Viz
 
 import analyses.utils as utils

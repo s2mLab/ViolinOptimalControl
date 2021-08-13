@@ -25,7 +25,7 @@ link_directories(
   ${CMAKE_INSTALL_PREFIX}/lib
 )
 
-# Problem definitions
+# ConfigureProblem definitions
 set(source_files
     eocarOpti.cpp
     eocarBiorbd.cpp

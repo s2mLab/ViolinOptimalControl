@@ -14,6 +14,8 @@ version 4
 // the original values are preserved in comment down below
 
 
+// The moment of inertia for clavicle and scapula are from Quental (2012) A multibody biomechanical model of the upper limb including the shoulder girdle
+
 segment thorax
     // translations xyz
     // rotations xyz
@@ -23,12 +25,12 @@ segment thorax
         1.4745	0.000000	0.000000
         0.000000	0.7555	0.000000
         0.000000	0.000000	1.4314
-    // meshfile Geometry/thorax.vtp
+    meshfile Geometry/thorax.vtp
 endsegment
 
 segment spine
 	parent	thorax
-    // meshfile Geometry/hat_spine.vtp
+    meshfile Geometry/hat_spine.vtp
 endsegment
 
 segment clavicle_effector_right
@@ -53,8 +55,12 @@ segment clavicle_right
        -0.994472543667 0              -0.10499695182    0
        -0.103812017405 0.14541602438   0.983909164962   0
         0              0               0                1
-    mass 0.2
+    mass  0.12784
     com -0.0127205 0.00849541 0.0659846
+    inertia
+            0.00122800 0 0
+            0 0.00109900 0
+            0 0 0.0003900
     meshfile Geometry/clavicle.vtp
 endsegment
 
@@ -70,8 +76,12 @@ endsegment
 segment scapula_right
     parent scapula_effector_right
     RT 0.52 -0.52 0 xyz 0 0 0
-    mass 0.5
+    mass 0.94898
     com -0.072 -0.039 -0.065
+    inertia
+        0.01912900 0 0
+        0 0.03007200 0
+        0 0 0.0112420
     meshfile Geometry/scapula.vtp
 endsegment
 
@@ -79,17 +89,17 @@ endsegment
 segment humerus_right
     parent scapula_right
     RT 0 0 0 xyz -0.00955 -0.034 0.009
-	rotations xyz
+	rotations xzy
 	ranges
 	    -pi/2 0.1
-        -pi/2 pi/2
         -pi/4 pi
-    mass 2.0325
+        -pi/2 pi/2
+    mass 2.16000
     com 0 -0.164502 0
     inertia
-        0.011946 0 0
-        0 0.004121 0
-        0 0 0.013409
+        0.01922569 0 0
+        0 0.00392116 0
+        0 0 0.0204860
     meshfile Geometry/humerus.vtp
 endsegment
 
@@ -114,12 +124,12 @@ segment ulna_right
         0                   0.999328355607296   -0.0366447496814640   0
         0.0494000123579900  0.0366000091559926   0.998108249694797    0
         0                   0                    0                    1
-    mass 0.6075
+    mass 0.94883
     com 0 -0.120525 0
     inertia
-        0.002962 0 0
-        0 0.000618 0
-        0 0 0.003213
+        0.00527229 0 0
+        0 0.00081371 0
+        0 0 0.0052723
     meshfile Geometry/ulna.vtp
 endsegment
 
@@ -144,12 +154,12 @@ segment radius_right
        -0.0171609938419917  0.992665643781517  -0.119667957056942   0
         0                   0.119685582039255   0.992811845946615   0
         0                   0                   0                   1
-    mass 0.6075
+    mass 0.58117
     com 0 -0.120525 0
     inertia
-        0.002962 0 0
-        0 0.000618 0
-        0 0 0.003213
+        0.00322935 0 0
+        0 0.00049841 0
+        0 0 0.0032294
     meshfile Geometry/radius.vtp
 endsegment
 
@@ -186,7 +196,7 @@ segment bow
 		0.000000	0.00000048	0.000000
 		0.000000	0.000000	0.00117637
 	com	0 -0.335 0
-	// meshfile Geometry/Bow.obj
+	meshfile Geometry/Bow.obj
 endsegment
 segment bow_hair
     parent bow
@@ -230,7 +240,7 @@ segment clavicle_left
         0                   0                    0                   1
     mass 0.2
     com -0.0127205 0.00849541 -0.0659846
-    // meshfile Geometry/clavicle_left.vtp
+    meshfile Geometry/clavicle_left.vtp
 endsegment
 
 
@@ -244,7 +254,7 @@ segment scapula_left
     RT -0.52 0.52 0 xyz 0 0 0
     mass 0.5
     com -0.072 -0.039 0.065
-    // meshfile Geometry/scapula_left.vtp
+    meshfile Geometry/scapula_left.vtp
 endsegment
 
 
@@ -263,7 +273,7 @@ segment humerus_rotation_left
     // This segment is created so one can choose if the dof exists or not
     // rotations yzy
     RT 0.25 0.8 0 yzy 0 0 0
-    // meshfile Geometry/humerus_left.vtp
+    meshfile Geometry/humerus_left.vtp
 endsegment
 
 
@@ -296,7 +306,7 @@ segment ulna_left
         0.002962 0 0
         0 0.000618 0
         0 0 0.003213
-    // meshfile Geometry/ulna_left.vtp
+    meshfile Geometry/ulna_left.vtp
 endsegment
 
 
@@ -329,7 +339,7 @@ segment radius_left
         0.002962 0 0
         0 0.000618 0
         0 0 0.003213
-    // meshfile Geometry/radius_left.vtp
+    meshfile Geometry/radius_left.vtp
 endsegment
 
 
@@ -356,7 +366,7 @@ segment violin
 	    0.000000	0.00000048	0.000000
 	    0.000000	0.000000	0.00117637
     com	-0.003 -0.325 0
-    // meshfile Geometry/Violin.obj
+    meshfile Geometry/Violin.obj
 endsegment
 
 

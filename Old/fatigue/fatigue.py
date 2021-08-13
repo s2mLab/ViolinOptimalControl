@@ -1,7 +1,7 @@
 
 import numpy as np
 
-import biorbd
+import biorbd_casadi as biorbd
 
 import scipy.integrate as integrate
 
