@@ -26,6 +26,9 @@ from bioptim import (
     FatigueList,
     XiaFatigue,
     XiaTauFatigue,
+    FatigueBounds,
+    FatigueInitialGuess,
+    VariableType,
 )
 
 from .violin import Violin
@@ -36,8 +39,7 @@ from .viz import online_muscle_torque
 class ViolinOcp:
 
     # TODO Get these values from a better method
-    tau_min, tau_max, tau_init = -100, 100, 0
-    LD, LR, F, R = 100, 100, 0.4, 0.2
+    tau_min, tau_max, tau_init = -30, 30, 0
 
     # TODO add external forces?
 
@@ -87,8 +89,8 @@ class ViolinOcp:
             for i in range(self.n_tau):
                 self.fatigue_dynamics.add(
                     XiaTauFatigue(
-                        XiaFatigue(LD=10, LR=10, F=5, R=10, scale=self.tau_min),
-                        XiaFatigue(LD=10, LR=10, F=5, R=10, scale=self.tau_max),
+                        XiaFatigue(LD=300, LR=300, F=0.05, R=10, scale=self.tau_min),
+                        XiaFatigue(LD=300, LR=300, F=0.05, R=10, scale=self.tau_max),
                     ),
                     state_only=True,
                 )
@@ -122,48 +124,64 @@ class ViolinOcp:
         # Regularization objectives
         self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.01, list_index=0, multi_thread=self.multi_thread_obj)
         self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.01, list_index=1, multi_thread=self.multi_thread_obj)
+
         if self.fatigable:
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="muscles", weight=10, list_index=2, multi_thread=self.multi_thread_obj)
+            # self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_minus", weight=10, list_index=2,
+            #                              multi_thread=self.multi_thread_obj)
+            # self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_plus", weight=10,
+            #                              list_index=3,
+            #                              multi_thread=self.multi_thread_obj)
+            if self.use_muscles:
+                self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="muscles", weight=10, list_index=4, multi_thread=self.multi_thread_obj)
 
         if self.use_muscles:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau",
                 index=self.violin.virtual_tau,
                 weight=0.01,
-                list_index=3, multi_thread=self.multi_thread_obj
+                list_index=5, multi_thread=self.multi_thread_obj
             )
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=10, list_index=4, multi_thread=self.multi_thread_obj)
+            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=10, list_index=6, multi_thread=self.multi_thread_obj)
         else:
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=0.01, list_index=5, multi_thread=self.multi_thread_obj)
-        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=10, list_index=6, multi_thread=self.multi_thread_obj)
-        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=10, list_index=7, multi_thread=self.multi_thread_obj, derivative=True)
-
-        # Keep the bow align at 90 degrees with the violin
-        self.objective_functions.add(
-            ObjectiveFcn.Lagrange.TRACK_SEGMENT_WITH_CUSTOM_RT,
-            weight=1000,
-            segment=self.bow.segment_idx,
-            rt=self.violin.rt_on_string,
-            list_index=8, multi_thread=self.multi_thread_obj
-        )
+            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, list_index=7, multi_thread=self.multi_thread_obj)
+        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=10, list_index=8, multi_thread=self.multi_thread_obj)
+        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=10, list_index=9, multi_thread=self.multi_thread_obj, derivative=True)
 
     def _set_generic_constraints(self):
         # Keep the bow in contact with the violin
         if self.solver == Solver.IPOPT:
+            # Keep the bow align at 90 degrees with the violin
+            self.constraints.add(
+                ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT,
+                node=Node.ALL,
+                segment=self.bow.segment_idx,
+                rt=self.violin.rt_on_string,
+                list_index=0, multi_thread=self.multi_thread_obj
+            )
+
             self.constraints.add(
                 ConstraintFcn.SUPERIMPOSE_MARKERS,
                 node=Node.ALL,
                 first_marker=self.bow.contact_marker,
                 second_marker=self.violin.bridge_marker,
-                list_index=0, multi_thread=self.multi_thread_obj
+                list_index=1, multi_thread=self.multi_thread_obj
             )
         else:
+            # Keep the bow align at 90 degrees with the violin
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.TRACK_SEGMENT_WITH_CUSTOM_RT,
+                node=Node.ALL,
+                segment=self.bow.segment_idx,
+                rt=self.violin.rt_on_string,
+                list_index=10, multi_thread=self.multi_thread_obj
+            )
+
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.SUPERIMPOSE_MARKERS,
                 node=Node.ALL,
                 first_marker=self.bow.contact_marker,
                 second_marker=self.violin.bridge_marker,
-                list_index=9,
+                list_index=11,
                 weight=1000, multi_thread=self.multi_thread_obj
             )
 
@@ -173,19 +191,10 @@ class ViolinOcp:
         self.x_bounds[self.n_q:, 0] = 0
 
         if self.fatigable:
-            ma_bounds = [[0, 0, 0], [1, 1, 1]]
-            mr_bounds = [[0, 0, 0], [1, 1, 1]]
-            mf_bounds = [[0, 0, 0], [1, 1, 1]]
-            for dof in range(self.n_tau * 2):
-                self.x_bounds.concatenate(Bounds([ma_bounds[0]], [ma_bounds[1]]))
-                self.x_bounds.concatenate(Bounds([mr_bounds[0]], [mr_bounds[1]]))
-                self.x_bounds.concatenate(Bounds([mf_bounds[0]], [mf_bounds[1]]))
+            self.x_bounds.concatenate(FatigueBounds(self.fatigue_dynamics))
 
         if self.fatigable:
-            u_bounds_min = [self.tau_min] * self.n_tau + [0] * self.n_tau + [0] * self.n_mus
-            u_bounds_max = [0] * self.n_tau + [self.tau_max] * self.n_tau + [1] * self.n_mus
-            self.u_bounds = Bounds(u_bounds_min, u_bounds_max)
-
+            self.u_bounds = FatigueBounds(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
         else:
             u_min = [self.tau_min] * self.n_tau + [0] * self.n_mus
             u_max = [self.tau_max] * self.n_tau + [1] * self.n_mus
@@ -193,16 +202,14 @@ class ViolinOcp:
 
     def _set_initial_guess(self, init_file):
         if init_file is None:
+            self.x_init = InitialGuess(np.concatenate((self.violin.q(self.bow_starting), np.zeros(self.n_q))))
             if self.fatigable:
-                x_init = np.zeros((self.n_q * 2 + 6 * self.n_tau, 1))
-                x_init[2 * self.n_q:, 0] = [0, 1, 0, 0, 1, 0] * self.n_tau
-                u_init = np.zeros((self.n_tau * 2 + self.n_mus, 1))
+                self.x_init.concatenate(FatigueInitialGuess(self.fatigue_dynamics))
+
+            if self.fatigable:
+                self.u_init = FatigueInitialGuess(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
             else:
-                x_init = np.zeros((self.n_q * 2, 1))
-                u_init = np.zeros((self.n_tau + self.n_mus, 1))
-            x_init[:self.n_q, 0] = self.violin.q(self.bow_starting)
-            self.x_init = InitialGuess(x_init)
-            self.u_init = InitialGuess(u_init)
+                self.u_init = InitialGuess(np.zeros((self.n_tau + self.n_mus, 1)))
 
         else:
             _, sol = ViolinOcp.load(init_file)
@@ -217,7 +224,7 @@ class ViolinOcp:
             weight=weight,
             target=bow_target,
             index=self.bow.hair_idx,
-            list_index=10, multi_thread=self.multi_thread_obj
+            list_index=12, multi_thread=self.multi_thread_obj
         )
         self.ocp.update_objectives(new_objectives)
 
@@ -230,7 +237,7 @@ class ViolinOcp:
                 min_bound=-0.05,
                 max_bound=0.05,
                 index=self.bow.hair_idx,
-                list_index=1, multi_thread=self.multi_thread_obj
+                list_index=2, multi_thread=self.multi_thread_obj
             )
             self.ocp.update_constraints(new_constraint)
 
