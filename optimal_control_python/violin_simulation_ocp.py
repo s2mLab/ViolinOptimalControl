@@ -32,7 +32,6 @@ def main():
         ode_solver=ode_solver,
         n_threads=n_threads
     )
-    # ocp.ocp.add_plot_penalty()
 
     lim = bow.hair_limits if ocp.bow_starting == BowPosition.FROG else [bow.hair_limits[1], bow.hair_limits[0]]
     bow_trajectory = BowTrajectory(lim, ocp.n_shooting_per_cycle + 1)

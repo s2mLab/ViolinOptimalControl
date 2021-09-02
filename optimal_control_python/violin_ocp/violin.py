@@ -1,5 +1,6 @@
 from enum import Enum
 
+from bioptim import XiaFatigue, XiaTauFatigue, MichaudFatigue, MichaudTauFatigue
 import numpy as np
 
 from .bow import BowPosition
@@ -17,15 +18,17 @@ class Violin:
     Contains initial values and references from useful markers and segments.
     """
 
+    # TODO Get these values from a better method
+    tau_min, tau_max, tau_init = -30, 30, 0
     segment_idx = 17
 
     def __init__(self, model: str, string: ViolinString):
         self.model = model
         self.string = string
         if self.model == "BrasViolon":
-            self.virtual_tau = range(0, 7)  # To be verified
+            self.residual_tau = range(0, 7)  # To be verified
         else:
-            self.virtual_tau = range(2, 7)
+            self.residual_tau = range(2, 7)
 
     def q(self, bow_position: BowPosition):
         if self.model == "BrasViolon":
@@ -114,3 +117,28 @@ class Violin:
             "D": np.array([0.0, 0.0, 0.0, 0.16081784, 1.30189937, 1.50970052]),
             "G": np.array([0.0, 0.0, 0.0, 0.05865013, 1.05013794, 1.7011086]),
         }[self.string.value]
+
+    @property
+    def muscle_fatigue_parameters(self):
+        return {"LD": 10, "LR": 10, "F": 0.01, "R": 0.002}
+
+    def tau_fatigue_parameters(self, direction: int, fatigue_type):
+        if fatigue_type == XiaFatigue:
+            return {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002}
+
+        elif fatigue_type == XiaTauFatigue:
+            scale = self.tau_min if direction < 0 else self.tau_max
+            out = {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002, "scale": scale}
+            return out
+
+        elif fatigue_type == MichaudFatigue:
+            return {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002, "L": 0.07, "fatigue_threshold": 0.2}
+
+        elif fatigue_type == MichaudTauFatigue:
+            scale = self.tau_min if direction < 0 else self.tau_max
+            out = {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002, "L": 0.07, "fatigue_threshold": 0.2, "scale": scale}
+            return out
+
+        else:
+            raise NotImplementedError("Implemented fatigue_type are XiaFatigue, XiaTauFatigue, "
+                                      "MichaudFatigue and MichaudTauFatigue")
