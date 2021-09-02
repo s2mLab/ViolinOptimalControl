@@ -41,31 +41,30 @@ mr_recup = list()
 # Define activation command
 def var_load(_t, _target_load=target_load, _delta_t=delta_t):
     if _t <= delta_t:
-        return _target_load/_delta_t*_t
+        return _target_load / _delta_t * _t
     else:
         return _target_load
 
 
 def var_sin_load(_t, freq=freq_load, _delta_amp=delta_amp, _target_load=target_load):
-    return _target_load*(1 + _delta_amp*np.math.sin(freq*_t))
+    return _target_load * (1 + _delta_amp * np.math.sin(freq * _t))
 
 
 # Define model of fatigue
 def def_dyn(fun_load, recovery_rate, fatigue_rate, develop_factor, recovery_factor):
-
     def dyn(t, x):
         _load = fun_load(t)
         (ma, mf, mr) = x
         if ma < _load:
             if mr > _load - ma:
-                command = develop_factor*(_load-ma)
+                command = develop_factor * (_load - ma)
             else:
-                command = develop_factor*mr
+                command = develop_factor * mr
         else:
-            command = recovery_factor*(_load-ma)
+            command = recovery_factor * (_load - ma)
 
-        ma_dot = command - fatigue_rate*ma
-        mr_dot = -command + recovery_rate*mf
+        ma_dot = command - fatigue_rate * ma
+        mr_dot = -command + recovery_rate * mf
         mf_dot = fatigue_rate * ma - recovery_rate * mf
 
         result = (ma_dot, mf_dot, mr_dot)
@@ -78,7 +77,9 @@ def def_dyn(fun_load, recovery_rate, fatigue_rate, develop_factor, recovery_fact
 # Get values from biorbd
 def fatigue_dyn_biorbd(_model, _muscle, _q, _q_dot, fun_load, is_state, is_muscle_updated=True):
     _fatigue_model = biorbd.HillThelenTypeFatigable_DeepCopy(_muscle)
-    _fatigue_state = biorbd.s2mMuscleFatigueDynamicStateXia_getRef(_fatigue_model.fatigueState()) # needs correct function
+    _fatigue_state = biorbd.s2mMuscleFatigueDynamicStateXia_getRef(
+        _fatigue_model.fatigueState()
+    )  # needs correct function
     if is_state and type(fun_load) != biorbd.s2mMuscleStateActual:
         print("Warning: command function is not of type s2mMuscleStateActual")
         return 1
@@ -109,7 +110,9 @@ def fatigue_dyn_biorbd(_model, _muscle, _q, _q_dot, fun_load, is_state, is_muscl
 
 # Create functions to integrate
 dyn_S = def_dyn(var_sin_load, recovery_rate_s, fatigue_rate_s, develop_factor_s, recovery_factor_s)
-dyn_biorbd = fatigue_dyn_biorbd(model, muscle, biorbd.s2mGenCoord(model), biorbd.s2mGenCoord(model), biorbd.s2mMuscleStateActual(0, 0.5), True, True)
+dyn_biorbd = fatigue_dyn_biorbd(
+    model, muscle, biorbd.s2mGenCoord(model), biorbd.s2mGenCoord(model), biorbd.s2mMuscleStateActual(0, 0.5), True, True
+)
 
 # Integration
 X_S = integrate.solve_ivp(dyn_S, (0, t_Max), state_init)
@@ -120,7 +123,7 @@ Y = list()
 Y_biorbd = list()
 time = X_S.t
 time_biorbd = X_biorbd.t
-T = np.linspace(0, time[len(time)-1], n_frames)
+T = np.linspace(0, time[len(time) - 1], n_frames)
 for i in range(3):
     tck = interpolate.splrep(time, X_S.y[i, :], s=0)
     Y.append(interpolate.splev(T, tck, der=0))
@@ -128,13 +131,13 @@ for i in range(3):
     tck_biorbd = interpolate.splrep(time_biorbd, X_biorbd.y[i, :], s=0)
     Y_biorbd.append(interpolate.splev(T, tck_biorbd, der=0))
 
-error_ma_absolute = (Y_biorbd[0][:] - Y[0][:])
-error_mf_absolute = (Y_biorbd[1][:] - Y[1][:])
-error_mr_absolute = (Y_biorbd[2][:] - Y[2][:])
+error_ma_absolute = Y_biorbd[0][:] - Y[0][:]
+error_mf_absolute = Y_biorbd[1][:] - Y[1][:]
+error_mr_absolute = Y_biorbd[2][:] - Y[2][:]
 
-error_ma_relative = (Y_biorbd[0][:] - Y[0][:])/Y[0][:]*100
-error_mf_relative = (Y_biorbd[1][:] - Y[1][:])/Y[1][:]*100
-error_mr_relative = (Y_biorbd[2][:] - Y[2][:])/Y[2][:]*100
+error_ma_relative = (Y_biorbd[0][:] - Y[0][:]) / Y[0][:] * 100
+error_mf_relative = (Y_biorbd[1][:] - Y[1][:]) / Y[1][:] * 100
+error_mr_relative = (Y_biorbd[2][:] - Y[2][:]) / Y[2][:] * 100
 
 # Error of integration and processing
 error_total_biorbd = X_biorbd.y[0, :] + X_biorbd.y[1, :] + X_biorbd.y[2, :] - np.ones(X_biorbd.y[0, :].size)
@@ -147,52 +150,52 @@ print(max_error)
 # Plot results
 plt.figure(1)
 plt.subplot(2, 1, 1)
-plt.plot(X_S.t, X_S.y[0, :], label='Activated')
-plt.plot(X_S.t, X_S.y[1, :], label='Fatigued')
-plt.plot(X_S.t, X_S.y[2, :], label='Resting')
+plt.plot(X_S.t, X_S.y[0, :], label="Activated")
+plt.plot(X_S.t, X_S.y[1, :], label="Fatigued")
+plt.plot(X_S.t, X_S.y[2, :], label="Resting")
 plt.title("Slow fibers fatigue")
-plt.xlabel('time')
-plt.ylabel('%MVC')
+plt.xlabel("time")
+plt.ylabel("%MVC")
 
 plt.subplot(2, 1, 2)
-plt.plot(X_biorbd.t, X_biorbd.y[0, :], label='Activated')
-plt.plot(X_biorbd.t, X_biorbd.y[1, :], label='Fatigued')
-plt.plot(X_biorbd.t, X_biorbd.y[2, :], label='Resting')
+plt.plot(X_biorbd.t, X_biorbd.y[0, :], label="Activated")
+plt.plot(X_biorbd.t, X_biorbd.y[1, :], label="Fatigued")
+plt.plot(X_biorbd.t, X_biorbd.y[2, :], label="Resting")
 plt.title("Slow fibers fatigue from biorbd")
-plt.xlabel('time')
-plt.ylabel('%MVC')
+plt.xlabel("time")
+plt.ylabel("%MVC")
 
 plt.legend()
 
 plt.figure(2)
 plt.plot(X_biorbd.t, error_total_biorbd)
 plt.title("Total error of integration and processing")
-plt.xlabel('time')
-plt.ylabel('%MVC')
+plt.xlabel("time")
+plt.ylabel("%MVC")
 
 plt.figure(3)
-plt.plot(T, error_ma_absolute, label = 'error_Activated')
-plt.plot(T, error_mf_absolute, label = 'error_Fatigued')
-plt.plot(T, error_mr_absolute, label = 'error_Resting')
+plt.plot(T, error_ma_absolute, label="error_Activated")
+plt.plot(T, error_mf_absolute, label="error_Fatigued")
+plt.plot(T, error_mr_absolute, label="error_Resting")
 plt.title("Absolute Error from biorbd")
-plt.xlabel('time')
-plt.ylabel('%error')
+plt.xlabel("time")
+plt.ylabel("%error")
 
 plt.legend()
 
 plt.figure(4)
-plt.plot(T, error_ma_relative, label = 'error_relative_Activated')
-plt.plot(T, error_mf_relative, label = 'error_relative_Fatigued')
-plt.plot(T, error_mr_relative, label = 'error_relative_Resting')
+plt.plot(T, error_ma_relative, label="error_relative_Activated")
+plt.plot(T, error_mf_relative, label="error_relative_Fatigued")
+plt.plot(T, error_mr_relative, label="error_relative_Resting")
 plt.title("Relative Error from biorbd")
-plt.xlabel('time')
-plt.ylabel('%error')
+plt.xlabel("time")
+plt.ylabel("%error")
 plt.legend()
 
 plt.figure(5)
 plt.plot(error_total_biorbd_2)
 plt.title("Total error of integration and processing 2")
-plt.xlabel('time')
-plt.ylabel('%MVC')
+plt.xlabel("time")
+plt.ylabel("%MVC")
 
 plt.show()

@@ -53,7 +53,9 @@ class BowTrajectory:
 
         self.bow_limits = bow_range
         self.t = np.linspace(0, 2, n_points)
-        self.target = self.curve_integral(optimize.least_squares(lambda x: objective_function(x, self.t), x0=np.array((1, 8))).x, self.t)[np.newaxis, :]
+        self.target = self.curve_integral(
+            optimize.least_squares(lambda x: objective_function(x, self.t), x0=np.array((1, 8))).x, self.t
+        )[np.newaxis, :]
 
     @staticmethod
     def curve(x, t):

@@ -12,10 +12,12 @@ violon_string = Violin("G")
 inital_bow_side = Bow("frog")
 
 X = InitialConditions(
-    violon_string.q()[inital_bow_side.side] + [0] * ocp.nlp[0]["nbQdot"], InterpolationType.CONSTANT,
+    violon_string.q()[inital_bow_side.side] + [0] * ocp.nlp[0]["nbQdot"],
+    InterpolationType.CONSTANT,
 )
 U = InitialConditions(
-    [torque_init] * ocp.nlp[0]["nbTau"] + [command] * ocp.nlp[0]["model"].nbMuscles(), InterpolationType.CONSTANT,
+    [torque_init] * ocp.nlp[0]["nbTau"] + [command] * ocp.nlp[0]["model"].nbMuscles(),
+    InterpolationType.CONSTANT,
 )
 
 muscle_states_init = InitialConditions(

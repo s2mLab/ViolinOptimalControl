@@ -24,8 +24,8 @@ from bioptim import (
     Solution,
     OdeSolver,
     FatigueList,
-    XiaFatigue,
-    XiaTauFatigue,
+    MichaudFatigue,
+    MichaudTauFatigue,
     FatigueBounds,
     FatigueInitialGuess,
     VariableType,
@@ -85,12 +85,14 @@ class ViolinOcp:
             self.fatigue_dynamics = FatigueList()
             for i in range(self.n_tau):
                 self.fatigue_dynamics.add(
-                    XiaTauFatigue(
-                        XiaFatigue(**violin.tau_fatigue_parameters(-1)), XiaFatigue(**violin.tau_fatigue_parameters(1))
-                    ), state_only=True
+                    MichaudTauFatigue(
+                        MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, -1)),
+                        MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1)),
+                    ),
+                    state_only=True,
                 )
             for i in range(self.n_mus):
-                self.fatigue_dynamics.add(XiaFatigue(**violin.muscle_fatigue_parameters), state_only=True)
+                self.fatigue_dynamics.add(MichaudFatigue(**violin.fatigue_parameters(MichaudFatigue)), state_only=True)
 
         if self.use_muscles:
             self.dynamics = Dynamics(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True, fatigue=self.fatigue_dynamics)
@@ -119,31 +121,75 @@ class ViolinOcp:
 
     def _set_generic_objective_functions(self):
         # Regularization objectives
-        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.01, list_index=0, expand=self.expand)
-        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.01, list_index=1, expand=self.expand)
+        self.objective_functions.add(
+            ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.01, list_index=0, expand=self.expand
+        )
+        self.objective_functions.add(
+            ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.01, list_index=1, expand=self.expand
+        )
 
         if self.fatigable:
-            # self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_minus", weight=1000000, list_index=2, expand=self.expand)
-            # self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_plus", weight=1000000, list_index=3, expand=self.expand)
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_minus", weight=100, list_index=4, expand=self.expand)
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_plus", weight=100, list_index=5, expand=self.expand)
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_minus", weight=1000, list_index=6, expand=self.expand, derivative=True)
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_plus", weight=1000, list_index=7, expand=self.expand, derivative=True)
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
+                key="tau_minus",
+                weight=1000000,
+                list_index=2,
+                expand=self.expand,
+            )
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_plus", weight=1000000, list_index=3, expand=self.expand
+            )
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_minus", weight=100, list_index=4, expand=self.expand
+            )
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_plus", weight=100, list_index=5, expand=self.expand
+            )
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+                key="tau_minus",
+                weight=1000,
+                list_index=6,
+                expand=self.expand,
+                derivative=True,
+            )
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+                key="tau_plus",
+                weight=1000,
+                list_index=7,
+                expand=self.expand,
+                derivative=True,
+            )
             if self.use_muscles:
-                self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="muscles", weight=10, list_index=8, expand=self.expand)
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="muscles", weight=10, list_index=8, expand=self.expand
+                )
         else:
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, list_index=9, expand=self.expand)
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1000, list_index=10, expand=self.expand, derivative=True)
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, list_index=9, expand=self.expand
+            )
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+                key="tau",
+                weight=1000,
+                list_index=10,
+                expand=self.expand,
+                derivative=True,
+            )
 
         if self.use_muscles:
             self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau",
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+                key="tau",
                 index=self.violin.residual_tau,
                 weight=1000,
                 list_index=11,
                 expand=self.expand,
             )
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=100, list_index=12, expand=self.expand)
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=100, list_index=12, expand=self.expand
+            )
 
         self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=10, list_index=13, expand=self.expand)
 
@@ -191,8 +237,8 @@ class ViolinOcp:
 
     def _set_bounds(self):
         self.x_bounds = QAndQDotBounds(self.model)
-        self.x_bounds[:self.n_q, 0] = self.violin.q(self.bow_starting)
-        self.x_bounds[self.n_q:, 0] = 0
+        self.x_bounds[: self.n_q, 0] = self.violin.q(self.bow_starting)
+        self.x_bounds[self.n_q :, 0] = 0
 
         if self.fatigable:
             self.x_bounds.concatenate(FatigueBounds(self.fatigue_dynamics))

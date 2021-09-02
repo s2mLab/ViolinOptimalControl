@@ -33,7 +33,7 @@ def main():
         solver=solver,
         window_len=window,
         window_duration=cycle_time,
-        n_threads=n_threads
+        n_threads=n_threads,
     )
 
     # Generate a full cycle target
@@ -53,7 +53,7 @@ def main():
             time_per_cycle=cycle_time,
             n_shooting_per_cycle=full_cycle,
             solver=solver,
-            n_threads=n_threads
+            n_threads=n_threads,
         )
         ocp_pre.set_bow_target_objective(bow_trajectory.target)
         ocp_pre.set_cyclic_bound()

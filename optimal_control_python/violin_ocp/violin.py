@@ -34,16 +34,53 @@ class Violin:
         if self.model == "BrasViolon":
             return {
                 "E": {
-                    "frog": [-0.08296722,  0.09690602,  0.79205348,  0.6544504 ,  1.48280029, 0.08853452,  0.53858613, -0.39647921, -0.57508712, -0.0699],
-                    "tip": [0.05540307, -0.29949352,  0.45207956,  0.47107735,  0.34250652, 0.43996516,  0.32375985,  0.26179933,  0.36437326, -0.54957409],
+                    "frog": [
+                        -0.08296722,
+                        0.09690602,
+                        0.79205348,
+                        0.6544504,
+                        1.48280029,
+                        0.08853452,
+                        0.53858613,
+                        -0.39647921,
+                        -0.57508712,
+                        -0.0699,
+                    ],
+                    "tip": [
+                        0.05540307,
+                        -0.29949352,
+                        0.45207956,
+                        0.47107735,
+                        0.34250652,
+                        0.43996516,
+                        0.32375985,
+                        0.26179933,
+                        0.36437326,
+                        -0.54957409,
+                    ],
                 },
                 "A": {"frog": [], "tip": []},
                 "D": {"frog": [], "tip": []},
                 "G": {"frog": [], "tip": []},
             }[self.string.value][bow_position.value]
         elif self.model == "WuViolin":
-            return {"E": {
-                    "tip": [0.03912959,  0.17247435, -0.19338927 , 0.20425233 ,-0.57008224 , 0.43337458, 0.57221809,  1.12542974, -0.07691151, -0.01791363, -0.0434384, 0.41112526, -0.54910199]
+            return {
+                "E": {
+                    "tip": [
+                        0.03912959,
+                        0.17247435,
+                        -0.19338927,
+                        0.20425233,
+                        -0.57008224,
+                        0.43337458,
+                        0.57221809,
+                        1.12542974,
+                        -0.07691151,
+                        -0.01791363,
+                        -0.0434384,
+                        0.41112526,
+                        -0.54910199,
+                    ]
                 },
                 "A": {"frog": [], "tip": []},
                 "D": {"frog": [], "tip": []},
@@ -118,15 +155,13 @@ class Violin:
             "G": np.array([0.0, 0.0, 0.0, 0.05865013, 1.05013794, 1.7011086]),
         }[self.string.value]
 
-    @property
-    def muscle_fatigue_parameters(self):
-        return {"LD": 10, "LR": 10, "F": 0.01, "R": 0.002}
-
-    def tau_fatigue_parameters(self, direction: int, fatigue_type):
+    def fatigue_parameters(self, fatigue_type, direction: int = 0):
         if fatigue_type == XiaFatigue:
             return {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002}
 
         elif fatigue_type == XiaTauFatigue:
+            if not (direction < 0 or direction > 0):
+                raise ValueError("direction should be < 0 or > 0")
             scale = self.tau_min if direction < 0 else self.tau_max
             out = {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002, "scale": scale}
             return out
@@ -135,10 +170,13 @@ class Violin:
             return {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002, "L": 0.07, "fatigue_threshold": 0.2}
 
         elif fatigue_type == MichaudTauFatigue:
+            if not (direction < 0 or direction > 0):
+                raise ValueError("direction should be < 0 or > 0")
             scale = self.tau_min if direction < 0 else self.tau_max
             out = {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002, "L": 0.07, "fatigue_threshold": 0.2, "scale": scale}
             return out
 
         else:
-            raise NotImplementedError("Implemented fatigue_type are XiaFatigue, XiaTauFatigue, "
-                                      "MichaudFatigue and MichaudTauFatigue")
+            raise NotImplementedError(
+                "Implemented fatigue_type are XiaFatigue, XiaTauFatigue, " "MichaudFatigue and MichaudTauFatigue"
+            )

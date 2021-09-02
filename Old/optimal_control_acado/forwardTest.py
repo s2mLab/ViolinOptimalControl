@@ -18,21 +18,28 @@ biorbd_model = biorbd.Model(f"../models/testloop.bioMod")
 q_init = np.concatenate((np.zeros(biorbd_model.nbQ()), np.zeros(biorbd_model.nbQ())))
 u = np.zeros(biorbd_model.nbGeneralizedTorque())
 
-integrated_tp = integrate.solve_ivp(fun=lambda t, y: fun_dyn(t, y, biorbd_model, u),
-                                    t_span=(0, 1), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
+integrated_tp = integrate.solve_ivp(
+    fun=lambda t, y: fun_dyn(t, y, biorbd_model, u), t_span=(0, 1), y0=q_init, method="RK45", atol=1e-8, rtol=1e-6
+)
 
 t_interp, q_interp = utils.interpolate_integration(nb_frames=1000, t_int=integrated_tp.t, y_int=integrated_tp.y)
 
 
-
-integrated_tp2 = integrate.solve_ivp(fun=lambda t, y: utils.dynamics_from_muscles_and_torques(t, y, biorbd_model, u),
-                                    t_span=(0, 1), y0=q_init, method='RK45', atol=1e-8, rtol=1e-6)
+integrated_tp2 = integrate.solve_ivp(
+    fun=lambda t, y: utils.dynamics_from_muscles_and_torques(t, y, biorbd_model, u),
+    t_span=(0, 1),
+    y0=q_init,
+    method="RK45",
+    atol=1e-8,
+    rtol=1e-6,
+)
 
 t_interp2, q_interp2 = utils.interpolate_integration(nb_frames=1000, t_int=integrated_tp2.t, y_int=integrated_tp2.y)
 
 from matplotlib import pyplot as plt
+
 plt.plot(t_interp, q_interp)
-plt.plot(t_interp2, q_interp2, '-.')
+plt.plot(t_interp2, q_interp2, "-.")
 plt.show()
 
 bioviz = Viz(loaded_model=biorbd_model)

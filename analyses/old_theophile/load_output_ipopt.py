@@ -43,7 +43,7 @@ for k, key in enumerate(keys[1:]):
         markersize=1,
         label=key,
         color=["b", "g", "r", "c", "m", "y", "k"][k],
-        zorder=10-k,
+        zorder=10 - k,
     )
 plt.yscale("log")
 plt.xlabel("itérations")

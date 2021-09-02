@@ -59,7 +59,7 @@ def main():
     # OPTIONS
     folder = "/home/pariterre/Documents/Documents/Presentations/CMBBE/2021/data"
     files = ["cycles_without_fatigue", "cycles_with_fatigue"]
-    mod = -180/np.pi
+    mod = -180 / np.pi
     n_cycles = 10
     cycle_time = 1
     data_type = DataType.STATE

@@ -17,7 +17,12 @@ class DummyPenalty:
         def __init__(self, m):
             self.model = m
             self.states = OptimizationVariableList()
-            self.states.append("q", [MX.sym("q", m.nbQ(), 1)], MX.sym("q", m.nbQ(), 1), BiMapping(range(self.model.nbQ()), range(self.model.nbQ())))
+            self.states.append(
+                "q",
+                [MX.sym("q", m.nbQ(), 1)],
+                MX.sym("q", m.nbQ(), 1),
+                BiMapping(range(self.model.nbQ()), range(self.model.nbQ())),
+            )
             self.casadi_func = dict()
 
     class DummyPen:
@@ -37,8 +42,8 @@ class DummyPenalty:
         penalty.val = val
 
 
-bow_place = 'tip'  # 'frog', 'tip'
-string_to_test = 'E'  # 'G', 'D', 'A', 'E'
+bow_place = "tip"  # 'frog', 'tip'
+string_to_test = "E"  # 'G', 'D', 'A', 'E'
 show_live_optim = False  # Bool
 model = "WuViolin"
 
@@ -61,16 +66,16 @@ elif model == "WuViolin":
 else:
     raise ValueError("Wrong model")
 
-if string_to_test == 'G':
+if string_to_test == "G":
     tag_violin = tag_violin_g_string
     rt_on_string = 0
-elif string_to_test == 'D':
+elif string_to_test == "D":
     tag_violin = tag_violin_d_string
     rt_on_string = 1
-elif string_to_test == 'A':
+elif string_to_test == "A":
     tag_violin = tag_violin_a_string
     rt_on_string = 2
-elif string_to_test == 'E':
+elif string_to_test == "E":
     tag_violin = tag_violin_e_string
     rt_on_string = 3
 else:
@@ -95,14 +100,16 @@ superimpose = Function("superimpose", [pn.nlp.states["q"].cx], [val]).expand()
 
 
 def objective_function(x, *args, **kwargs):
-    out = np.ndarray((6, ))
+    out = np.ndarray((6,))
     out[:3] = np.array(custom_rt(x))[:, 0]
     out[3:] = np.array(superimpose(x))[:, 0]
     return out
 
 
 b = bioviz.Viz(m.path().absolutePath().to_string(), markers_size=0.003, show_markers=True)
-x0 = np.zeros(m.nbDof(), )
+x0 = np.zeros(
+    m.nbDof(),
+)
 if bow_place == "frog":
     bounds[0][-1] = -0.0701
     bounds[1][-1] = -0.0699
@@ -111,7 +118,9 @@ else:
     bounds[1][-1] = -0.549
 x0 = np.mean(bounds, axis=0)
 pos = optimize.least_squares(objective_function, x0=x0, bounds=bounds)
-print(f"Optimal Q for the bow at {bow_place} on {string_to_test} string is:\n{pos.x}\n"
-      f"with cost function = {objective_function(pos.x)}")
+print(
+    f"Optimal Q for the bow at {bow_place} on {string_to_test} string is:\n{pos.x}\n"
+    f"with cost function = {objective_function(pos.x)}"
+)
 b.set_q(pos.x)
 b.exec()
