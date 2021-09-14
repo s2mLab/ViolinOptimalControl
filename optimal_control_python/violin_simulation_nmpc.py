@@ -15,14 +15,14 @@ def main():
     full_cycle = 30
     cycle_time = 1
     cycle_from = 1
-    n_cycle_at_same_time = 3
+    n_cycles_simultaneous = 3
     n_cycles = 10
     n_threads = 8
     solver = Solver.IPOPT
     with_fatigue = True
-    minimize_fatigue = False
+    minimize_fatigue = True
     with_muscles = False
-    pre_solve = True
+    pre_solve = False
 
     # --- Solve the program --- #
     window = full_cycle
@@ -31,7 +31,7 @@ def main():
         model_path=f"../models/{model_name}.bioMod",
         violin=violin,
         bow=bow,
-        n_cycle_at_same_time=n_cycle_at_same_time,
+        n_cycles_simultaneous=n_cycles_simultaneous,
         n_cycles_to_advance=1,
         bow_starting=starting_position,
         use_muscles=with_muscles,
@@ -46,7 +46,7 @@ def main():
     # Generate a full cycle target
     lim = bow.hair_limits if starting_position == BowPosition.FROG else [bow.hair_limits[1], bow.hair_limits[0]]
     bow_trajectory = BowTrajectory(lim, full_cycle + 1)
-    bow_trajectory.target = np.tile(bow_trajectory.target[:, :-1], n_cycle_at_same_time)
+    bow_trajectory.target = np.tile(bow_trajectory.target[:, :-1], n_cycles_simultaneous)
     bow_trajectory.target = np.concatenate((bow_trajectory.target, bow_trajectory.target[:, -1][:, np.newaxis]), axis=1)
 
     if pre_solve:
@@ -54,7 +54,7 @@ def main():
             model_path=f"../models/{model_name}.bioMod",
             violin=violin,
             bow=bow,
-            n_cycles=n_cycle_at_same_time,
+            n_cycles=n_cycles_simultaneous,
             bow_starting=starting_position,
             init_file=None,
             use_muscles=with_muscles,
@@ -77,7 +77,7 @@ def main():
 
         print(f"Optimizing cycle {t + 1}..")
         _t = 0  # Cyclic so t should always be the start
-        target_time_index = [i % full_cycle for i in range(_t, _t + window * n_cycle_at_same_time + 1)]
+        target_time_index = [i % full_cycle for i in range(_t, _t + window * n_cycles_simultaneous + 1)]
         nmpc_violin.set_bow_target_objective(bow_trajectory.target[:, target_time_index])
         return True
 

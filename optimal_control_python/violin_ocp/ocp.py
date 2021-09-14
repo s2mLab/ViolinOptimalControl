@@ -386,7 +386,7 @@ class ViolinNMPC(ViolinOcp):
         model_path: str,
         violin: Violin,
         bow: Bow,
-        n_cycle_at_same_time,
+        n_cycles_simultaneous,
         n_cycles_to_advance,
         bow_starting: BowPosition,
         use_muscles: bool = False,
@@ -397,7 +397,7 @@ class ViolinNMPC(ViolinOcp):
         solver: Solver = Solver.ACADOS,
         n_threads: int = 8,
     ):
-        self.n_cycles_at_same_time = n_cycle_at_same_time
+        self.n_cycles_simultaneous = n_cycles_simultaneous
         self.n_cycles_to_advance = n_cycles_to_advance
         super(ViolinNMPC, self).__init__(
             model_path=model_path,
@@ -418,7 +418,7 @@ class ViolinNMPC(ViolinOcp):
         self.ocp = MultiCyclicNonlinearModelPredictiveControl(
             biorbd_model=self.model,
             dynamics=self.dynamics,
-            n_cycles=self.n_cycles_at_same_time,
+            n_cycles_simultaneous=self.n_cycles_simultaneous,
             n_cycles_to_advance=self.n_cycles_to_advance,
             cycle_len=self.n_shooting,
             cycle_duration=self.time,
