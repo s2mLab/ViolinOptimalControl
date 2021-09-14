@@ -6,7 +6,7 @@ import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
     Solver,
-    CyclicNonlinearModelPredictiveControl,
+    MultiCyclicNonlinearModelPredictiveControl,
     OptimalControlProgram,
     Objective,
     ObjectiveFcn,
@@ -46,15 +46,16 @@ class ViolinOcp:
         violin: Violin,
         bow: Bow,
         n_cycles: int,
-        bow_starting: BowPosition.TIP,
+        bow_starting: BowPosition,
         init_file: str = None,
         use_muscles: bool = True,
         fatigable: bool = False,
+        minimize_fatigue: bool = True,
         time_per_cycle: float = 1,
         n_shooting_per_cycle: int = 30,
         solver: Solver = Solver.IPOPT,
         n_threads: int = 8,
-        ode_solver: OdeSolver = OdeSolver.RK4(),
+        ode_solver=OdeSolver.RK4(),
     ):
         self.ode_solver = ode_solver
         self.model_path = model_path
@@ -80,6 +81,7 @@ class ViolinOcp:
         self.expand = True
 
         self.fatigue_dynamics = None
+        self.minimize_fatigue = minimize_fatigue
         if self.fatigable:
             self.expand = False
             self.fatigue_dynamics = FatigueList()
@@ -89,7 +91,7 @@ class ViolinOcp:
                         MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, -1)),
                         MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1)),
                     ),
-                    state_only=True,
+                    state_only=False,
                 )
             for i in range(self.n_mus):
                 self.fatigue_dynamics.add(MichaudFatigue(**violin.fatigue_parameters(MichaudFatigue)), state_only=True)
@@ -117,7 +119,8 @@ class ViolinOcp:
         if use_muscles:
             online_muscle_torque(self.ocp)
 
-        self.ocp.add_plot_penalty()
+        if self.ode_solver == OdeSolver.RK4:
+            self.ocp.add_plot_penalty()
 
     def _set_generic_objective_functions(self):
         # Regularization objectives
@@ -129,16 +132,17 @@ class ViolinOcp:
         )
 
         if self.fatigable:
-            self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
-                key="tau_minus",
-                weight=1000000,
-                list_index=2,
-                expand=self.expand,
-            )
-            self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_plus", weight=1000000, list_index=3, expand=self.expand
-            )
+            if self.minimize_fatigue:
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
+                    key="tau_minus",
+                    weight=1_000_000,
+                    list_index=2,
+                    expand=self.expand,
+                )
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_plus", weight=1000000, list_index=3, expand=self.expand
+                )
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_minus", weight=100, list_index=4, expand=self.expand
             )
@@ -162,9 +166,14 @@ class ViolinOcp:
                 derivative=True,
             )
             if self.use_muscles:
-                self.objective_functions.add(
-                    ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="muscles", weight=10, list_index=8, expand=self.expand
-                )
+                if self.minimize_fatigue:
+                    self.objective_functions.add(
+                        ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
+                        key="muscles",
+                        weight=10,
+                        list_index=8,
+                        expand=self.expand,
+                    )
         else:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, list_index=9, expand=self.expand
@@ -266,10 +275,19 @@ class ViolinOcp:
             self.x_init = InitialGuess(sol.states["all"], interpolation=InterpolationType.EACH_FRAME)
             self.u_init = InitialGuess(sol.controls["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
 
-    def set_cyclic_bound(self):
+    def set_cyclic_bound(self, slack: float = 0):
+        """
+        Add a cyclic bound constraint
+
+        Parameters
+        ----------
+        slack: float
+            The slack to the bound constraint, based on the range of motion
+        """
+
         range_of_motion = self.ocp.nlp[0].x_bounds.max[:, 1] - self.ocp.nlp[0].x_bounds.min[:, 1]
-        self.ocp.nlp[0].x_bounds.min[:, 2] = self.ocp.nlp[0].x_bounds.min[:, 0] - range_of_motion * 0.01
-        self.ocp.nlp[0].x_bounds.max[:, 2] = self.ocp.nlp[0].x_bounds.max[:, 0] + range_of_motion * 0.01
+        self.ocp.nlp[0].x_bounds.min[:, 2] = self.ocp.nlp[0].x_bounds.min[:, 0] - range_of_motion * slack
+        self.ocp.nlp[0].x_bounds.max[:, 2] = self.ocp.nlp[0].x_bounds.max[:, 0] + range_of_motion * slack
         self.ocp.update_bounds(self.ocp.nlp[0].x_bounds)
 
     def set_bow_target_objective(self, bow_target: np.ndarray, weight: float = 10000, sol: Solution = None):
@@ -328,15 +346,16 @@ class ViolinOcp:
                     "linear_solver": "ma57",
                 },
             )
+
         if limit_memory_max_iter > 0 and exact_max_iter > 0:
             self.ocp.set_warm_start(sol)
+
         if exact_max_iter > 0:
             sol = self.ocp.solve(
                 show_online_optim=True and not force_no_graph,
                 solver_options={
                     "hessian_approximation": "exact",
                     "max_iter": exact_max_iter,
-                    "warm_start_init_point": "yes",
                     "linear_solver": "ma57",
                 },
             )
@@ -345,7 +364,7 @@ class ViolinOcp:
 
     @staticmethod
     def load(file_path: str):
-        return CyclicNonlinearModelPredictiveControl.load(file_path)
+        return MultiCyclicNonlinearModelPredictiveControl.load(file_path)
 
     def save(self, sol: Solution, ext: str = "", stand_alone: bool = False):
         try:
@@ -367,14 +386,19 @@ class ViolinNMPC(ViolinOcp):
         model_path: str,
         violin: Violin,
         bow: Bow,
-        bow_starting: BowPosition.TIP,
+        n_cycle_at_same_time,
+        n_cycles_to_advance,
+        bow_starting: BowPosition,
         use_muscles: bool = False,
         fatigable=True,
+        minimize_fatigue=True,
         window_duration: float = 1,
         window_len: int = 30,
         solver: Solver = Solver.ACADOS,
         n_threads: int = 8,
     ):
+        self.n_cycles_at_same_time = n_cycle_at_same_time
+        self.n_cycles_to_advance = n_cycles_to_advance
         super(ViolinNMPC, self).__init__(
             model_path=model_path,
             violin=violin,
@@ -383,6 +407,7 @@ class ViolinNMPC(ViolinOcp):
             bow_starting=bow_starting,
             use_muscles=use_muscles,
             fatigable=fatigable,
+            minimize_fatigue=minimize_fatigue,
             time_per_cycle=window_duration,
             n_shooting_per_cycle=window_len,
             solver=solver,
@@ -390,11 +415,13 @@ class ViolinNMPC(ViolinOcp):
         )
 
     def _set_generic_ocp(self):
-        self.ocp = CyclicNonlinearModelPredictiveControl(
+        self.ocp = MultiCyclicNonlinearModelPredictiveControl(
             biorbd_model=self.model,
             dynamics=self.dynamics,
-            window_len=self.n_shooting,
-            window_duration=self.time,
+            n_cycles=self.n_cycles_at_same_time,
+            n_cycles_to_advance=self.n_cycles_to_advance,
+            cycle_len=self.n_shooting,
+            cycle_duration=self.time,
             x_init=self.x_init,
             u_init=self.u_init,
             x_bounds=self.x_bounds,
@@ -405,10 +432,28 @@ class ViolinNMPC(ViolinOcp):
             n_threads=self.n_threads,
         )
 
-    def solve(self, update_function, **opts: Any) -> Solution:
+    def solve(self, update_function, cycle_from=-1, **opts: Any) -> Solution:
+        """
+
+        Parameters
+        ----------
+        update_function
+            The function to update between optimizations
+        cycle_from
+            The cycle from which to start the next iteration
+        opts
+            Any other options to pass to the solve methdd
+        Returns
+        -------
+        The solution
+        """
+
         if "solver_options" in opts:
             if "linear_solver" not in opts:
                 opts["solver_options"]["linear_solver"] = "ma57"
         else:
             opts["solver_options"] = {"linear_solver": "ma57"}
-        return self.ocp.solve(update_function, solver=self.solver, **opts)
+
+        cyclic_options = {"states": ["q", "qdot"]}
+
+        return self.ocp.solve(update_function, solver=self.solver, cyclic_options=cyclic_options, **opts)

@@ -27,8 +27,8 @@ def main():
     t = np.linspace(0, t_end, n_points)
     violin = Violin("WuViolin", ViolinString.E)
     fatigue_models = [
-        XiaFatigue(**violin.fatigue_parameters(1, XiaTauFatigue)),
-        MichaudFatigue(**violin.fatigue_parameters(1, MichaudTauFatigue)),
+        XiaFatigue(**violin.fatigue_parameters(XiaTauFatigue, 1)),
+        MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1)),
     ]
     linestyles = ["-", "--"]
 
