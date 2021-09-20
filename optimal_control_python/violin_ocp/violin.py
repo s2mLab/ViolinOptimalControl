@@ -157,23 +157,23 @@ class Violin:
 
     def fatigue_parameters(self, fatigue_type, direction: int = 0):
         if fatigue_type == XiaFatigue:
-            return {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002}
+            return {"LD": 100, "LR": 100, "F": 0.008, "R": 0.002}
 
         elif fatigue_type == XiaTauFatigue:
             if not (direction < 0 or direction > 0):
                 raise ValueError("direction should be < 0 or > 0")
             scale = self.tau_min if direction < 0 else self.tau_max
-            out = {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002, "scale": scale}
+            out = {"LD": 100, "LR": 100, "F": 0.008, "R": 0.002, "scale": scale}
             return out
 
         elif fatigue_type == MichaudFatigue:
-            return {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002, "L": 0.07, "fatigue_threshold": 0.2}
+            return {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "L": 0.001, "S": 10, "fatigue_threshold": 0.2}
 
         elif fatigue_type == MichaudTauFatigue:
             if not (direction < 0 or direction > 0):
                 raise ValueError("direction should be < 0 or > 0")
             scale = self.tau_min if direction < 0 else self.tau_max
-            out = {"LD": 400, "LR": 400, "F": 0.008, "R": 0.002, "L": 0.07, "fatigue_threshold": 0.2, "scale": scale}
+            out = {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "L": 0.001, "S": 10, "fatigue_threshold": 0.2, "scale": scale}
             return out
 
         else:
