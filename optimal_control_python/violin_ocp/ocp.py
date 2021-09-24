@@ -91,7 +91,7 @@ class ViolinOcp:
                         MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, -1)),
                         MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1)),
                     ),
-                    state_only=False,
+                    state_only=True,
                 )
             for i in range(self.n_mus):
                 self.fatigue_dynamics.add(MichaudFatigue(**violin.fatigue_parameters(MichaudFatigue)), state_only=True)
@@ -341,6 +341,7 @@ class ViolinOcp:
             sol = self.ocp.solve(
                 show_online_optim=exact_max_iter == 0 and not force_no_graph,
                 solver_options={
+                    "c_compile": False,
                     "hessian_approximation": "limited-memory",
                     "max_iter": limit_memory_max_iter,
                     "linear_solver": "ma57",
@@ -354,6 +355,7 @@ class ViolinOcp:
             sol = self.ocp.solve(
                 show_online_optim=True and not force_no_graph,
                 solver_options={
+                    "c_compile": False,
                     "hessian_approximation": "exact",
                     "max_iter": exact_max_iter,
                     "linear_solver": "ma57",
