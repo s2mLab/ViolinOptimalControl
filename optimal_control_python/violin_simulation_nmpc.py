@@ -2,7 +2,7 @@ from time import time
 
 import numpy as np
 from violin_ocp import Violin, ViolinString, ViolinNMPC, ViolinOcp, Bow, BowTrajectory, BowPosition
-from bioptim import Solver
+from bioptim import Solver, OdeSolver
 
 
 def main():
@@ -19,6 +19,7 @@ def main():
     n_cycles = 10
     n_threads = 8
     solver = Solver.IPOPT
+    ode_solver = OdeSolver.RK4(n_integration_steps=2)
     with_fatigue = True
     minimize_fatigue = True
     with_muscles = False
@@ -38,6 +39,7 @@ def main():
         fatigable=with_fatigue,
         minimize_fatigue=minimize_fatigue,
         solver=solver,
+        ode_solver=ode_solver,
         window_len=window,
         window_duration=cycle_time,
         n_threads=n_threads,
@@ -63,11 +65,12 @@ def main():
             time_per_cycle=cycle_time,
             n_shooting_per_cycle=full_cycle,
             solver=solver,
+            ode_solver=ode_solver,
             n_threads=n_threads,
         )
         ocp_pre.set_bow_target_objective(bow_trajectory.target)
         ocp_pre.set_cyclic_bound(0.01)
-        sol_pre = ocp_pre.solve(limit_memory_max_iter=50, exact_max_iter=1000, force_no_graph=True)
+        sol_pre = ocp_pre.solve(limit_memory_max_iter=50, exact_max_iter=0, force_no_graph=True)
         nmpc_violin.ocp.set_warm_start(sol_pre)
 
     def nmpc_update_function(ocp, t, sol):
@@ -75,10 +78,11 @@ def main():
             print("Finished optimizing!")
             return False
 
-        print(f"Optimizing cycle {t + 1}..")
-        _t = 0  # Cyclic so t should always be the start
-        target_time_index = [i % full_cycle for i in range(_t, _t + window * n_cycles_simultaneous + 1)]
-        nmpc_violin.set_bow_target_objective(bow_trajectory.target[:, target_time_index])
+        print(f"Optimizing cycle #{t + 1}..")
+        if window != full_cycle:
+            _t = 0  # Cyclic so t should always be the start
+            target_time_index = [i % full_cycle for i in range(_t, _t + window * n_cycles_simultaneous + 1)]
+            nmpc_violin.set_bow_target_objective(bow_trajectory.target[:, target_time_index])
         return True
 
     sol = nmpc_violin.solve(nmpc_update_function, show_online_optim=True, cycle_from=cycle_from)

@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Any
+from typing import Any, Union
 
 import biorbd_casadi as biorbd
 import numpy as np
@@ -54,8 +54,8 @@ class ViolinOcp:
         time_per_cycle: float = 1,
         n_shooting_per_cycle: int = 30,
         solver: Solver = Solver.IPOPT,
+        ode_solver: Union[OdeSolver.RK4, OdeSolver.COLLOCATION] = OdeSolver.RK4(),
         n_threads: int = 8,
-        ode_solver=OdeSolver.RK4(),
     ):
         self.ode_solver = ode_solver
         self.model_path = model_path
@@ -285,9 +285,9 @@ class ViolinOcp:
             The slack to the bound constraint, based on the range of motion
         """
 
-        range_of_motion = self.ocp.nlp[0].x_bounds.max[:, 1] - self.ocp.nlp[0].x_bounds.min[:, 1]
-        self.ocp.nlp[0].x_bounds.min[:, 2] = self.ocp.nlp[0].x_bounds.min[:, 0] - range_of_motion * slack
-        self.ocp.nlp[0].x_bounds.max[:, 2] = self.ocp.nlp[0].x_bounds.max[:, 0] + range_of_motion * slack
+        range_of_motion = self.ocp.nlp[0].x_bounds.max[:self.n_q * 2, 1] - self.ocp.nlp[0].x_bounds.min[:self.n_q * 2, 1]
+        self.ocp.nlp[0].x_bounds.min[:self.n_q * 2, 2] = self.ocp.nlp[0].x_bounds.min[:self.n_q * 2, 0] - range_of_motion * slack
+        self.ocp.nlp[0].x_bounds.max[:self.n_q * 2, 2] = self.ocp.nlp[0].x_bounds.max[:self.n_q * 2, 0] + range_of_motion * slack
         self.ocp.update_bounds(self.ocp.nlp[0].x_bounds)
 
     def set_bow_target_objective(self, bow_target: np.ndarray, weight: float = 10000, sol: Solution = None):
@@ -397,6 +397,7 @@ class ViolinNMPC(ViolinOcp):
         window_duration: float = 1,
         window_len: int = 30,
         solver: Solver = Solver.ACADOS,
+        ode_solver: Union[OdeSolver.RK4, OdeSolver.COLLOCATION] = OdeSolver.RK4(),
         n_threads: int = 8,
     ):
         self.n_cycles_simultaneous = n_cycles_simultaneous
@@ -413,6 +414,7 @@ class ViolinNMPC(ViolinOcp):
             time_per_cycle=window_duration,
             n_shooting_per_cycle=window_len,
             solver=solver,
+            ode_solver=ode_solver,
             n_threads=n_threads,
         )
 
