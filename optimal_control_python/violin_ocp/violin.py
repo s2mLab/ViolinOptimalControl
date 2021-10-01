@@ -176,6 +176,16 @@ class Violin:
             out = {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "L": 0.001, "S": 10, "fatigue_threshold": 0.2, "scale": scale}
             return out
 
+        elif fatigue_type == MichaudFatigueSimple:
+            return {"L": 0.001, "fatigue_threshold": 0.2}
+
+        elif fatigue_type == MichaudTauFatigueSimple:
+            if not (direction < 0 or direction > 0):
+                raise ValueError("direction should be < 0 or > 0")
+            scale = self.tau_min if direction < 0 else self.tau_max
+            out = {"L": 0.001, "fatigue_threshold": 0.2, "scale": scale}
+            return out
+
         else:
             raise NotImplementedError(
                 "Implemented fatigue_type are XiaFatigue, XiaTauFatigue, " "MichaudFatigue and MichaudTauFatigue"

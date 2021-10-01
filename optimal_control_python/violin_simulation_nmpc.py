@@ -19,11 +19,11 @@ def main():
     n_cycles = 10
     n_threads = 8
     solver = Solver.IPOPT
-    ode_solver = OdeSolver.RK4(n_integration_steps=2)
+    ode_solver = OdeSolver.RK4(n_integration_steps=3)
     with_fatigue = True
     minimize_fatigue = True
     with_muscles = False
-    pre_solve = False
+    pre_solve = True
 
     # --- Solve the program --- #
     window = full_cycle
@@ -49,7 +49,7 @@ def main():
     lim = bow.hair_limits if starting_position == BowPosition.FROG else [bow.hair_limits[1], bow.hair_limits[0]]
     bow_trajectory = BowTrajectory(lim, full_cycle + 1)
     bow_trajectory.target = np.tile(bow_trajectory.target[:, :-1], n_cycles_simultaneous)
-    bow_trajectory.target = np.concatenate((bow_trajectory.target, bow_trajectory.target[:, -1][:, np.newaxis]), axis=1)
+    bow_trajectory.target = np.concatenate((bow_trajectory.target, bow_trajectory.target[:, 0][:, np.newaxis]), axis=1)
 
     if pre_solve:
         ocp_pre = ViolinOcp(
@@ -72,6 +72,8 @@ def main():
         ocp_pre.set_cyclic_bound(0.01)
         sol_pre = ocp_pre.solve(limit_memory_max_iter=50, exact_max_iter=0, force_no_graph=True)
         nmpc_violin.ocp.set_warm_start(sol_pre)
+        # nmpc_violin.ocp._initialize_state_idx_to_cycle({'states': ['q', 'qdot']})
+        # nmpc_violin.ocp.advance_window(sol_pre)
 
     def nmpc_update_function(ocp, t, sol):
         if t >= n_cycles:

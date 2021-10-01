@@ -83,7 +83,6 @@ class ViolinOcp:
         self.fatigue_dynamics = None
         self.minimize_fatigue = minimize_fatigue
         if self.fatigable:
-            self.expand = False
             self.fatigue_dynamics = FatigueList()
             for i in range(self.n_tau):
                 self.fatigue_dynamics.add(
@@ -141,7 +140,7 @@ class ViolinOcp:
                     expand=self.expand,
                 )
                 self.objective_functions.add(
-                    ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_plus", weight=1000000, list_index=3, expand=self.expand
+                    ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_plus", weight=1_000_000, list_index=3, expand=self.expand
                 )
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_minus", weight=100, list_index=4, expand=self.expand
@@ -152,7 +151,7 @@ class ViolinOcp:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
                 key="tau_minus",
-                weight=1000,
+                weight=100,
                 list_index=6,
                 expand=self.expand,
                 derivative=True,
@@ -160,7 +159,7 @@ class ViolinOcp:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
                 key="tau_plus",
-                weight=1000,
+                weight=100,
                 list_index=7,
                 expand=self.expand,
                 derivative=True,

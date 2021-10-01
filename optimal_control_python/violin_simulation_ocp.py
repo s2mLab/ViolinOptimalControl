@@ -10,11 +10,11 @@ def main():
     bow = Bow(model_name)
 
     # --- Solve the program --- #
-    n_shoot_per_cycle = 50
+    n_shoot_per_cycle = 30
     n_cycles = 3
     cycle_time = 1
     solver = Solver.IPOPT
-    ode_solver = OdeSolver.RK4(n_integration_steps=2)  # OdeSolver.COLLOCATION(method="radau", polynomial_degree=4)  #
+    ode_solver = OdeSolver.RK4(n_integration_steps=1)  # OdeSolver.COLLOCATION(method="radau", polynomial_degree=4)  #
     n_threads = 8
     # ocp, sol = ViolinOcp.load("results/5_cycles_with_fatigue.bo")
     ocp = ViolinOcp(
