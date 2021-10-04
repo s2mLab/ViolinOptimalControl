@@ -25,6 +25,12 @@ def main():
     with_muscles = False
     pre_solve = True
 
+    # Generate a full cycle target
+    lim = bow.hair_limits if starting_position == BowPosition.FROG else [bow.hair_limits[1], bow.hair_limits[0]]
+    bow_trajectory = BowTrajectory(lim, full_cycle + 1)
+    bow_trajectory.target = np.tile(bow_trajectory.target[:, :-1], n_cycles_simultaneous)
+    bow_trajectory.target = np.concatenate((bow_trajectory.target, bow_trajectory.target[:, 0][:, np.newaxis]), axis=1)
+
     # --- Solve the program --- #
     window = full_cycle
     tic = time()
@@ -44,13 +50,10 @@ def main():
         window_duration=cycle_time,
         n_threads=n_threads,
     )
+    nmpc_violin.set_bow_target_objective(bow_trajectory.target)
+    nmpc_violin.set_cyclic_bound(0.01)
 
-    # Generate a full cycle target
-    lim = bow.hair_limits if starting_position == BowPosition.FROG else [bow.hair_limits[1], bow.hair_limits[0]]
-    bow_trajectory = BowTrajectory(lim, full_cycle + 1)
-    bow_trajectory.target = np.tile(bow_trajectory.target[:, :-1], n_cycles_simultaneous)
-    bow_trajectory.target = np.concatenate((bow_trajectory.target, bow_trajectory.target[:, 0][:, np.newaxis]), axis=1)
-
+    sol_pre = None
     if pre_solve:
         ocp_pre = ViolinOcp(
             model_path=f"../models/{model_name}.bioMod",
@@ -71,9 +74,6 @@ def main():
         ocp_pre.set_bow_target_objective(bow_trajectory.target)
         ocp_pre.set_cyclic_bound(0.01)
         sol_pre = ocp_pre.solve(limit_memory_max_iter=50, exact_max_iter=0, force_no_graph=True)
-        nmpc_violin.ocp.set_warm_start(sol_pre)
-        # nmpc_violin.ocp._initialize_state_idx_to_cycle({'states': ['q', 'qdot']})
-        # nmpc_violin.ocp.advance_window(sol_pre)
 
     def nmpc_update_function(ocp, t, sol):
         if t >= n_cycles:
@@ -87,7 +87,7 @@ def main():
             nmpc_violin.set_bow_target_objective(bow_trajectory.target[:, target_time_index])
         return True
 
-    sol = nmpc_violin.solve(nmpc_update_function, show_online_optim=True, cycle_from=cycle_from)
+    sol = nmpc_violin.solve(nmpc_update_function, sol_pre, show_online_optim=True, cycle_from=cycle_from)
 
     # Data output
     nmpc_violin.save(sol, ext=f"{n_cycles}_cycles{'_with_fatigue' if with_fatigue else ''}", stand_alone=True)

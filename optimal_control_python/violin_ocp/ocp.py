@@ -24,8 +24,8 @@ from bioptim import (
     Solution,
     OdeSolver,
     FatigueList,
-    MichaudFatigue,
-    MichaudTauFatigue,
+    EffortPerception,
+    TauEffortPerception,
     FatigueBounds,
     FatigueInitialGuess,
     VariableType,
@@ -85,15 +85,9 @@ class ViolinOcp:
         if self.fatigable:
             self.fatigue_dynamics = FatigueList()
             for i in range(self.n_tau):
-                self.fatigue_dynamics.add(
-                    MichaudTauFatigue(
-                        MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, -1)),
-                        MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1)),
-                    ),
-                    state_only=True,
-                )
+                self.fatigue_dynamics.add(violin.fatigue_model(TauEffortPerception))
             for i in range(self.n_mus):
-                self.fatigue_dynamics.add(MichaudFatigue(**violin.fatigue_parameters(MichaudFatigue)), state_only=True)
+                self.fatigue_dynamics.add(violin.fatigue_model(EffortPerception))
 
         if self.use_muscles:
             self.dynamics = Dynamics(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True, fatigue=self.fatigue_dynamics)
@@ -249,7 +243,7 @@ class ViolinOcp:
         self.x_bounds[self.n_q :, 0] = 0
 
         if self.fatigable:
-            self.x_bounds.concatenate(FatigueBounds(self.fatigue_dynamics))
+            self.x_bounds.concatenate(FatigueBounds(self.fatigue_dynamics, fix_first_frame=True))
 
         if self.fatigable:
             self.u_bounds = FatigueBounds(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
@@ -435,13 +429,15 @@ class ViolinNMPC(ViolinOcp):
             n_threads=self.n_threads,
         )
 
-    def solve(self, update_function, cycle_from=-1, **opts: Any) -> Solution:
+    def solve(self, update_function, warm_start_solution: Solution = None, cycle_from=-1, **opts: Any) -> Solution:
         """
 
         Parameters
         ----------
         update_function
             The function to update between optimizations
+        warm_start_solution: Solution
+            A solution to warm start from
         cycle_from
             The cycle from which to start the next iteration
         opts
@@ -459,4 +455,4 @@ class ViolinNMPC(ViolinOcp):
 
         cyclic_options = {"states": ["q", "qdot"]}
 
-        return self.ocp.solve(update_function, solver=self.solver, cyclic_options=cyclic_options, **opts)
+        return self.ocp.solve(update_function, solver=self.solver, cyclic_options=cyclic_options, warm_start=warm_start_solution, **opts)

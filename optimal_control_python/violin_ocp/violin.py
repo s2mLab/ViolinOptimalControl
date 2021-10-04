@@ -1,6 +1,7 @@
 from enum import Enum
 
-from bioptim import XiaFatigue, XiaTauFatigue, MichaudFatigue, MichaudTauFatigue
+from bioptim import XiaFatigue, XiaTauFatigue, MichaudFatigue, MichaudTauFatigue, EffortPerception, TauEffortPerception
+from bioptim.dynamics.fatigue.tau_fatigue import TauFatigue
 import numpy as np
 
 from .bow import BowPosition
@@ -155,6 +156,42 @@ class Violin:
             "G": np.array([0.0, 0.0, 0.0, 0.05865013, 1.05013794, 1.7011086]),
         }[self.string.value]
 
+    def fatigue_model(self, fatigue_type):
+        if fatigue_type == XiaFatigue:
+            XiaFatigue(**self.fatigue_parameters(fatigue_type), state_only=True)
+
+        elif fatigue_type == XiaTauFatigue:
+            return XiaTauFatigue(
+                XiaFatigue(**self.fatigue_parameters(fatigue_type, -1)),
+                XiaFatigue(**self.fatigue_parameters(fatigue_type, 1)),
+                state_only=True,
+                split_controls=False,
+            )
+
+        elif fatigue_type == MichaudFatigue:
+            return MichaudFatigue(**self.fatigue_parameters(fatigue_type), state_only=True)
+
+        elif fatigue_type == MichaudTauFatigue:
+            return MichaudTauFatigue(
+                MichaudFatigue(**self.fatigue_parameters(fatigue_type, -1)),
+                MichaudFatigue(**self.fatigue_parameters(fatigue_type, 1)),
+                state_only=True,
+                split_controls=False,
+            )
+
+        elif fatigue_type == EffortPerception:
+            return EffortPerception(**self.fatigue_parameters(fatigue_type), state_only=True)
+
+        elif fatigue_type == TauEffortPerception:
+            return TauEffortPerception(
+                EffortPerception(**self.fatigue_parameters(fatigue_type, -1)),
+                EffortPerception(**self.fatigue_parameters(fatigue_type, 1)),
+                split_controls=False,
+            )
+
+        else:
+            raise NotImplementedError("The fatigue model is not implemented")
+
     def fatigue_parameters(self, fatigue_type, direction: int = 0):
         if fatigue_type == XiaFatigue:
             return {"LD": 100, "LR": 100, "F": 0.008, "R": 0.002}
@@ -167,23 +204,23 @@ class Violin:
             return out
 
         elif fatigue_type == MichaudFatigue:
-            return {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "L": 0.001, "S": 10, "fatigue_threshold": 0.2}
+            return {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "effort_factor": 0.001, "stabilization_factor": 10, "effort_threshold": 0.2}
 
         elif fatigue_type == MichaudTauFatigue:
             if not (direction < 0 or direction > 0):
                 raise ValueError("direction should be < 0 or > 0")
             scale = self.tau_min if direction < 0 else self.tau_max
-            out = {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "L": 0.001, "S": 10, "fatigue_threshold": 0.2, "scale": scale}
+            out = {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "effort_factor": 0.001, "stabilization_factor": 10, "effort_threshold": 0.2, "scale": scale}
             return out
 
-        elif fatigue_type == MichaudFatigueSimple:
-            return {"L": 0.001, "fatigue_threshold": 0.2}
+        elif fatigue_type == EffortPerception:
+            return {"effort_factor": 0.01, "effort_threshold": 0.2}
 
-        elif fatigue_type == MichaudTauFatigueSimple:
+        elif fatigue_type == TauEffortPerception:
             if not (direction < 0 or direction > 0):
                 raise ValueError("direction should be < 0 or > 0")
             scale = self.tau_min if direction < 0 else self.tau_max
-            out = {"L": 0.001, "fatigue_threshold": 0.2, "scale": scale}
+            out = {"effort_factor": 0.01, "effort_threshold": 0.2, "scaling": scale}
             return out
 
         else:
