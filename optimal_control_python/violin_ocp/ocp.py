@@ -137,15 +137,15 @@ class ViolinOcp:
                     ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_plus", weight=1_000_000, list_index=3, expand=self.expand
                 )
             self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_minus", weight=100, list_index=4, expand=self.expand
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_minus", weight=1, list_index=4, expand=self.expand
             )
             self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_plus", weight=100, list_index=5, expand=self.expand
+                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_plus", weight=1, list_index=5, expand=self.expand
             )
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
                 key="tau_minus",
-                weight=100,
+                weight=1000,
                 list_index=6,
                 expand=self.expand,
                 derivative=True,
@@ -153,7 +153,7 @@ class ViolinOcp:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
                 key="tau_plus",
-                weight=100,
+                weight=1000,
                 list_index=7,
                 expand=self.expand,
                 derivative=True,
