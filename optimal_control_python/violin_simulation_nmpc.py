@@ -87,14 +87,16 @@ def main():
             nmpc_violin.set_bow_target_objective(bow_trajectory.target[:, target_time_index])
         return True
 
-    sol = nmpc_violin.solve(nmpc_update_function, sol_pre, show_online_optim=True, cycle_from=cycle_from)
+    sol = nmpc_violin.solve(nmpc_update_function, sol_pre, show_online_optim=False, cycle_from=cycle_from)
 
     # Data output
-    nmpc_violin.save(sol, ext=f"{n_cycles}_cycles{'_with_fatigue' if with_fatigue else ''}", stand_alone=True)
+    save_name = f"{n_cycles}_cycles{'_with_fatigue' if with_fatigue else ''}"
+    nmpc_violin.save(sol, ext=save_name)
+    nmpc_violin.save(sol, ext=save_name, stand_alone=True)
     print(f"Running time: {time() - tic} seconds")
     sol.print()
-    sol.graphs()
     sol.animate()
+    sol.graphs()
 
 
 if __name__ == "__main__":

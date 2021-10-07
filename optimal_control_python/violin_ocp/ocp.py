@@ -123,29 +123,12 @@ class ViolinOcp:
         self.objective_functions.add(
             ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.01, list_index=1, expand=self.expand
         )
-
+        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=10, list_index=13, expand=self.expand)
         if self.fatigable:
-            if self.minimize_fatigue:
-                self.objective_functions.add(
-                    ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
-                    key="tau_minus",
-                    weight=1_000_000,
-                    list_index=2,
-                    expand=self.expand,
-                )
-                self.objective_functions.add(
-                    ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="tau_plus", weight=1_000_000, list_index=3, expand=self.expand
-                )
-            self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_minus", weight=1, list_index=4, expand=self.expand
-            )
-            self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_plus", weight=1, list_index=5, expand=self.expand
-            )
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
                 key="tau_minus",
-                weight=1000,
+                weight=100,
                 list_index=6,
                 expand=self.expand,
                 derivative=True,
@@ -153,47 +136,71 @@ class ViolinOcp:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
                 key="tau_plus",
-                weight=1000,
+                weight=100,
                 list_index=7,
                 expand=self.expand,
                 derivative=True,
             )
-            if self.use_muscles:
-                if self.minimize_fatigue:
-                    self.objective_functions.add(
-                        ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
-                        key="muscles",
-                        weight=10,
-                        list_index=8,
-                        expand=self.expand,
-                    )
         else:
-            self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, list_index=9, expand=self.expand
-            )
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
                 key="tau",
-                weight=1000,
+                weight=100,
                 list_index=10,
                 expand=self.expand,
                 derivative=True,
             )
 
+        # Minimize efforts
         if self.use_muscles:
+            if self.fatigable:
+                raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
+            else:
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+                    key="tau",
+                    index=self.violin.residual_tau,
+                    weight=1000,
+                    list_index=11,
+                    expand=self.expand,
+                )
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=100, list_index=12, expand=self.expand
+                )
+        else:        
+            if self.fatigable:
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_minus", weight=1000, list_index=4, expand=self.expand
+                )
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_plus", weight=1000, list_index=5, expand=self.expand
+                )
+            else:
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, list_index=9, expand=self.expand
+                )
+
+        # Fatigue objectives
+        if self.fatigable and self.minimize_fatigue:
             self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
-                key="tau",
-                index=self.violin.residual_tau,
-                weight=1000,
-                list_index=11,
+                ObjectiveFcn.Mayer.MINIMIZE_FATIGUE,
+                key="tau_minus",
+                weight=100,
+                list_index=2,
                 expand=self.expand,
             )
             self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=100, list_index=12, expand=self.expand
+                ObjectiveFcn.Mayer.MINIMIZE_FATIGUE, key="tau_plus", weight=100, list_index=3, expand=self.expand
             )
-
-        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=10, list_index=13, expand=self.expand)
+            if self.use_muscles:
+                raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
+                # self.objective_functions.add(
+                #     ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
+                #     key="muscles",
+                #     weight=10,
+                #     list_index=8,
+                #     expand=self.expand,
+                # )
 
     def _set_generic_constraints(self):
         # Keep the bow in contact with the violin
@@ -441,17 +448,21 @@ class ViolinNMPC(ViolinOcp):
         cycle_from
             The cycle from which to start the next iteration
         opts
-            Any other options to pass to the solve methdd
+            Any other options to pass to the solve method
         Returns
         -------
         The solution
         """
 
-        if "solver_options" in opts:
-            if "linear_solver" not in opts:
-                opts["solver_options"]["linear_solver"] = "ma57"
-        else:
-            opts["solver_options"] = {"linear_solver": "ma57"}
+        if not opts or "solver_options" not in opts:
+            opts["solver_options"] = {}
+
+        if "linear_solver" not in opts:
+            opts["solver_options"]["linear_solver"] = "ma57"
+        if "hessian_approximation" not in opts:
+            opts["solver_options"]["hessian_approximation"] = "exact"
+        if "c_compile" not in opts:
+            opts["solver_options"]["c_compile"] = False
 
         cyclic_options = {"states": ["q", "qdot"]}
 
