@@ -1,5 +1,7 @@
 version 4
 
+gravity 0 -9.8 0
+
 // The kinematics model originates from (https://simtk.org/projects/wu-shoulder), which is itself based on Holzbaur
 // It was symmetrized by extracting the angles from RT (xyz sequence), opposing XY and recreating the matrix
 // from it (xyz sequence) and by opposing the Z translations

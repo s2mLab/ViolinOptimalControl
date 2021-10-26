@@ -1,10 +1,13 @@
 from enum import Enum
 
-from bioptim import XiaFatigue, XiaTauFatigue, MichaudFatigue, MichaudTauFatigue, EffortPerception, TauEffortPerception
-from bioptim.dynamics.fatigue.tau_fatigue import TauFatigue
+from scipy import optimize
+from bioptim import XiaFatigue, XiaTauFatigue, MichaudFatigue, MichaudTauFatigue, EffortPerception, TauEffortPerception, ObjectiveFcn, BiMapping
+from bioptim.optimization.optimization_variable import OptimizationVariableList
 import numpy as np
+from casadi import MX, Function
+import biorbd_casadi as biorbd
 
-from .bow import BowPosition
+from .bow import Bow, BowPosition
 
 
 class ViolinString(Enum):
@@ -12,6 +15,41 @@ class ViolinString(Enum):
     A = "A"
     D = "D"
     G = "G"
+
+
+class DummyPenalty:
+    class DummyState:
+        def __init__(self, mx):
+            self.mx = mx
+            self.cx = mx
+
+    class DummyNlp:
+        def __init__(self, m):
+            self.model = m
+            self.states = OptimizationVariableList()
+            self.states.append(
+                "q",
+                [MX.sym("q", m.nbQ(), 1)],
+                MX.sym("q", m.nbQ(), 1),
+                BiMapping(range(self.model.nbQ()), range(self.model.nbQ())),
+            )
+            self.casadi_func = dict()
+
+    class DummyPen:
+        @staticmethod
+        def get_type():
+            return DummyPenalty
+
+    def __init__(self, m):
+        self.ocp = []
+        self.nlp = DummyPenalty.DummyNlp(m)
+        self.type = DummyPenalty.DummyPen()
+        self.quadratic = True
+        self.rows = None
+
+    @staticmethod
+    def add_to_penalty(ocp, nlp, val, penalty):
+        penalty.val = val
 
 
 class Violin:
@@ -31,64 +69,43 @@ class Violin:
         else:
             self.residual_tau = range(2, 7)
 
-    def q(self, bow_position: BowPosition):
-        if self.model == "BrasViolon":
-            return {
-                "E": {
-                    "frog": [
-                        -0.08296722,
-                        0.09690602,
-                        0.79205348,
-                        0.6544504,
-                        1.48280029,
-                        0.08853452,
-                        0.53858613,
-                        -0.39647921,
-                        -0.57508712,
-                        -0.0699,
-                    ],
-                    "tip": [
-                        0.05540307,
-                        -0.29949352,
-                        0.45207956,
-                        0.47107735,
-                        0.34250652,
-                        0.43996516,
-                        0.32375985,
-                        0.26179933,
-                        0.36437326,
-                        -0.54957409,
-                    ],
-                },
-                "A": {"frog": [], "tip": []},
-                "D": {"frog": [], "tip": []},
-                "G": {"frog": [], "tip": []},
-            }[self.string.value][bow_position.value]
-        elif self.model == "WuViolin":
-            return {
-                "E": {
-                    "tip": [
-                        0.03912959,
-                        0.17247435,
-                        -0.19338927,
-                        0.20425233,
-                        -0.57008224,
-                        0.43337458,
-                        0.57221809,
-                        1.12542974,
-                        -0.07691151,
-                        -0.01791363,
-                        -0.0434384,
-                        0.41112526,
-                        -0.54910199,
-                    ]
-                },
-                "A": {"frog": [], "tip": []},
-                "D": {"frog": [], "tip": []},
-                "G": {"frog": [], "tip": []},
-            }[self.string.value][bow_position.value]
+    def q(self, biorbd_model: biorbd.Model, bow: Bow, bow_position: BowPosition):
+        # Get some values
+        idx_segment_bow_hair = bow.hair_idx
+        tag_bow_contact = bow.contact_marker
+        tag_violin = self.bridge_marker
+        rt_on_string = self.rt_on_string
+
+        bound_min = []
+        bound_max = []
+        for i in range(biorbd_model.nbSegment()):
+            seg = biorbd_model.segment(i)
+            for r in seg.QRanges():
+                bound_min.append(r.min())
+                bound_max.append(r.max())
+        bounds = (bound_min, bound_max)
+
+        pn = DummyPenalty(biorbd_model)
+        val = ObjectiveFcn.Lagrange.TRACK_SEGMENT_WITH_CUSTOM_RT.value[0](pn, pn, idx_segment_bow_hair, rt_on_string)
+        custom_rt = Function("custom_rt", [pn.nlp.states["q"].cx], [val]).expand()
+        val = ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS.value[0](pn, pn, first_marker=tag_bow_contact,
+                                                              second_marker=tag_violin)
+        superimpose = Function("superimpose", [pn.nlp.states["q"].cx], [val]).expand()
+
+        def objective_function(x, *args, **kwargs):
+            out = np.ndarray((6,))
+            out[:3] = np.array(custom_rt(x))[:, 0]
+            out[3:] = np.array(superimpose(x))[:, 0]
+            return out
+
+        if bow_position == BowPosition.FROG:
+            bounds[0][-1] = -0.0701
+            bounds[1][-1] = -0.0699
         else:
-            raise ValueError("Wrong model")
+            bounds[0][-1] = -0.551
+            bounds[1][-1] = -0.549
+        x0 = np.mean(bounds, axis=0)
+        return optimize.least_squares(objective_function, x0=x0, bounds=bounds).x
 
     @property
     def bridge_marker(self):
@@ -180,7 +197,7 @@ class Violin:
             )
 
         elif fatigue_type == EffortPerception:
-            return EffortPerception(**self.fatigue_parameters(fatigue_type), state_only=True)
+            return EffortPerception(**self.fatigue_parameters(fatigue_type))
 
         elif fatigue_type == TauEffortPerception:
             return TauEffortPerception(
@@ -220,7 +237,7 @@ class Violin:
             if not (direction < 0 or direction > 0):
                 raise ValueError("direction should be < 0 or > 0")
             scale = self.tau_min if direction < 0 else self.tau_max
-            out = {"effort_factor": 0.01, "effort_threshold": 0.2, "scaling": scale}
+            out = {"effort_factor": 0.01, "effort_threshold": scale / 5, "scaling": scale}
             return out
 
         else:

@@ -7,7 +7,7 @@ from bioptim import Solver, OdeSolver
 
 def main():
     model_name = "WuViolin"
-    violin = Violin(model_name, ViolinString.E)
+    violin = Violin(model_name, ViolinString.G)
     bow = Bow(model_name)
 
     # --- OPTIONS --- #
@@ -16,9 +16,9 @@ def main():
     cycle_time = 1
     cycle_from = 1
     n_cycles_simultaneous = 3
-    n_cycles = 10
+    n_cycles = 20
     n_threads = 8
-    solver = Solver.IPOPT
+    solver = Solver.IPOPT()
     ode_solver = OdeSolver.RK4(n_integration_steps=3)
     with_fatigue = True
     minimize_fatigue = True
@@ -80,14 +80,14 @@ def main():
             print("Finished optimizing!")
             return False
 
-        print(f"Optimizing cycle #{t + 1}..")
+        print(f"\n\nOptimizing cycle #{t + 1}..")
         if window != full_cycle:
             _t = 0  # Cyclic so t should always be the start
             target_time_index = [i % full_cycle for i in range(_t, _t + window * n_cycles_simultaneous + 1)]
             nmpc_violin.set_bow_target_objective(bow_trajectory.target[:, target_time_index])
         return True
 
-    sol = nmpc_violin.solve(nmpc_update_function, sol_pre, show_online_optim=False, cycle_from=cycle_from)
+    sol = nmpc_violin.solve(nmpc_update_function, sol_pre, show_online=False, cycle_from=cycle_from)
 
     # Data output
     save_name = f"{n_cycles}_cycles{'_with_fatigue' if with_fatigue else ''}"
@@ -95,7 +95,7 @@ def main():
     nmpc_violin.save(sol, ext=save_name, stand_alone=True)
     print(f"Running time: {time() - tic} seconds")
     sol.print()
-    sol.animate()
+    sol.animate(show_muscles=False)
     sol.graphs()
 
 

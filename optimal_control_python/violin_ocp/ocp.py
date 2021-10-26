@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Any, Union
+from typing import Union
 
 import biorbd_casadi as biorbd
 import numpy as np
@@ -53,7 +53,7 @@ class ViolinOcp:
         minimize_fatigue: bool = True,
         time_per_cycle: float = 1,
         n_shooting_per_cycle: int = 30,
-        solver: Solver = Solver.IPOPT,
+        solver: Solver.Generic = Solver.IPOPT(),
         ode_solver: Union[OdeSolver.RK4, OdeSolver.COLLOCATION] = OdeSolver.RK4(),
         n_threads: int = 8,
     ):
@@ -204,13 +204,15 @@ class ViolinOcp:
 
     def _set_generic_constraints(self):
         # Keep the bow in contact with the violin
-        if self.solver == Solver.IPOPT:
+        if isinstance(self.solver, Solver.IPOPT):
             # Keep the bow align at 90 degrees with the violin
             self.constraints.add(
                 ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT,
                 node=Node.ALL,
                 segment=self.bow.segment_idx,
                 rt=self.violin.rt_on_string,
+                min_bound=-0.03,
+                max_bound=0.03,
                 list_index=0,
                 expand=self.expand,
             )
@@ -246,11 +248,12 @@ class ViolinOcp:
 
     def _set_bounds(self):
         self.x_bounds = QAndQDotBounds(self.model)
-        self.x_bounds[: self.n_q, 0] = self.violin.q(self.bow_starting)
+        self.x_bounds[: self.n_q, 0] = self.violin.q(self.model, self.bow, self.bow_starting)
         self.x_bounds[self.n_q :, 0] = 0
 
         if self.fatigable:
             self.x_bounds.concatenate(FatigueBounds(self.fatigue_dynamics, fix_first_frame=True))
+            # self.x_bounds.max[self.model.nbQ() * 2:, 1:] = 0.95  # Limit the fatigue below the max level
 
         if self.fatigable:
             self.u_bounds = FatigueBounds(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
@@ -261,7 +264,7 @@ class ViolinOcp:
 
     def _set_initial_guess(self, init_file):
         if init_file is None:
-            self.x_init = InitialGuess(np.concatenate((self.violin.q(self.bow_starting), np.zeros(self.n_q))))
+            self.x_init = InitialGuess(np.concatenate((self.violin.q(self.model, self.bow, self.bow_starting), np.zeros(self.n_q))))
             if self.fatigable:
                 self.x_init.concatenate(FatigueInitialGuess(self.fatigue_dynamics))
 
@@ -303,7 +306,7 @@ class ViolinOcp:
         )
         self.ocp.update_objectives(new_objectives)
 
-        if self.solver == Solver.IPOPT:
+        if isinstance(self.solver, Solver.IPOPT):
             new_constraint = Constraint(
                 ConstraintFcn.TRACK_STATE,
                 key="q",
@@ -329,7 +332,7 @@ class ViolinOcp:
             u_bounds=self.u_bounds,
             objective_functions=self.objective_functions,
             constraints=self.constraints,
-            use_sx=self.solver == Solver.ACADOS,
+            use_sx=isinstance(self.solver, Solver.ACADOS),
             n_threads=self.n_threads,
             ode_solver=self.ode_solver,
         )
@@ -338,29 +341,23 @@ class ViolinOcp:
 
         sol = None
         if limit_memory_max_iter > 0:
-            sol = self.ocp.solve(
-                show_online_optim=exact_max_iter == 0 and not force_no_graph,
-                solver_options={
-                    "c_compile": False,
-                    "hessian_approximation": "limited-memory",
-                    "max_iter": limit_memory_max_iter,
-                    "linear_solver": "ma57",
-                },
-            )
+            if isinstance(self.solver, Solver.IPOPT):
+                self.solver.show_online_optim = exact_max_iter == 0 and not force_no_graph
+                self.solver.set_hessian_approximation("limited-memory")
+                self.solver.set_maximum_iterations(limit_memory_max_iter)
+                self.solver.set_linear_solver("ma57")
+            sol = self.ocp.solve(self.solver)
 
         if limit_memory_max_iter > 0 and exact_max_iter > 0:
             self.ocp.set_warm_start(sol)
 
         if exact_max_iter > 0:
-            sol = self.ocp.solve(
-                show_online_optim=True and not force_no_graph,
-                solver_options={
-                    "c_compile": False,
-                    "hessian_approximation": "exact",
-                    "max_iter": exact_max_iter,
-                    "linear_solver": "ma57",
-                },
-            )
+            if isinstance(self.solver, Solver.IPOPT):
+                self.solver.show_online_optim = not force_no_graph
+                self.solver.set_hessian_approximation("exact")
+                self.solver.set_maximum_iterations(exact_max_iter)
+                self.solver.set_linear_solver("ma57")
+            sol = self.ocp.solve(self.solver)
 
         return sol
 
@@ -396,7 +393,7 @@ class ViolinNMPC(ViolinOcp):
         minimize_fatigue=True,
         window_duration: float = 1,
         window_len: int = 30,
-        solver: Solver = Solver.ACADOS,
+        solver: Solver.Generic = Solver.ACADOS(),
         ode_solver: Union[OdeSolver.RK4, OdeSolver.COLLOCATION] = OdeSolver.RK4(),
         n_threads: int = 8,
     ):
@@ -432,11 +429,11 @@ class ViolinNMPC(ViolinOcp):
             u_bounds=self.u_bounds,
             objective_functions=self.objective_functions,
             constraints=self.constraints,
-            use_sx=self.solver == Solver.ACADOS,
+            use_sx=isinstance(self.solver, Solver.ACADOS),
             n_threads=self.n_threads,
         )
 
-    def solve(self, update_function, warm_start_solution: Solution = None, cycle_from=-1, **opts: Any) -> Solution:
+    def solve(self, update_function, warm_start_solution: Solution = None, cycle_from=-1, show_online: bool = False) -> Solution:
         """
 
         Parameters
@@ -447,23 +444,18 @@ class ViolinNMPC(ViolinOcp):
             A solution to warm start from
         cycle_from
             The cycle from which to start the next iteration
-        opts
-            Any other options to pass to the solve method
         Returns
         -------
         The solution
         """
 
-        if not opts or "solver_options" not in opts:
-            opts["solver_options"] = {}
+        if isinstance(self.solver, Solver.IPOPT):
+            self.solver.set_linear_solver("ma57")
+            self.solver.set_hessian_approximation("limited-memory")
+            self.solver.set_c_compile(False)
+            self.solver.show_online_optim = show_online
 
-        if "linear_solver" not in opts:
-            opts["solver_options"]["linear_solver"] = "ma57"
-        if "hessian_approximation" not in opts:
-            opts["solver_options"]["hessian_approximation"] = "exact"
-        if "c_compile" not in opts:
-            opts["solver_options"]["c_compile"] = False
-
+        self.solver.set_maximum_iterations(1000)
         cyclic_options = {"states": ["q", "qdot"]}
 
-        return self.ocp.solve(update_function, solver=self.solver, cyclic_options=cyclic_options, warm_start=warm_start_solution, **opts)
+        return self.ocp.solve(update_function, solver=self.solver, cyclic_options=cyclic_options, warm_start=warm_start_solution)

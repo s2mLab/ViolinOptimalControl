@@ -32,7 +32,7 @@ def plot_result(t, out, target, linestyle):
 
 def main():
     # target = np.random.rand(t_end + 1) / 2.5 + 0.1
-    target = 1
+    target = -10
     t_end = 3000
 
     starting_time = time.time()
@@ -42,7 +42,8 @@ def main():
     fatigue_models = [
         # XiaFatigue(**violin.fatigue_parameters(XiaTauFatigue, 1)),
         # MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1)),
-        EffortPerception(**violin.fatigue_parameters(TauEffortPerception, 1)),
+        EffortPerception(**violin.fatigue_parameters(TauEffortPerception, -1)),
+        # EffortPerception(**violin.fatigue_parameters(TauEffortPerception, 1)),
     ]
     linestyles = ["-", "--"]
 
