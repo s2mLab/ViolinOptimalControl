@@ -49,27 +49,37 @@ def plot_shaded(axs, t, data, mod, **opts):
         axs[i].fill_between(t, d - r, d + r, alpha=0.4, **opts)
 
 
-def plot_all(axs, t, data, mod, **opts):
-    for i in range(data["mean"].shape[0]):
-        d = data["all_cycles"][i, :, :].squeeze() * mod
+def plot_all(axs, t, data, mod, skip_frame=None, **opts):
+    n_dof = data["all_cycles"].shape[0]
+    n_cycle = data["all_cycles"].shape[2]
+
+    if not skip_frame:
+        skip_frame = []
+    cycle = [i for i in range(n_cycle) if i not in skip_frame]
+
+    for i in range(n_dof):
+        d = (data["all_cycles"][i, :, cycle].squeeze() * mod).T
         axs[i].plot(t, d, **opts)
 
 
 def main():
     # OPTIONS
-    folder = "/home/pariterre/Documents/Documents/Presentations/CMBBE/2021/data"
-    files = ["cycles_without_fatigue", "cycles_with_fatigue"]
-    mod = -180 / np.pi
-    n_cycles = 10
+    folder = "./results/900_cycles"
+    files = ["cycles_non_fatigue", "cycles_with_fatigue"]
+    mod = 1  # -180 / np.pi
+    n_cycles = 900
     cycle_time = 1
-    data_type = DataType.STATE
-    elt = False
-    data_key = "q"
-    colors = ["tab:purple", "tab:red"]
-    show_shaded = True
+    # data_type = DataType.STATE
+    data_type = DataType.CONTROL
+    elt = 1
+    # data_key = "tau_plus_mf"
+    data_key = "tau"
+    colors = ["tab:green", "tab:red"]
+    show_shaded = False
     show_all = True
     animate = False
     model_path = "../models/WuViolin.bioMod"
+    skip_frame = []
 
     plot_title = "Humerus abduction"  # "Humerus fatigue"  # "Humerus abduction"
     y_label = "Angle (°)"  # "Accumulated fatigue"  #
@@ -116,7 +126,7 @@ def main():
             if show_all:
                 if i == 0:
                     axs_all = prepare_subplots(n_elt)
-                plot_all(axs_all, t, data_to_plot, mod=mod, color=colors[i])
+                plot_all(axs_all, t, data_to_plot, mod=mod, color=colors[i], skip_frame=skip_frame)
         plt.show()
 
     if animate:

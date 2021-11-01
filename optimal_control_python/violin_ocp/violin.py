@@ -231,13 +231,13 @@ class Violin:
             return out
 
         elif fatigue_type == EffortPerception:
-            return {"effort_factor": 0.01, "effort_threshold": 0.2}
+            return {"effort_factor": 0.1, "effort_threshold": 0.2}
 
         elif fatigue_type == TauEffortPerception:
             if not (direction < 0 or direction > 0):
                 raise ValueError("direction should be < 0 or > 0")
             scale = self.tau_min if direction < 0 else self.tau_max
-            out = {"effort_factor": 0.01, "effort_threshold": scale / 5, "scaling": scale}
+            out = {"effort_factor": 0.1, "effort_threshold": scale / 5, "scaling": scale}
             return out
 
         else:

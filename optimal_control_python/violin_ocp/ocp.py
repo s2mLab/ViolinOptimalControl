@@ -379,6 +379,19 @@ class ViolinOcp:
             self.ocp.save(sol, f"results/{t.tm_year}_{t.tm_mon}_{t.tm_mday}{ext}.bo")
 
 
+class MultiCyclicWithFatigue(MultiCyclicNonlinearModelPredictiveControl):
+    def advance_window_initial_guess_states(self, sol, **advance_options):
+        super(MultiCyclicWithFatigue, self).advance_window_initial_guess_states(sol, **advance_options)
+
+        if "tau_minus_mf" in self.nlp[0].states:
+            x_init = InitialGuess(sol.states["all"][:, self.initial_guess_frames[0]])
+            u_init = InitialGuess(sol.controls["all"][:, self.initial_guess_frames], InterpolationType.EACH_FRAME)
+            s = Solution(self, [x_init, u_init])
+            integrated_sol = s.integrate()
+            self.nlp[0].x_init.init[self.nlp[0].states["tau_minus_mf"].index, :] = integrated_sol.states["tau_minus_mf"]
+            self.nlp[0].x_init.init[self.nlp[0].states["tau_plus_mf"].index, :] = integrated_sol.states["tau_plus_mf"]
+
+
 class ViolinNMPC(ViolinOcp):
     def __init__(
         self,
@@ -416,7 +429,7 @@ class ViolinNMPC(ViolinOcp):
         )
 
     def _set_generic_ocp(self):
-        self.ocp = MultiCyclicNonlinearModelPredictiveControl(
+        self.ocp = MultiCyclicWithFatigue(
             biorbd_model=self.model,
             dynamics=self.dynamics,
             n_cycles_simultaneous=self.n_cycles_simultaneous,
