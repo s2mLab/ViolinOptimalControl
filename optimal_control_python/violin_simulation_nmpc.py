@@ -81,6 +81,8 @@ def main():
             return False
 
         print(f"\n\nOptimizing cycle #{t + 1}..")
+        if sol is not None:
+            nmpc_violin.save(sol, f"tmp_{save_name}_{t}", stand_alone=True)
         if window != full_cycle:
             _t = 0  # Cyclic so t should always be the start
             target_time_index = [i % full_cycle for i in range(_t, _t + window * n_cycles_simultaneous + 1)]
