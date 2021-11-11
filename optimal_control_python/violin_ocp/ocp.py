@@ -85,7 +85,7 @@ class ViolinOcp:
         if self.fatigable:
             self.fatigue_dynamics = FatigueList()
             for i in range(self.n_tau):
-                self.fatigue_dynamics.add(violin.fatigue_model(TauEffortPerception))
+                self.fatigue_dynamics.add(violin.fatigue_model(TauEffortPerception, i))
             for i in range(self.n_mus):
                 self.fatigue_dynamics.add(violin.fatigue_model(EffortPerception))
 
