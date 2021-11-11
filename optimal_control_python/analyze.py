@@ -4,6 +4,7 @@ from enum import Enum
 import bioviz
 import numpy as np
 from matplotlib import pyplot as plt
+from bioptim import OptimalControlProgram
 
 
 class DataType(Enum):
@@ -12,10 +13,14 @@ class DataType(Enum):
     PARAMETER = 2
 
 
-def load_data(path: str, n_cycles: int):
+def load_data(path: str, n_cycles: int, use_bo: bool = True):
 
-    with open(path, "rb") as file:
-        data = pickle.load(file)
+    if use_bo:
+        with open(path, "rb") as file:
+            data = pickle.load(file)
+    else:
+        data_tp = OptimalControlProgram.load(path)[1]
+        data = [data_tp.states, data_tp.controls]
 
     out = {}
     for data_type in [DataType.STATE, DataType.CONTROL]:
@@ -59,33 +64,36 @@ def plot_all(axs, t, data, mod, skip_frame=None, **opts):
 
     for i in range(n_dof):
         d = (data["all_cycles"][i, :, cycle].squeeze() * mod).T
-        axs[i].plot(t, d, **opts)
+        axs[i].plot(t, d, alpha=0.4, **opts)
+        # axs[i].set_ylim([0, 1])
 
 
 def main():
     # OPTIONS
     folder = "./results/900_cycles"
     files = ["cycles_non_fatigue", "cycles_with_fatigue"]
+    use_bo = False
     mod = 1  # -180 / np.pi
     n_cycles = 900
     cycle_time = 1
     # data_type = DataType.STATE
     data_type = DataType.CONTROL
-    elt = 1
+    elt = None
     # data_key = "tau_plus_mf"
+    # data_key = "q"
     data_key = "tau"
     colors = ["tab:green", "tab:red"]
     show_shaded = False
     show_all = True
     animate = False
     model_path = "../models/WuViolin.bioMod"
-    skip_frame = []
+    skip_frame = [0]
 
     plot_title = "Humerus abduction"  # "Humerus fatigue"  # "Humerus abduction"
     y_label = "Angle (°)"  # "Accumulated fatigue"  #
 
     # Get data
-    all_data = [load_data(f"{folder}/{n_cycles}_{file}_out.bo", n_cycles) for file in files]
+    all_data = [load_data(f"{folder}/{n_cycles}_{file}{'_out' if use_bo else ''}.bo", n_cycles, use_bo) for file in files]
 
     # Show
     if show_shaded or show_all:

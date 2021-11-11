@@ -57,17 +57,21 @@ class Violin:
     Contains initial values and references from useful markers and segments.
     """
 
-    # TODO Get these values from a better method
-    tau_min, tau_max, tau_init = -30, 30, 0
-    segment_idx = 17
-
     def __init__(self, model: str, string: ViolinString):
         self.model = model
         self.string = string
         if self.model == "BrasViolon":
             self.residual_tau = range(0, 7)  # To be verified
+            self.segment_idx = 17
         else:
             self.residual_tau = range(2, 7)
+            self.segment_idx = 17
+            # Arbitrarily set all dof from tau in [-30; 30] and then adjust some dof
+            self.tau_min = [-30] * 13
+            self.tau_max = [30] * 13
+            self.tau_init = [0] * 13
+            self.tau_min[1], self.tau_max[1] = -25, 25  # Clavicle elevation
+            self.tau_min[2], self.tau_max[2] = -25, 25  # Scapula elevation
 
     def q(self, biorbd_model: biorbd.Model, bow: Bow, bow_position: BowPosition):
         # Get some values
@@ -173,7 +177,7 @@ class Violin:
             "G": np.array([0.0, 0.0, 0.0, 0.05865013, 1.05013794, 1.7011086]),
         }[self.string.value]
 
-    def fatigue_model(self, fatigue_type):
+    def fatigue_model(self, fatigue_type, index: int = None):
         if fatigue_type == XiaFatigue:
             XiaFatigue(**self.fatigue_parameters(fatigue_type), state_only=True)
 
@@ -201,24 +205,23 @@ class Violin:
 
         elif fatigue_type == TauEffortPerception:
             return TauEffortPerception(
-                EffortPerception(**self.fatigue_parameters(fatigue_type, -1)),
-                EffortPerception(**self.fatigue_parameters(fatigue_type, 1)),
+                EffortPerception(**self.fatigue_parameters(fatigue_type, -1, index)),
+                EffortPerception(**self.fatigue_parameters(fatigue_type, 1, index)),
                 split_controls=False,
             )
 
         else:
             raise NotImplementedError("The fatigue model is not implemented")
 
-    def fatigue_parameters(self, fatigue_type, direction: int = 0):
+    def fatigue_parameters(self, fatigue_type, direction: int = 0, index: int = None):
         if fatigue_type == XiaFatigue:
             return {"LD": 100, "LR": 100, "F": 0.008, "R": 0.002}
 
         elif fatigue_type == XiaTauFatigue:
             if not (direction < 0 or direction > 0):
                 raise ValueError("direction should be < 0 or > 0")
-            scale = self.tau_min if direction < 0 else self.tau_max
-            out = {"LD": 100, "LR": 100, "F": 0.008, "R": 0.002, "scale": scale}
-            return out
+            scale = self.tau_min[index] if direction < 0 else self.tau_max[index]
+            return {"LD": 100, "LR": 100, "F": 0.008, "R": 0.002, "scale": scale}
 
         elif fatigue_type == MichaudFatigue:
             return {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "effort_factor": 0.001, "stabilization_factor": 10, "effort_threshold": 0.2}
@@ -226,9 +229,8 @@ class Violin:
         elif fatigue_type == MichaudTauFatigue:
             if not (direction < 0 or direction > 0):
                 raise ValueError("direction should be < 0 or > 0")
-            scale = self.tau_min if direction < 0 else self.tau_max
-            out = {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "effort_factor": 0.001, "stabilization_factor": 10, "effort_threshold": 0.2, "scale": scale}
-            return out
+            scale = self.tau_min[index] if direction < 0 else self.tau_max[index]
+            return {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "effort_factor": 0.001, "stabilization_factor": 10, "effort_threshold": 0.2, "scale": scale}
 
         elif fatigue_type == EffortPerception:
             return {"effort_factor": 0.1, "effort_threshold": 0.2}
@@ -236,9 +238,8 @@ class Violin:
         elif fatigue_type == TauEffortPerception:
             if not (direction < 0 or direction > 0):
                 raise ValueError("direction should be < 0 or > 0")
-            scale = self.tau_min if direction < 0 else self.tau_max
-            out = {"effort_factor": 0.1, "effort_threshold": scale / 5, "scaling": scale}
-            return out
+            scale = self.tau_min[index] if direction < 0 else self.tau_max[index]
+            return {"effort_factor": 0.1, "effort_threshold": scale / 5, "scaling": scale}
 
         else:
             raise NotImplementedError(
