@@ -16,15 +16,18 @@ def main():
     cycle_time = 1
     cycle_from = 1
     n_cycles_simultaneous = 3
-    n_cycles = 20
-    n_threads = 8
+    n_cycles = 900
+    n_threads = 32
     solver = Solver.IPOPT()
     ode_solver = OdeSolver.RK4(n_integration_steps=3)
     with_fatigue = True
-    minimize_fatigue = True
+    minimize_fatigue = False
     with_muscles = False
     pre_solve = True
 
+    # Final save name
+    save_name = f"{n_cycles}_cycles{'_with_fatigue' if with_fatigue else ''}"
+    
     # Generate a full cycle target
     lim = bow.hair_limits if starting_position == BowPosition.FROG else [bow.hair_limits[1], bow.hair_limits[0]]
     bow_trajectory = BowTrajectory(lim, full_cycle + 1)
@@ -81,6 +84,8 @@ def main():
             return False
 
         print(f"\n\nOptimizing cycle #{t + 1}..")
+        if sol is not None:
+            nmpc_violin.save(sol, ext=f"tmp_{save_name}_{t}", stand_alone=True)
         if window != full_cycle:
             _t = 0  # Cyclic so t should always be the start
             target_time_index = [i % full_cycle for i in range(_t, _t + window * n_cycles_simultaneous + 1)]
@@ -90,13 +95,10 @@ def main():
     sol = nmpc_violin.solve(nmpc_update_function, sol_pre, show_online=False, cycle_from=cycle_from)
 
     # Data output
-    save_name = f"{n_cycles}_cycles{'_with_fatigue' if with_fatigue else ''}"
     nmpc_violin.save(sol, ext=save_name)
     nmpc_violin.save(sol, ext=save_name, stand_alone=True)
     print(f"Running time: {time() - tic} seconds")
     sol.print()
-    sol.animate(show_muscles=False)
-    sol.graphs()
 
 
 if __name__ == "__main__":
