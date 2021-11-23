@@ -70,8 +70,8 @@ class Violin:
             self.tau_min = [-30] * 13
             self.tau_max = [30] * 13
             self.tau_init = [0] * 13
-            self.tau_min[1], self.tau_max[1] = -25, 25  # Clavicle elevation
-            self.tau_min[2], self.tau_max[2] = -25, 25  # Scapula elevation
+            self.tau_min[1], self.tau_max[1] = -10, 10  # Clavicle elevation
+            self.tau_min[2], self.tau_max[2] = -8, 8  # Scapula elevation
 
     def q(self, biorbd_model: biorbd.Model, bow: Bow, bow_position: BowPosition):
         # Get some values

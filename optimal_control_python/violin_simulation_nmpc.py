@@ -21,7 +21,7 @@ def main():
     solver = Solver.IPOPT()
     ode_solver = OdeSolver.RK4(n_integration_steps=3)
     with_fatigue = True
-    minimize_fatigue = False
+    minimize_fatigue = True
     with_muscles = False
     pre_solve = True
 

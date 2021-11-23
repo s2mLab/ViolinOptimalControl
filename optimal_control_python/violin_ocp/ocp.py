@@ -167,30 +167,22 @@ class ViolinOcp:
                 self.objective_functions.add(
                     ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=100, list_index=12, expand=self.expand
                 )
-        else:        
-            if self.fatigable:
-                self.objective_functions.add(
-                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_minus", weight=1000, list_index=4, expand=self.expand
-                )
-                self.objective_functions.add(
-                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_plus", weight=1000, list_index=5, expand=self.expand
-                )
-            else:
-                self.objective_functions.add(
-                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, list_index=9, expand=self.expand
-                )
 
         # Fatigue objectives
         if self.fatigable and self.minimize_fatigue:
             self.objective_functions.add(
-                ObjectiveFcn.Mayer.MINIMIZE_FATIGUE,
+                ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
                 key="tau_minus",
-                weight=100,
+                weight=100_000,
                 list_index=2,
                 expand=self.expand,
             )
             self.objective_functions.add(
-                ObjectiveFcn.Mayer.MINIMIZE_FATIGUE, key="tau_plus", weight=100, list_index=3, expand=self.expand
+                ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
+                key="tau_plus",
+                weight=100_000,
+                list_index=3,
+                expand=self.expand,
             )
             if self.use_muscles:
                 raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
@@ -253,7 +245,7 @@ class ViolinOcp:
 
         if self.fatigable:
             self.x_bounds.concatenate(FatigueBounds(self.fatigue_dynamics, fix_first_frame=True))
-            # self.x_bounds.max[self.model.nbQ() * 2:, 1:] = 0.95  # Limit the fatigue below the max level
+            self.x_bounds.max[self.model.nbQ() * 2:, 1:] = 0.90  # Limit the fatigue below the max level
 
         if self.fatigable:
             self.u_bounds = FatigueBounds(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
@@ -294,18 +286,6 @@ class ViolinOcp:
         self.ocp.update_bounds(self.ocp.nlp[0].x_bounds)
 
     def set_bow_target_objective(self, bow_target: np.ndarray, weight: float = 10000, sol: Solution = None):
-        new_objectives = Objective(
-            ObjectiveFcn.Lagrange.TRACK_STATE,
-            key="q",
-            node=Node.ALL,
-            weight=weight,
-            target=bow_target,
-            index=self.bow.hair_idx,
-            list_index=16,
-            expand=self.expand,
-        )
-        self.ocp.update_objectives(new_objectives)
-
         if isinstance(self.solver, Solver.IPOPT):
             new_constraint = Constraint(
                 ConstraintFcn.TRACK_STATE,
@@ -319,6 +299,18 @@ class ViolinOcp:
                 expand=self.expand,
             )
             self.ocp.update_constraints(new_constraint)
+        else:
+            new_objectives = Objective(
+                ObjectiveFcn.Lagrange.TRACK_STATE,
+                key="q",
+                node=Node.ALL,
+                weight=weight,
+                target=bow_target,
+                index=self.bow.hair_idx,
+                list_index=16,
+                expand=self.expand,
+            )
+            self.ocp.update_objectives(new_objectives)
 
     def _set_generic_ocp(self):
         self.ocp = OptimalControlProgram(
