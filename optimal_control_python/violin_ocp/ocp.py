@@ -471,4 +471,4 @@ class ViolinNMPC(ViolinOcp):
         self.solver.set_maximum_iterations(1000)
         cyclic_options = {"states": ["q", "qdot"]}
 
-        return self.ocp.solve(update_function, solver=self.solver, cyclic_options=cyclic_options, warm_start=warm_start_solution)
+        return self.ocp.solve(update_function, solver=self.solver, cyclic_options=cyclic_options, max_consecutive_failing=3, warm_start=warm_start_solution)

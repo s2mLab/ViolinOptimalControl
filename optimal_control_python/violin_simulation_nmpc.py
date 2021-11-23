@@ -92,6 +92,7 @@ def main():
             nmpc_violin.set_bow_target_objective(bow_trajectory.target[:, target_time_index])
         return True
 
+    save_name = f"{n_cycles}_cycles{'_with_fatigue' if with_fatigue else ''}"
     sol = nmpc_violin.solve(nmpc_update_function, sol_pre, show_online=False, cycle_from=cycle_from)
 
     # Data output
