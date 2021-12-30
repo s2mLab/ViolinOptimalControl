@@ -16,7 +16,7 @@ class DataType(Enum):
 def load_data(path: str, n_cycles: int, use_bo: bool = True):
 
     if use_bo:
-        with open(path, "rb") as file:
+        with open(path, "rb") as file:self.ocp_solver.opts =
             data = pickle.load(file)
     else:
         data_tp = OptimalControlProgram.load(path)[1]

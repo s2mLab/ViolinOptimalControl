@@ -3,6 +3,7 @@ from enum import Enum
 from scipy import optimize
 from bioptim import XiaFatigue, XiaTauFatigue, MichaudFatigue, MichaudTauFatigue, EffortPerception, TauEffortPerception, ObjectiveFcn, BiMapping
 from bioptim.optimization.optimization_variable import OptimizationVariableList
+from bioptim.dynamics.fatigue.tau_fatigue import TauFatigue
 import numpy as np
 from casadi import MX, Function
 import biorbd_casadi as biorbd
@@ -213,33 +214,51 @@ class Violin:
         else:
             raise NotImplementedError("The fatigue model is not implemented")
 
-    def fatigue_parameters(self, fatigue_type, direction: int = 0, index: int = None):
+    def fatigue_parameters(
+        self,
+        fatigue_type,
+        direction: int = 0,
+        index: int = None,
+        LD: float = 100,
+        LR: float = 100,
+        F: float = 0.005,
+        R: float = 0.005,
+        scaling: float = None,  # Default 1
+        stabilization_factor: float = 10,
+        effort_factor: float = 0.1,
+        effort_threshold: float = None,  # Default 0.2 * scaling
+    ):
+        if scaling is None:
+            scaling = 1
+            if issubclass(fatigue_type, TauFatigue):
+                if not (direction < 0 or direction > 0):
+                    raise ValueError("direction should be < 0 or > 0")
+                scaling = self.tau_min[index] if direction < 0 else self.tau_max[index]
+
+        if effort_threshold is None:
+            effort_threshold = scaling / 5
+
         if fatigue_type == XiaFatigue:
-            return {"LD": 100, "LR": 100, "F": 0.008, "R": 0.002}
+            return {"LD": LD, "LR": LR, "F": F, "R": R}
 
         elif fatigue_type == XiaTauFatigue:
-            if not (direction < 0 or direction > 0):
-                raise ValueError("direction should be < 0 or > 0")
-            scale = self.tau_min[index] if direction < 0 else self.tau_max[index]
-            return {"LD": 100, "LR": 100, "F": 0.008, "R": 0.002, "scale": scale}
+
+            return {"LD": LD, "LR": LR, "F": F, "R": R, "scaling": scaling}
 
         elif fatigue_type == MichaudFatigue:
-            return {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "effort_factor": 0.001, "stabilization_factor": 10, "effort_threshold": 0.2}
+            return {"LD": LD, "LR": LR, "F": F, "R": R, "effort_factor": effort_factor,
+                    "stabilization_factor": stabilization_factor, "effort_threshold": effort_threshold}
 
         elif fatigue_type == MichaudTauFatigue:
-            if not (direction < 0 or direction > 0):
-                raise ValueError("direction should be < 0 or > 0")
-            scale = self.tau_min[index] if direction < 0 else self.tau_max[index]
-            return {"LD": 100, "LR": 100, "F": 0.005, "R": 0.005, "effort_factor": 0.001, "stabilization_factor": 10, "effort_threshold": 0.2, "scale": scale}
+            return {"LD": LD, "LR": LR, "F": F, "R": R, "effort_factor": effort_factor,
+                    "stabilization_factor": stabilization_factor, "effort_threshold": effort_threshold,
+                    "scaling": scaling}
 
         elif fatigue_type == EffortPerception:
-            return {"effort_factor": 0.1, "effort_threshold": 0.2}
+            return {"effort_factor": effort_factor, "effort_threshold": effort_threshold}
 
         elif fatigue_type == TauEffortPerception:
-            if not (direction < 0 or direction > 0):
-                raise ValueError("direction should be < 0 or > 0")
-            scale = self.tau_min[index] if direction < 0 else self.tau_max[index]
-            return {"effort_factor": 0.1, "effort_threshold": scale / 5, "scaling": scale}
+            return {"effort_factor": effort_factor, "effort_threshold": effort_threshold, "scaling": scaling}
 
         else:
             raise NotImplementedError(

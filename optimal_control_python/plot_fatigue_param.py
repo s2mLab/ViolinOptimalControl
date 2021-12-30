@@ -1,3 +1,5 @@
+# This is a debug script for testing and plotting fatigue
+
 import time
 import pickle
 
@@ -38,18 +40,21 @@ def main():
     # target = data[1]["tau"][1, :]
 
     # target = np.random.rand(t_end + 1) / 2.5 + 0.1
-    target = [-10, 10]
+    target = [5, 5]
     t_end = 600
 
     starting_time = time.time()
     n_points = 100000
     t = np.linspace(0, t_end, n_points)
     violin = Violin("WuViolin", ViolinString.E)
+
+
     fatigue_models = [
-        # XiaFatigue(**violin.fatigue_parameters(XiaTauFatigue, 1)),
-        # MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1)),
-        EffortPerception(**violin.fatigue_parameters(TauEffortPerception, -1)),
-        EffortPerception(**violin.fatigue_parameters(TauEffortPerception, 1)),
+        MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1, index=0, effort_threshold=0, stabilization_factor=0, effort_factor=0)),  # Behaves like Xia original
+        MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1, index=0, effort_threshold=0, effort_factor=0)),  # Behaves like Xia stabilized
+        # MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1, index=0)),
+        # EffortPerception(**violin.fatigue_parameters(TauEffortPerception, -1, index=0)),
+        # EffortPerception(**violin.fatigue_parameters(TauEffortPerception, 1, index=0)),
     ]
     linestyles = ["-", "--"]
 
