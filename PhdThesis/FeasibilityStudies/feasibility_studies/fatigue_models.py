@@ -1,6 +1,6 @@
 from enum import Enum
 
-from bioptim import MichaudFatigue, EffortPerception
+from bioptim import XiaFatigue, XiaFatigueStabilized, MichaudFatigue, EffortPerception
 
 from .fatigue_parameters import FatigueParameters
 
@@ -15,29 +15,24 @@ class FatigueModels(Enum):
 class FatigueModelsInternal:
     def __init__(self, fatigue_params: FatigueParameters, chosen_models: tuple[FatigueModels]):
         self.fatigue_params = fatigue_params
-        self.models = [getattr(self, chosen_model.value)() for chosen_model in chosen_models]
+        self.models = tuple([getattr(self, chosen_model.value)() for chosen_model in chosen_models])
 
     def xia(self):
-        return MichaudFatigue(
+        return XiaFatigue(
             LD=self.fatigue_params.LD,
             LR=self.fatigue_params.LR,
             F=self.fatigue_params.F,
             R=self.fatigue_params.R,
-            effort_threshold=0,
-            stabilization_factor=0,
-            effort_factor=0,
             scaling=self.fatigue_params.scaling,
         )
 
     def xia_stabilized(self):
-        return MichaudFatigue(
+        return XiaFatigueStabilized(
             LD=self.fatigue_params.LD,
             LR=self.fatigue_params.LR,
             F=self.fatigue_params.F,
             R=self.fatigue_params.R,
-            effort_threshold=0,
             stabilization_factor=self.fatigue_params.stabilization_factor,
-            effort_factor=0,
             scaling=self.fatigue_params.scaling,
         )
 
