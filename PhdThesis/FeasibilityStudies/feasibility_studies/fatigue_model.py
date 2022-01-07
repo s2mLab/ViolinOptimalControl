@@ -14,7 +14,7 @@ class FatigueParameters:
         R: float = 0.005,
         scaling: float = 1,
         stabilization_factor: float = 10,
-        effort_factor: float = 0.1,
+        effort_factor: float = 0.0075,
         effort_threshold: float = 0.2
     ):
         self.LD = LD
@@ -35,12 +35,16 @@ class FatigueModel:
         x0: tuple[float, ...] = None,
         rms_indices: tuple[int, ...] = None,
         custom_analyses: tuple[CustomAnalysis, ...] = None,
+        colors: tuple[str, ...] = None,
+        print_sum: bool = True,
     ):
         self.model = model
         self.integrator = integrator
         self.initial_guess = x0
         self.rms_indices = rms_indices
         self.custom_analyses = custom_analyses
+        self.colors = colors
+        self.print_sum = print_sum
 
     def apply_dynamics(self, target_load: float, states: np.ndarray) -> np.ndarray:
         return np.array(self.model.apply_dynamics(target_load, *states))[:, 0]
@@ -61,7 +65,7 @@ class Xia(FatigueModel):
         )
 
         if x0 is None:
-            x0 = self.model.default_initial_guess()
+            x0 = model.default_initial_guess()
         super(Xia, self).__init__(model, *args, x0=x0, **kwargs)
 
 
@@ -76,7 +80,7 @@ class XiaStabilized(FatigueModel):
             scaling=fatigue_params.scaling,
         )
         if x0 is None:
-            x0 = self.model.default_initial_guess()
+            x0 = model.default_initial_guess()
         super(XiaStabilized, self).__init__(model, *args, x0=x0, **kwargs)
 
 
@@ -93,7 +97,7 @@ class Michaud(FatigueModel):
             scaling=fatigue_params.scaling,
         )
         if x0 is None:
-            x0 = self.model.default_initial_guess()
+            x0 = model.default_initial_guess()
         super(Michaud, self).__init__(model, *args, x0=x0, **kwargs)
 
 
@@ -105,7 +109,7 @@ class EffortPerception(FatigueModel):
             scaling=fatigue_params.scaling,
         )
         if x0 is None:
-            x0 = self.model.default_initial_guess()
+            x0 = model.default_initial_guess()
         super(EffortPerception, self).__init__(model, *args, x0=x0, **kwargs)
 
 

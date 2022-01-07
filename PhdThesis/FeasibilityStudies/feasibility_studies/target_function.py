@@ -6,6 +6,7 @@ import numpy as np
 
 class TargetFunctions(Enum):
     TARGET_UP_TO_END = "target_up_to_end"
+    TARGET1_UP_TO_MID_THEN_TARGET2 = "target1_up_to_mid_then_target2"
     TARGET_UP_TO_MID_THEN_ZERO = "target_up_to_mid_then_zero"
     TARGET_RANDOM_PER_FRAME = "target_random_per_frame"
     TARGET_RANDOM_PER_SECOND = "target_random_per_second"
@@ -31,6 +32,9 @@ class TargetFunctionInternal:
 
     def target_up_to_end(self, t):
         return self.fixed_target
+
+    def target1_up_to_mid_then_target2(self, t):
+        return self.fixed_target[0] if t < self.t_end / 2 else self.fixed_target[1]
 
     def target_up_to_mid_then_zero(self, t):
         return self.fixed_target if t < self.t_end / 2 else 0

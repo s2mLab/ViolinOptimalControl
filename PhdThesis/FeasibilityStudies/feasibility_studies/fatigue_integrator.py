@@ -7,6 +7,7 @@ from scipy import integrate
 
 from .enums import Integrator
 from .study_configuration import StudyConfiguration
+from .fatigue_model import FatigueModel
 
 
 class Result:
@@ -86,15 +87,26 @@ class FatigueIntegrator:
             raise RuntimeError("run() must be called before plotting the results")
 
         plt.plot(self.study.t, [self.study.target_function.function(t) * 100 for t in self.study.t], color="tab:blue", linewidth=4)
-        for result, plot_options in zip(self._results[-1], self.study.plot_options.options):
-            self._add_result_to_plot(result, plot_options)
+        for model, result, plot_options in zip(self.study.fatigue_models, self._results[-1], self.study.plot_options.options):
+            self._add_result_to_plot(model, result, plot_options)
 
         self.axes.set_title(self.study.plot_options.title, fontsize=1.5*font_size)
         self.axes.set_xlabel('Temps (s)', fontsize=font_size)
         self.axes.set_ylabel('Niveau (\%)', fontsize=font_size)
         self.axes.tick_params(axis="both", labelsize=font_size)
         if self.study.plot_options.legend is not None:
+            supplementary_legend = None
+            if self.study.plot_options.supplementary_legend:
+                supplementary_legend = plt.legend(
+                    self.axes.get_lines(),
+                    self.study.plot_options.supplementary_legend,
+                    loc="lower right",
+                    fontsize=font_size,
+                    framealpha=0.9,
+                )
             self.axes.legend(self.study.plot_options.legend, loc="upper right", fontsize=font_size, framealpha=0.9)
+            if supplementary_legend is not None:
+                self.axes.add_artist(supplementary_legend)
 
         if maximized:
             plt.get_current_fig_manager().window.showMaximized()
@@ -106,14 +118,6 @@ class FatigueIntegrator:
 
         plt.show()
 
-    def print_final_sum(self):
-        if not self._has_run:
-            raise RuntimeError("run() must be called before printing the results")
-
-        print("Sum of components at the final index")
-        for model, results in zip(self.study.fatigue_models, self._results[-1]):
-            print(f"\t{type(model).__name__}: {np.sum(results.y, axis=0)[-1]}")
-
     def print_integration_time(self):
         if not self._has_run:
             raise RuntimeError("run() must be called before printing the results")
@@ -122,7 +126,7 @@ class FatigueIntegrator:
         time = np.array(self._performing_time).T
         for model, t in zip(self.study.fatigue_models, time):
             print(f"\t{type(model).__name__}: {np.mean(t) / self.study.t[-1]:1.3f} seconds "
-                  f"per integrated second (mean of {t.shape[0]} trials)")
+                  f"per integrated second for {np.mean(t):1.3f} second total (mean of {t.shape[0]} trials)")
 
     def print_rmse(self):
         if not self._has_run:
@@ -145,21 +149,26 @@ class FatigueIntegrator:
         print(f"The RMSE between {type(models[0]).__name__} and {type(models[1]).__name__} is {rmse}")
 
     def print_custom_analyses(self):
+        if not self._has_run:
+            raise RuntimeError("run() must be called before printing the results")
+
         for model, results in zip(self.study.fatigue_models, self._results[-1]):
             if model.custom_analyses is None:
                 continue
-
             for custom_analysis in model.custom_analyses:
                 print(f"{custom_analysis.name} for {type(model).__name__}: {custom_analysis.fun(results)}")
+
+        if self.study.common_custom_analyses is not None:
+            for custom_analysis in self.study.common_custom_analyses:
+                print(f"{custom_analysis.name} ")
+                for model, results in zip(self.study.fatigue_models, self._results[-1]):
+                    print(f"\tfor {type(model).__name__}: {custom_analysis.fun(results)}")
 
     def _dynamics(self, t, x, fatigue):
         return fatigue.apply_dynamics(self.study.target_function.function(t) / fatigue.scaling, x)
 
-    def _add_result_to_plot(self, results: Result, plot_options: Any):
-        plt.plot(results.t, results.y[0, :] * 100, color="tab:green", **plot_options)
-        if results.y.shape[0] > 1:
-            plt.plot(results.t, results.y[1, :] * 100, color="tab:orange", **plot_options)
-            plt.plot(results.t, results.y[2, :] * 100, color="tab:red", **plot_options)
-        if results.y.shape[0] > 3:
-            plt.plot(results.t, results.y[3, :] * 100, "tab:gray", **plot_options)
-        plt.plot(results.t, np.sum(results.y[:4, :] * 100,  axis=0), color="black", **plot_options)
+    def _add_result_to_plot(self, model: FatigueModel, results: Result, plot_options: Any):
+        for y, color in zip(results.y, model.colors):
+            plt.plot(results.t, y * 100, color=color, **plot_options)
+        if model.print_sum:
+            plt.plot(results.t, np.sum(results.y * 100,  axis=0), color="black", **plot_options)

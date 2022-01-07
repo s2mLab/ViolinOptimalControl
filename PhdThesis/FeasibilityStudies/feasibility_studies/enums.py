@@ -6,6 +6,7 @@ class PlotOptions:
         self,
         title: str = "",
         legend: tuple[str, ...] = None,
+        supplementary_legend: tuple[str, ...] = None,
         options: tuple[dict, ...] = None,
         save_path: str = None
     ):
@@ -13,6 +14,7 @@ class PlotOptions:
         self.legend = legend
         self.options = options
         self.save_path = save_path
+        self.supplementary_legend = supplementary_legend
 
 
 class CustomAnalysis:
