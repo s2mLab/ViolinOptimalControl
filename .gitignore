@@ -131,3 +131,6 @@ BiorbdViz
 *.c
 
 *.o
+
+*.gv
+*.gv.pdf
