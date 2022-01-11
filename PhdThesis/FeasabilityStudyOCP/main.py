@@ -1,4 +1,4 @@
-from studies import Study
+from studies import Study, Conditions, DataType
 
 
 def main():
@@ -6,14 +6,14 @@ def main():
     Prepare and solve and animate a reaching task ocp
     """
 
-    ocp = Study.MUSCLE_DRIVEN_MICHAUD
+    study = Study(Conditions.STUDY1)
 
     # --- Solve the program --- #
-    sol = ocp.perform()
-    sol.print()
+    study.run()
 
-    # --- Show results --- #
-    sol.animate(show_meshes=True, show_floor=False)
+    study.generate_latex_table()
+    study.prepare_plot_data(DataType.STATES, "q")
+    study.plot()
 
 
 if __name__ == "__main__":
