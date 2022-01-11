@@ -114,6 +114,26 @@ class Study(Enum):
         ),
     )
 
+    EP_ONLY = StudyConfiguration(
+        fatigue_models=(
+            FatigueModels.EFFORT_PERCEPTION(
+                FatigueParameters(scaling=10000),
+                integrator=Integrator.RK45,
+                x0=(0,),
+                rms_indices=(0,),
+                colors=("tab:gray",),
+            ),
+        ),
+        t_end=600,
+        fixed_target=0.8,
+        target_function=TargetFunctions.TARGET_UP_TO_END,
+        n_points=10000,  # 100000
+        plot_options=PlotOptions(
+            title="DEBUG: Modèle de Pe seulement",
+            options=({"linestyle": "-"}, {"linestyle": "--"})
+        ),
+    )
+
     # Actual studies from the thesis
     STUDY1_1_XIA_STABILIZED = StudyConfiguration(
         repeat=1,
