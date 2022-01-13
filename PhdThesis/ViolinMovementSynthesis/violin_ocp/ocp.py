@@ -249,7 +249,20 @@ class ViolinOcp:
 
         if self.fatigue_model != FatigueType.NO_FATIGUE:
             self.x_bounds.concatenate(FatigueBounds(self.fatigue_dynamics, fix_first_frame=True))
-            self.x_bounds.max[self.model.nbQ() * 2:, 1:] = 0.90  # Limit the fatigue below the max level
+
+            # Limit the fatigue below the max level
+            if self.fatigue_model == FatigueType.EFFORT_PERCEPTION:
+                self.x_bounds.max[self.model.nbQ() * 2:, 1:] = 0.90
+            elif self.fatigue_model == FatigueType.QCC:
+                if self.structure_type == StructureType.TAU:
+                    self.x_bounds.max[self.n_q * 2 + self.n_q * 3 : self.n_q * 2 + self.n_q * 4, 1:] = 0.90
+                    self.x_bounds.max[self.n_q * 2 + self.n_q * 7 : self.n_q * 2 + self.n_q * 8, 1:] = 0.90
+                elif self.structure_type == StructureType.MUSCLE:
+                    self.x_bounds.max[self.n_q * 2 + self.n_mus * 3 : self.n_q * 2 + self.n_mus * 4, 1:] = 0.90
+                else:
+                    raise NotImplementedError("Fatigue type not implemented yet")
+            else:
+                raise NotImplementedError("Structure type not implemented yet")
 
         if self.fatigue_model != FatigueType.NO_FATIGUE:
             self.u_bounds = FatigueBounds(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
