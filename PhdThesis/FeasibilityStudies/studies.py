@@ -117,7 +117,7 @@ class Study(Enum):
     EP_ONLY = StudyConfiguration(
         fatigue_models=(
             FatigueModels.EFFORT_PERCEPTION(
-                FatigueParameters(scaling=10000),
+                FatigueParameters(),
                 integrator=Integrator.RK45,
                 x0=(0,),
                 rms_indices=(0,),
