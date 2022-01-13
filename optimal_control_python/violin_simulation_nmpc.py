@@ -1,4 +1,4 @@
-from time import time
+from time import perf_counter
 
 import numpy as np
 from violin_ocp import Violin, ViolinString, ViolinNMPC, ViolinOcp, Bow, BowTrajectory, BowPosition
@@ -36,7 +36,7 @@ def main():
 
     # --- Solve the program --- #
     window = full_cycle
-    tic = time()
+    tic = perf_counter()
     nmpc_violin = ViolinNMPC(
         model_path=f"../models/{model_name}.bioMod",
         violin=violin,
@@ -98,7 +98,7 @@ def main():
     # Data output
     nmpc_violin.save(sol, ext=save_name)
     nmpc_violin.save(sol, ext=save_name, stand_alone=True)
-    print(f"Running time: {time() - tic} seconds")
+    print(f"Running time: {perf_counter() - tic} seconds")
     sol.print()
 
 
