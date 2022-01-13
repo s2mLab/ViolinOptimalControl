@@ -156,8 +156,7 @@ class ViolinOcp:
         # Minimize efforts
         if self.structure_type == StructureType.MUSCLE:
             if self.fatigue_model != FatigueType.NO_FATIGUE:
-                pass
-                # raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
+                raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
             else:
                 self.objective_functions.add(
                     ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
@@ -173,30 +172,32 @@ class ViolinOcp:
 
         # Fatigue objectives
         if self.fatigue_model != FatigueType.NO_FATIGUE and self.minimize_fatigue:
-            self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
-                key="tau_minus",
-                weight=100_000,
-                list_index=2,
-                expand=self.expand,
-            )
-            self.objective_functions.add(
-                ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
-                key="tau_plus",
-                weight=100_000,
-                list_index=3,
-                expand=self.expand,
-            )
-            if self.structure_type == StructureType.MUSCLE:
-                pass
-                # raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
+            if self.structure_type == StructureType.TAU:
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
+                    key="tau_minus",
+                    weight=100_000,
+                    list_index=2,
+                    expand=self.expand,
+                )
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
+                    key="tau_plus",
+                    weight=100_000,
+                    list_index=3,
+                    expand=self.expand,
+                )
+            elif self.structure_type == StructureType.MUSCLE:
+                raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
                 # self.objective_functions.add(
                 #     ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
                 #     key="muscles",
-                #     weight=10,
+                #     weight=100_000,
                 #     list_index=8,
                 #     expand=self.expand,
                 # )
+            else:
+                raise NotImplementedError("Structure type not implemented yet")
 
     def _set_generic_constraints(self):
         # Keep the bow in contact with the violin
