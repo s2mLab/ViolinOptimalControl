@@ -1,6 +1,6 @@
 import numpy as np
 
-from violin_ocp import Violin, ViolinString, ViolinOcp, Bow, BowTrajectory, BowPosition
+from violin_ocp import Violin, ViolinString, ViolinOcp, Bow, BowTrajectory, BowPosition, FatigueType, StructureType
 from bioptim import Solver, OdeSolver
 
 
@@ -30,9 +30,9 @@ def main():
         bow=bow,
         n_cycles=n_cycles,
         bow_starting=starting_position,
+        structure_type=StructureType.TAU,
+        fatigue_type=FatigueType.EFFORT_PERCEPTION,
         init_file=None,
-        use_muscles=False,
-        fatigable=True,
         minimize_fatigue=True,
         time_per_cycle=cycle_time,
         n_shooting_per_cycle=n_shoot_per_cycle,

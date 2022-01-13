@@ -24,13 +24,12 @@ from bioptim import (
     Solution,
     OdeSolver,
     FatigueList,
-    EffortPerception,
-    TauEffortPerception,
     FatigueBounds,
     FatigueInitialGuess,
     VariableType,
 )
 
+from .enums import FatigueType, StructureType
 from .violin import Violin
 from .bow import Bow, BowPosition
 from .viz import online_muscle_torque
@@ -47,9 +46,10 @@ class ViolinOcp:
         bow: Bow,
         n_cycles: int,
         bow_starting: BowPosition,
+        structure_type: StructureType,
+        fatigue_type: FatigueType = FatigueType.NO_FATIGUE,
         init_file: str = None,
-        use_muscles: bool = True,
-        fatigable: bool = False,
+        split_tau: bool = False,
         minimize_fatigue: bool = True,
         time_per_cycle: float = 1,
         n_shooting_per_cycle: int = 30,
@@ -62,9 +62,10 @@ class ViolinOcp:
         self.model = biorbd.Model(self.model_path)
         self.n_q = self.model.nbQ()
         self.n_tau = self.model.nbGeneralizedTorque()
-        self.use_muscles = use_muscles
-        self.fatigable = fatigable
-        self.n_mus = self.model.nbMuscles() if self.use_muscles else 0
+        self.structure_type = structure_type
+        self.split_tau = split_tau
+        self.fatigue_model = fatigue_type
+        self.n_mus = self.model.nbMuscles() if self.structure_type == StructureType.MUSCLE else 0
 
         self.violin = violin
         self.bow = bow
@@ -82,14 +83,15 @@ class ViolinOcp:
 
         self.fatigue_dynamics = None
         self.minimize_fatigue = minimize_fatigue
-        if self.fatigable:
+        if self.fatigue_model != FatigueType.NO_FATIGUE:
             self.fatigue_dynamics = FatigueList()
-            for i in range(self.n_tau):
-                self.fatigue_dynamics.add(violin.fatigue_model(TauEffortPerception, i))
+            if self.structure_type == StructureType.TAU:
+                for i in range(self.n_tau):
+                    self.fatigue_dynamics.add(violin.fatigue_model(self.fatigue_model, self.structure_type, i, self.split_tau))
             for i in range(self.n_mus):
-                self.fatigue_dynamics.add(violin.fatigue_model(EffortPerception))
+                self.fatigue_dynamics.add(violin.fatigue_model(self.fatigue_model, self.structure_type))
 
-        if self.use_muscles:
+        if self.structure_type == StructureType.MUSCLE:
             self.dynamics = Dynamics(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True, fatigue=self.fatigue_dynamics)
         else:
             self.dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=self.fatigue_dynamics)
@@ -109,7 +111,7 @@ class ViolinOcp:
         self._set_generic_constraints()
 
         self._set_generic_ocp()
-        if use_muscles:
+        if self.structure_type == StructureType.MUSCLE:
             online_muscle_torque(self.ocp)
 
         if self.ode_solver == OdeSolver.RK4:
@@ -124,7 +126,7 @@ class ViolinOcp:
             ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.01, list_index=1, expand=self.expand
         )
         self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=10, list_index=13, expand=self.expand)
-        if self.fatigable:
+        if self.fatigue_model != FatigueType.NO_FATIGUE and self.structure_type == StructureType.TAU and self.split_tau:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
                 key="tau_minus",
@@ -145,16 +147,17 @@ class ViolinOcp:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
                 key="tau",
-                weight=100,
+                weight=200,
                 list_index=10,
                 expand=self.expand,
                 derivative=True,
             )
 
         # Minimize efforts
-        if self.use_muscles:
-            if self.fatigable:
-                raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
+        if self.structure_type == StructureType.MUSCLE:
+            if self.fatigue_model != FatigueType.NO_FATIGUE:
+                pass
+                # raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
             else:
                 self.objective_functions.add(
                     ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
@@ -169,7 +172,7 @@ class ViolinOcp:
                 )
 
         # Fatigue objectives
-        if self.fatigable and self.minimize_fatigue:
+        if self.fatigue_model != FatigueType.NO_FATIGUE and self.minimize_fatigue:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
                 key="tau_minus",
@@ -184,8 +187,9 @@ class ViolinOcp:
                 list_index=3,
                 expand=self.expand,
             )
-            if self.use_muscles:
-                raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
+            if self.structure_type == StructureType.MUSCLE:
+                pass
+                # raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
                 # self.objective_functions.add(
                 #     ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
                 #     key="muscles",
@@ -243,27 +247,28 @@ class ViolinOcp:
         self.x_bounds[: self.n_q, 0] = self.violin.q(self.model, self.bow, self.bow_starting)
         self.x_bounds[self.n_q :, 0] = 0
 
-        if self.fatigable:
+        if self.fatigue_model != FatigueType.NO_FATIGUE:
             self.x_bounds.concatenate(FatigueBounds(self.fatigue_dynamics, fix_first_frame=True))
             self.x_bounds.max[self.model.nbQ() * 2:, 1:] = 0.90  # Limit the fatigue below the max level
 
-        if self.fatigable:
+        if self.fatigue_model != FatigueType.NO_FATIGUE:
             self.u_bounds = FatigueBounds(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
         else:
-            u_min = [self.violin.tau_min] * self.n_tau + [0] * self.n_mus
-            u_max = [self.violin.tau_max] * self.n_tau + [1] * self.n_mus
+            u_min = self.violin.tau_min + [0] * self.n_mus  # n_mus == 0 if not self.use_muscle
+            u_max = self.violin.tau_max + [1] * self.n_mus  # n_mus == 0 if not self.use_muscle
             self.u_bounds = Bounds(u_min, u_max)
 
     def _set_initial_guess(self, init_file):
         if init_file is None:
             self.x_init = InitialGuess(np.concatenate((self.violin.q(self.model, self.bow, self.bow_starting), np.zeros(self.n_q))))
-            if self.fatigable:
+            if self.fatigue_model != FatigueType.NO_FATIGUE:
                 self.x_init.concatenate(FatigueInitialGuess(self.fatigue_dynamics))
 
-            if self.fatigable:
+            if self.fatigue_model != FatigueType.NO_FATIGUE:
                 self.u_init = FatigueInitialGuess(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
             else:
-                self.u_init = InitialGuess(np.zeros((self.n_tau + self.n_mus, 1)))
+                u_init = self.violin.tau_init + [0] * self.n_mus  # n_mus == 0 if not self.use_muscle
+                self.u_init = InitialGuess(u_init)
 
         else:
             _, sol = ViolinOcp.load(init_file)
@@ -393,8 +398,8 @@ class ViolinNMPC(ViolinOcp):
         n_cycles_simultaneous,
         n_cycles_to_advance,
         bow_starting: BowPosition,
-        use_muscles: bool = False,
-        fatigable=True,
+        structure_type: StructureType,
+        fatigue_type: FatigueType = FatigueType.NO_FATIGUE,
         minimize_fatigue=True,
         window_duration: float = 1,
         window_len: int = 30,
@@ -410,8 +415,8 @@ class ViolinNMPC(ViolinOcp):
             bow=bow,
             n_cycles=1,
             bow_starting=bow_starting,
-            use_muscles=use_muscles,
-            fatigable=fatigable,
+            structure_type=structure_type,
+            fatigue_type=fatigue_type,
             minimize_fatigue=minimize_fatigue,
             time_per_cycle=window_duration,
             n_shooting_per_cycle=window_len,
