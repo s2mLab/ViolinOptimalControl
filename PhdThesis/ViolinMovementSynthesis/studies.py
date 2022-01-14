@@ -28,6 +28,8 @@ class StudyInternal:
             rmse_index: int
     ):
         self.name = name
+        self.save_name = name.replace("$", "")
+        self.save_name = self.save_name.replace("\\", "")
         self.rmse_index = rmse_index
 
         self.model_name: str = "WuViolin"
@@ -137,7 +139,8 @@ class StudyInternal:
 
 
 class StudiesInternal:
-    def __init__(self, studies: tuple[StudyInternal, ...]):
+    def __init__(self, name: str, studies: tuple[StudyInternal, ...]):
+        self.name = name
         self._has_run = False
         self.studies = studies
         self.solutions: list[Solution, ...] = []
@@ -147,6 +150,11 @@ class StudiesInternal:
         for study in self.studies:
             self.solutions.append(study.perform(limit_memory_max_iter, exact_max_iter, show_graphs))
         self._has_run = True
+
+    def save_solutions(self):
+        for study, solution in zip(self.studies, self.solutions):
+            study.nmpc.save(solution, ext=f"results/{self.name}/{study.save_name}")
+            study.nmpc.save(solution, ext=f"results/{self.name}/{study.save_name}", stand_alone=True)
 
     def generate_latex_table(self):
         if not self._has_run:
@@ -202,6 +210,7 @@ class StudiesInternal:
 class StudyConfig:
     # Debug studies
     DEBUG_TAU_NO_FATIGUE: StudiesInternal = StudiesInternal(
+        name="DEBUG_TAU_NO_FATIGUE",
         studies=(
             StudyInternal(
                 name=r"$\condTauNf$",
@@ -215,6 +224,7 @@ class StudyConfig:
     )
 
     DEBUG_ALL_TAU: StudiesInternal = StudiesInternal(
+        name="DEBUG_ALL_TAU",
         studies=(
             StudyInternal(
                 name=r"$\condTauNf$",
@@ -244,6 +254,7 @@ class StudyConfig:
     )
 
     DEBUG_ALL_MUSCLE: StudiesInternal = StudiesInternal(
+        name="DEBUG_ALL_MUSCLE",
         studies=(
             StudyInternal(
                 name=r"$\condAlphaNf$",
@@ -274,7 +285,8 @@ class StudyConfig:
 
     # Actual Studies
     STUDY1_OCP: StudiesInternal = StudiesInternal(
-        (
+        name="STUDY1_OCP",
+        studies=(
             StudyInternal(
                 name=r"$\condTauNf$",
                 structure_type=StructureType.TAU,
