@@ -12,3 +12,8 @@ class FatigueType(Enum):
     NO_FATIGUE = None
     EFFORT_PERCEPTION = EffortPerception
     QCC = MichaudFatigue
+
+
+class DataType(Enum):
+    STATES = "states"
+    CONTROLS = "controls"

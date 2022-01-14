@@ -182,18 +182,19 @@ class Violin:
         self,
         fatigue_type: FatigueType,
         structure_type: StructureType,
+        state_only: bool = True,
         index: int = None,
         split_tau: bool = False
     ):
         if fatigue_type == FatigueType.QCC:
             if structure_type == StructureType.MUSCLE:
-                return MichaudFatigue(**self.fatigue_parameters(fatigue_type, structure_type), state_only=True)
+                return MichaudFatigue(**self.fatigue_parameters(fatigue_type, structure_type))
 
             elif structure_type == StructureType.TAU:
                 return MichaudTauFatigue(
                     MichaudFatigue(**self.fatigue_parameters(fatigue_type, structure_type, -1, index)),
                     MichaudFatigue(**self.fatigue_parameters(fatigue_type, structure_type, 1, index)),
-                    state_only=True,
+                    state_only=state_only,
                     split_controls=split_tau,
                 )
             else:
