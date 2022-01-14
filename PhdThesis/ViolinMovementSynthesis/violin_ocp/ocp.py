@@ -158,16 +158,16 @@ class ViolinOcp:
             if self.fatigue_model != FatigueType.NO_FATIGUE:
                 raise NotImplementedError("Objective function for use_muscles and fatigable is not ready yet")
             else:
+                # self.objective_functions.add(
+                #     ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+                #     key="tau",
+                #     index=self.violin.residual_tau,
+                #     weight=1000,
+                #     list_index=11,
+                #     expand=self.expand,
+                # )
                 self.objective_functions.add(
-                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
-                    key="tau",
-                    index=self.violin.residual_tau,
-                    weight=1000,
-                    list_index=11,
-                    expand=self.expand,
-                )
-                self.objective_functions.add(
-                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=100, list_index=12, expand=self.expand
+                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1, list_index=12, expand=self.expand
                 )
 
         # Fatigue objectives
