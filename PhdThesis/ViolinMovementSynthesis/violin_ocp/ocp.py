@@ -470,17 +470,29 @@ class ViolinNMPC(ViolinOcp):
             n_threads=self.n_threads,
         )
 
-    def solve(self, update_function, warm_start_solution: Solution = None, cycle_from=-1, show_online: bool = False) -> Solution:
+    def solve(
+            self,
+            update_function,
+            max_iter: int = 1000,
+            warm_start_solution: Solution = None,
+            show_online: bool = False,
+            update_function_extra_params: dict = None,
+    ) -> Solution:
         """
 
         Parameters
         ----------
         update_function
             The function to update between optimizations
+        max_iter: int
+            The maximum number of iteration to perform
         warm_start_solution: Solution
             A solution to warm start from
-        cycle_from
             The cycle from which to start the next iteration
+        show_online: bool
+            If it should show the graphs while optimizing
+        update_function_extra_params: dict
+            Any extra parameters to pass to update_function
         Returns
         -------
         The solution
@@ -488,11 +500,18 @@ class ViolinNMPC(ViolinOcp):
 
         if isinstance(self.solver, Solver.IPOPT):
             self.solver.set_linear_solver("ma57")
-            self.solver.set_hessian_approximation("limited-memory")
+            self.solver.set_hessian_approximation("exact")
             self.solver.set_c_compile(False)
             self.solver.show_online_optim = show_online
 
-        self.solver.set_maximum_iterations(1000)
+        self.solver.set_maximum_iterations(max_iter)
         cyclic_options = {"states": ["q", "qdot"]}
 
-        return self.ocp.solve(update_function, solver=self.solver, cyclic_options=cyclic_options, max_consecutive_failing=3, warm_start=warm_start_solution)
+        return self.ocp.solve(
+            update_function,
+            solver=self.solver,
+            cyclic_options=cyclic_options,
+            max_consecutive_failing=3,
+            warm_start=warm_start_solution,
+            update_function_extra_params=update_function_extra_params
+        )
