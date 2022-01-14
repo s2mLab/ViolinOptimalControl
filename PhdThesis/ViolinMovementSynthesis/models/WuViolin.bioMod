@@ -474,7 +474,7 @@ musclegroup thorax_to_humerus
 endmusclegroup 	
 
 	muscle	PECM2
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_humerus
 		originPosition		0.0248658 -0.0475832 0.0174664
 		insertionPosition	0.016 -0.0354957 0.005
@@ -493,7 +493,7 @@ endmusclegroup
 
 
 	muscle	PECM3
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_humerus
 		originPosition		0.0626543 -0.147759 0.0220602
 		insertionPosition	0.016 -0.03 0.005
@@ -512,7 +512,7 @@ endmusclegroup
 
     muscle	LAT
         // REMOVED WRAPPING
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_humerus
 		originPosition		-0.094702 -0.160998 0.000512144
 		insertionPosition	0.00991752 -0.0223337 -0.008822
@@ -544,7 +544,7 @@ musclegroup scapula_to_humerus
 endmusclegroup
 
     muscle	DELT2
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.0275294 -0.0032022 0.00142634
 		insertionPosition	0.00455911 -0.103949 0.00775516
@@ -568,7 +568,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	DELT3
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.0590625 -0.00156871 -0.0384606
 		insertionPosition	-0.00455911 -0.103949 0.00775516
@@ -593,7 +593,7 @@ endmusclegroup
 
 	muscle	INFSP
 	    // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.087985 -0.0545528 -0.0693532
 		insertionPosition	-0.00509757 0.00804087 0.0263967
@@ -619,7 +619,7 @@ endmusclegroup
 
 	muscle	SUPSP
 	    // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.0670398 -0.0115895 -0.0644974
 		insertionPosition	0.0142549 0.0168443 0.0209438
@@ -643,7 +643,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	SUBSC
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.072 -0.039 -0.065
 		insertionPosition	0.0199995 -0.00831173 -0.00174873
@@ -667,7 +667,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	TMIN
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.0820004 -0.0674811 -0.0409306
 		insertionPosition	0.00655633 -0.00365417 0.0216781
@@ -692,7 +692,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	TMAJ
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_humerus
 		originPosition		-0.104709 -0.107757 -0.0711555
 		insertionPosition	0.003699 -0.045 -0.00676304
@@ -711,7 +711,7 @@ endmusclegroup
 
 	muscle	CORB
 	    // REMOVED WRAPPING
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_humerus
 		originPosition		0.0125 -0.04127 -0.02652
 		insertionPosition	0 -0.128 -0.0116594
@@ -729,7 +729,7 @@ endmusclegroup
 
 	muscle	TRIlong
 	    // REMOVED WRAPPING
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_ulna
 		originPosition		-0.04565 -0.04073 -0.01377
 		insertionPosition	-0.03  0.01046 -0.00078 // -0.02190  0.01046 -0.00078
@@ -781,7 +781,7 @@ endmusclegroup
 
 	muscle	TRIlat
 	    // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		humerus_to_ulna
 		originPosition		-0.00599 -0.12646  0.00428
 		insertionPosition	-0.03  0.01046 -0.00078 // -0.02190  0.01046 -0.00078
@@ -812,7 +812,7 @@ endmusclegroup
 
 	muscle	TRImed
 	    // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		humerus_to_ulna
 		originPosition		-0.00838 -0.13695 -0.00906
 		insertionPosition	-0.03  0.01046 -0.00078 // -0.02190  0.01046 -0.00078
@@ -843,7 +843,7 @@ endmusclegroup
 
 	muscle	ANC
 	    // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		humerus_to_ulna
 		originPosition		-0.00744 -0.28359  0.00979
 		insertionPosition	-0.02532 -0.00124  0.00600
@@ -854,7 +854,7 @@ endmusclegroup
 	endmuscle
 
 	muscle	BRA
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		humerus_to_ulna
 		originPosition		0.00680 -0.17390 -0.00360
 		insertionPosition	-0.00320 -0.02390  0.00090
@@ -878,7 +878,7 @@ musclegroup humerus_to_radius
 endmusclegroup
 
 	muscle	BRD
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		humerus_to_radius
 		originPosition		-0.00980 -0.19963  0.00223
 		insertionPosition	0.04190 -0.22100  0.02240
@@ -902,7 +902,7 @@ musclegroup clavicle_to_humerus
 endmusclegroup
 
 	muscle	PECM1
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		clavicle_to_humerus
 		originPosition		0.00110542 0.00608334 0.0513213
 		insertionPosition	0.016 -0.0404957 0.005
@@ -921,7 +921,7 @@ endmusclegroup
 
 
 	muscle	DELT1
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		clavicle_to_humerus
 		originPosition		-0.0241685 0.0192842 0.099015
 		insertionPosition	0.00455911 -0.103949 0.00775516
@@ -946,7 +946,7 @@ endmusclegroup
 
 	muscle	BIClong
 	    // TWO VIA POINTS WERE REMOVED AND THE WRAPPING
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_radius
 		originPosition		-0.03123 -0.02353 -0.01305
 		insertionPosition	-0.00200 -0.03750 -0.00200
@@ -1002,7 +1002,7 @@ endmusclegroup
 
 	muscle	BICshort
 	    // TWO VIA POINTS WERE REMOVED AND THE WRAPPING
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		scapula_to_radius
 		originPosition		0.01268 -0.03931 -0.02625
 		insertionPosition	0.00200 -0.03750 -0.00200
@@ -1045,7 +1045,7 @@ endmusclegroup
 
 	muscle	TRP1
 	    // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_clavicle
 		originPosition		-0.0589601 0.0968498 0.00192477
 		insertionPosition	-0.0305978 0.0248459 0.0982569
@@ -1056,7 +1056,7 @@ endmusclegroup
 	endmuscle
 
 	muscle	SBCL
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_clavicle
 		originPosition		-0.000927862 -0.013199 0.0391262
 		insertionPosition	-0.0157477 0.00908546 0.0757093
@@ -1073,7 +1073,7 @@ musclegroup thorax_to_scapula
 endmusclegroup
 
     muscle LVS
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition      -0.037263 0.0944378 0.0225438
 		insertionPosition   -0.0676471 0.000672336 -0.0956535
@@ -1085,7 +1085,7 @@ endmusclegroup
 
 	muscle	TRP2
 	    // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition		-0.0774721 0.0314578 0.00356913
 		insertionPosition	-0.039 -0.0025817 -0.01
@@ -1104,7 +1104,7 @@ endmusclegroup
 		endviapoint
 
 	muscle	TRP3
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition		-0.0921656 -0.0154049 0.00250602
 		insertionPosition	-0.058344 -0.00650954 -0.0444157
@@ -1124,7 +1124,7 @@ endmusclegroup
 
 	muscle	TRP4
 	    // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition		-0.115981 -0.105564 0.000683625
 		insertionPosition	-0.0791919 -0.0129439 -0.0789001
@@ -1144,7 +1144,7 @@ endmusclegroup
 
     muscle RMN
         // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition      -0.063 0.0559617 0.003
 		insertionPosition   -0.079057 -0.0131532 -0.100259
@@ -1156,7 +1156,7 @@ endmusclegroup
 
     muscle RMJ1
         // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition      -0.0790589 0.00944004 0.00143378
 		insertionPosition   -0.0903423 -0.0422644 -0.104178
@@ -1168,7 +1168,7 @@ endmusclegroup
 
     muscle RMJ2
         // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition      -0.087 -0.025 0.00143378
 		insertionPosition   -0.1 -0.099 -0.097
@@ -1180,7 +1180,7 @@ endmusclegroup
 
     muscle SRA1
         // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition      -0.000944031 -0.0561663 0.119819
 		insertionPosition   -0.0878498 -0.0472465 -0.0985756
@@ -1200,7 +1200,7 @@ endmusclegroup
 
     muscle SRA2
         // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition      -0.000625923 -0.102011 0.137825
 		insertionPosition   -0.0931001 -0.0622901 -0.0985183
@@ -1220,7 +1220,7 @@ endmusclegroup
 
     muscle SRA3
         // WRAPPING REMOVED
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition      -0.0113734 -0.161817 0.148868
 		insertionPosition   -0.0968835 -0.0774188 -0.0982424
@@ -1239,7 +1239,7 @@ endmusclegroup
 		endviapoint
 
     muscle PMN
-		type 				Thelen
+		type 				idealizedActuator
 		musclegroup 		thorax_to_scapula
 		originPosition      0.032445 -0.0750782 0.0894181
 		insertionPosition   0.012 -0.04127 -0.02652
