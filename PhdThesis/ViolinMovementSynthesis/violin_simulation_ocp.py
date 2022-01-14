@@ -11,11 +11,11 @@ def main():
 
     # --- Solve the program --- #
     starting_position = BowPosition.TIP
-    n_shoot_per_cycle = 30
+    n_shoot_per_cycle = 50
     n_cycles = 1
     cycle_time = 1
     solver = Solver.IPOPT()
-    ode_solver = OdeSolver.RK4(n_integration_steps=3)  # OdeSolver.COLLOCATION(method="radau", polynomial_degree=4)  #
+    ode_solver = OdeSolver.RK4(n_integration_steps=5)  # OdeSolver.COLLOCATION(method="radau", polynomial_degree=4)  #
     n_threads = 8
 
     # Generate a full cycle target
@@ -30,8 +30,8 @@ def main():
         bow=bow,
         n_cycles=n_cycles,
         bow_starting=starting_position,
-        structure_type=StructureType.TAU,
-        fatigue_type=FatigueType.EFFORT_PERCEPTION,
+        structure_type=StructureType.MUSCLE,
+        fatigue_type=FatigueType.NO_FATIGUE,
         init_file=None,
         minimize_fatigue=True,
         time_per_cycle=cycle_time,
@@ -50,8 +50,8 @@ def main():
     # ocp.save(sol, stand_alone=True)
 
     sol.print()
-    # sol.graphs()
-    sol.animate(show_muscles=False, show_floor=False)
+    sol.graphs()
+    sol.animate(show_muscles=True, show_floor=False)
 
 
 if __name__ == "__main__":
