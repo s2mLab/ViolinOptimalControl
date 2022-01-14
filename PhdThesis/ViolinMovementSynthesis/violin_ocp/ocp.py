@@ -125,7 +125,7 @@ class ViolinOcp:
         self.objective_functions.add(
             ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.01, list_index=1, expand=self.expand
         )
-        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=10, list_index=13, expand=self.expand)
+        self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=0.1, list_index=13, expand=self.expand)
         if self.fatigue_model != FatigueType.NO_FATIGUE and self.structure_type == StructureType.TAU and self.split_tau:
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
