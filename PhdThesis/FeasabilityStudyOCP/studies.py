@@ -1,3 +1,4 @@
+import os
 from typing import Union
 from enum import Enum
 
@@ -315,6 +316,7 @@ class Conditions(Enum):
 
 class Study:
     def __init__(self, conditions: Conditions):
+        self.name = conditions.name
         self._has_run: bool = False
         self._plots_are_prepared: bool = False
         self.conditions: StudyConfiguration = conditions.value
@@ -343,10 +345,48 @@ class Study:
             raise RuntimeError("run() must be called before generating the latex table")
 
         table = (
-            f"% These commented lines should be added to the preamble\n"
-            f"% \\usepackage[table]{{xcolor}}\n"
-            f"% \\usepackage{{makecell}}\n"
-            f"% \\definecolor{{lightgray}}{{gray}}{{0.91}}\n"
+            f"\\documentclass{{article}}\n"
+            f"\n"
+            f"\\usepackage{{amsmath}}\n"
+            f"\\usepackage{{amssymb}}\n"
+            f"\\usepackage[table]{{xcolor}}\n"
+            f"\\usepackage{{makecell}}\n"
+            f"\\definecolor{{lightgray}}{{gray}}{{0.91}}\n"
+            f"\n\n"
+            f"% Aliases\n"
+            f"\\newcommand{{\\rmse}}{{RMSE}}\n"
+            f"\\newcommand{{\\ocp}}{{OCP}}\n"
+            f"\\newcommand{{\\controls}}{{\\mathbf{{u}}}}\n"
+            f"\\newcommand{{\\states}}{{\\mathbf{{x}}}}\n"
+            f"\\newcommand{{\\statesDot}}{{\\mathbf{{\\dot{{x}}}}}}\n"
+            f"\\newcommand{{\\q}}{{\\mathbf{{q}}}}\n"
+            f"\\newcommand{{\\qdot}}{{\\mathbf{{\\dot{{q}}}}}}\n"
+            f"\\newcommand{{\\qddot}}{{\\mathbf{{\\ddot{{q}}}}}}\n"
+            f"\\newcommand{{\\f}}{{\\mathbf{{f}}}}\n"
+            f"\\newcommand{{\\taupm}}{{\\tau^{{\\pm}}}}\n"
+            f"\\newcommand{{\\tauns}}{{\\tau^{{\\times}}}}\n"
+            f"\n"
+            f"\\newcommand{{\\condition}}{{C/}}\n"
+            f"\\newcommand{{\\noFatigue}}{{\\varnothing}}\n"
+            f"\\newcommand{{\\qcc}}{{4\\textsubscript{{CC}}}}\n"
+            f"\\newcommand{{\\pe}}{{P\\textsubscript{{E}}}}\n"
+            f"\\newcommand{{\\condTau}}{{{{\\condition}}{{\\tau}}{{}}}}\n"
+            f"\\newcommand{{\\condTauNf}}{{{{\\condition}}{{\\tau}}{{\\noFatigue}}}}\n"
+            f"\\newcommand{{\\condTauQcc}}{{{{\\condition}}{{\\tau}}{{\\qcc}}}}\n"
+            f"\\newcommand{{\\condTauPe}}{{{{\\condition}}{{\\tau}}{{\\pe}}}}\n"
+            f"\\newcommand{{\\condTaupm}}{{{{\\condition}}{{\\taupm}}{{}}}}\n"
+            f"\\newcommand{{\\condTaupmQcc}}{{{{\\condition}}{{\\taupm}}{{\\qcc}}}}\n"
+            f"\\newcommand{{\\condTaupmPe}}{{{{\\condition}}{{\\taupm}}{{\\pe}}}}\n"
+            f"\\newcommand{{\\condTauns}}{{{{\\condition}}{{\\tauns}}{{}}}}\n"
+            f"\\newcommand{{\\condTaunsQcc}}{{{{\\condition}}{{\\tauns}}{{\\qcc}}}}\n"
+            f"\\newcommand{{\\condTaunsPe}}{{{{\\condition}}{{\\tauns}}{{\\pe}}}}\n"
+            f"\\newcommand{{\\condAlpha}}{{{{\\condition}}{{\\alpha}}{{}}}}\n"
+            f"\\newcommand{{\\condAlphaNf}}{{{{\\condition}}{{\\alpha}}{{\\noFatigue}}}}\n"
+            f"\\newcommand{{\\condAlphaQcc}}{{{{\\condition}}{{\\alpha}}{{\\qcc}}}}\n"
+            f"\\newcommand{{\\condAlphaPe}}{{{{\\condition}}{{\\alpha}}{{\\pe}}}}\n"
+            f"\n\n"
+            f"\\begin{{document}}\n"
+            f"\n"
             f"\\begin{{table}}[!ht]\n"
             f" \\rowcolors{{1}}{{}}{{lightgray}}\n"
             f" \\caption{{Comparaison des métriques d'efficacité et de comportement entre les modèles de fatigue "
@@ -379,13 +419,26 @@ class Study:
                 f"& {rmse_str} \\\\\n"
             )
 
-        table += f"  \\hline\n" f" \\end{{tabular}}\n" f"\\end{{table}}"
+        table += f"  \\hline\n" f" \\end{{tabular}}\n" f"\\end{{table}}\n\n"
+        table += f"\\end{{document}}\n"
 
-        print("\n\nThis can be copy pasted to latex to generate the table from the thesis")
-        print("**************")
-        print(table)
-        print("**************")
-        print("\n")
+        save_path = f"{self._prepare_and_get_results_dir()}/results.tex"
+
+        with open(save_path, "w", encoding='utf8') as file:
+            file.write(table)
+        print("\n\nTex file generated in the results folder")
+
+    def _prepare_and_get_results_dir(self):
+        try:
+            os.mkdir("results")
+        except FileExistsError:
+            pass
+
+        try:
+            os.mkdir(f"results/{self.name}")
+        except FileExistsError:
+            pass
+        return f"results/{self.name}"
 
     def prepare_plot_data(self, data_type: DataType, key: str, font_size: int = 20):
         if not self._has_run:
@@ -445,7 +498,7 @@ class Study:
             if plot_options.save_path is not None and plot_options.save_path[i] is not None:
                 plt.show(block=False)
                 plt.draw_all(True)
-                plt.savefig(plot_options.save_path[i], dpi=300)
+                plt.savefig(f"{self._prepare_and_get_results_dir()}/{plot_options.save_path[i]}", dpi=300)
 
         self._plots_are_prepared = True
 

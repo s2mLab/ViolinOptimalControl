@@ -143,60 +143,116 @@ class StudiesInternal:
         self.name = name
         self._has_run = False
         self.studies = studies
-        self.solutions: list[Solution, ...] = []
+        self.solutions: list[tuple[Solution, list[Solution]], ...] = []
 
     def perform(self, limit_memory_max_iter: int = 100, exact_max_iter: int = 1000, show_graphs: bool = False):
-        self.solutions: list[Solution, ...] = []
+        self.solutions: list[tuple[Solution, list[Solution]], ...] = []
         for study in self.studies:
             self.solutions.append(study.perform(limit_memory_max_iter, exact_max_iter, show_graphs))
         self._has_run = True
 
     def save_solutions(self):
-        for study, solution in zip(self.studies, self.solutions):
-            study.nmpc.save(solution, ext=f"results/{self.name}/{study.save_name}")
-            study.nmpc.save(solution, ext=f"results/{self.name}/{study.save_name}", stand_alone=True)
+        for study, (sol, all_iterations) in zip(self.studies, self.solutions):
+            study.nmpc.save(sol, save_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}")
+            study.nmpc.save(sol, save_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}", stand_alone=True)
+
+            for i, iterations in enumerate(all_iterations):
+                study.nmpc.save(
+                    iterations,
+                    save_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}"
+                )
 
     def generate_latex_table(self):
         if not self._has_run:
             raise RuntimeError("run() must be called before generating the latex table")
 
         table = (
-            f"% These commented lines should be added to the preamble\n"
-            f"% \\usepackage[table]{{xcolor}}\n"
-            f"% \\usepackage{{makecell}}\n"
-            f"% \\definecolor{{lightgray}}{{gray}}{{0.91}}\n"
+            f"\\documentclass{{article}}\n"
+            f"\n"
+            f"\\usepackage{{amsmath}}\n"
+            f"\\usepackage{{amssymb}}\n"
+            f"\\usepackage[table]{{xcolor}}\n"
+            f"\\usepackage{{makecell}}\n"
+            f"\\definecolor{{lightgray}}{{gray}}{{0.91}}\n"
+            f"\n\n"
+            f"% Aliases\n"
+            f"\\newcommand{{\\rmse}}{{RMSE}}\n"
+            f"\\newcommand{{\\ocp}}{{OCP}}\n"
+            f"\\newcommand{{\\controls}}{{\\mathbf{{u}}}}\n"
+            f"\\newcommand{{\\states}}{{\\mathbf{{x}}}}\n"
+            f"\\newcommand{{\\statesDot}}{{\\mathbf{{\\dot{{x}}}}}}\n"
+            f"\\newcommand{{\\q}}{{\\mathbf{{q}}}}\n"
+            f"\\newcommand{{\\qdot}}{{\\mathbf{{\\dot{{q}}}}}}\n"
+            f"\\newcommand{{\\qddot}}{{\\mathbf{{\\ddot{{q}}}}}}\n"
+            f"\\newcommand{{\\f}}{{\\mathbf{{f}}}}\n"
+            f"\\newcommand{{\\taupm}}{{\\tau^{{\\pm}}}}\n"
+            f"\\newcommand{{\\tauns}}{{\\tau^{{\\times}}}}\n"
+            f"\n"
+            f"\\newcommand{{\\condition}}{{C/}}\n"
+            f"\\newcommand{{\\noFatigue}}{{\\varnothing}}\n"
+            f"\\newcommand{{\\qcc}}{{4\\textsubscript{{CC}}}}\n"
+            f"\\newcommand{{\\pe}}{{P\\textsubscript{{E}}}}\n"
+            f"\\newcommand{{\\condTau}}{{{{\\condition}}{{\\tau}}{{}}}}\n"
+            f"\\newcommand{{\\condTauNf}}{{{{\\condition}}{{\\tau}}{{\\noFatigue}}}}\n"
+            f"\\newcommand{{\\condTauQcc}}{{{{\\condition}}{{\\tau}}{{\\qcc}}}}\n"
+            f"\\newcommand{{\\condTauPe}}{{{{\\condition}}{{\\tau}}{{\\pe}}}}\n"
+            f"\\newcommand{{\\condTaupm}}{{{{\\condition}}{{\\taupm}}{{}}}}\n"
+            f"\\newcommand{{\\condTaupmQcc}}{{{{\\condition}}{{\\taupm}}{{\\qcc}}}}\n"
+            f"\\newcommand{{\\condTaupmPe}}{{{{\\condition}}{{\\taupm}}{{\\pe}}}}\n"
+            f"\\newcommand{{\\condTauns}}{{{{\\condition}}{{\\tauns}}{{}}}}\n"
+            f"\\newcommand{{\\condTaunsQcc}}{{{{\\condition}}{{\\tauns}}{{\\qcc}}}}\n"
+            f"\\newcommand{{\\condTaunsPe}}{{{{\\condition}}{{\\tauns}}{{\\pe}}}}\n"
+            f"\\newcommand{{\\condAlpha}}{{{{\\condition}}{{\\alpha}}{{}}}}\n"
+            f"\\newcommand{{\\condAlphaNf}}{{{{\\condition}}{{\\alpha}}{{\\noFatigue}}}}\n"
+            f"\\newcommand{{\\condAlphaQcc}}{{{{\\condition}}{{\\alpha}}{{\\qcc}}}}\n"
+            f"\\newcommand{{\\condAlphaPe}}{{{{\\condition}}{{\\alpha}}{{\\pe}}}}\n"
+            f"\n\n"
+            f"\\begin{{document}}\n"
+            f"\n"
             f"\\begin{{table}}[!ht]\n"
             f" \\rowcolors{{1}}{{}}{{lightgray}}\n"
             f" \\caption{{Comparaison des métriques d'efficacité entre les modèles de fatigue "
             f"appliqués sur une dynamique musculaire ou articulaire lors de la résolution d'un \\ocp{{}}}}\n"
             f" \\label{{table:faisabilite}}\n"
-            f" \\begin{{tabular}}{{lccc}}\n"
+            f" \\begin{{tabular}}{{lcccc}}\n"
             f"  \\hline\n"
             f"  \\bfseries Condition & "
             f"\\bfseries\\makecell[c]{{Nombre\\\\d'itération}} & "
             f"\\bfseries\\makecell[c]{{Temps\\\\d'optimisation\\\\(s)}} & "
-            f"\\bfseries\\makecell[c]{{Temps moyen\\\\par itération\\\\(s/iteration)}}\\\\ \n"
+            f"\\bfseries\\makecell[c]{{Temps moyen\\\\par itération\\\\(s/iteration)}} & "
+            f"\\bfseries\\makecell[c]{{$\\sum\\text{{\\rmse{{}}}}$\\\\pour $\\q$\\\\(rad)}}\\\\ \n"
             f"  \\hline\n"
         )
 
-        for study, sol in zip(self.studies, self.solutions):
+        for study, (sol, all_iterations) in zip(self.studies, self.solutions):
+            mean_iterations = statistics.mean([iteration.iterations for iteration in all_iterations])
+
+            rmse = np.sum(self._rmse(DataType.STATES, "q", study.rmse_index, sol))
+            rmse_str = f"{rmse:0.3e}" if rmse != 0 else "---"
+            if rmse_str.find("e") >= 0:
+                rmse_str = rmse_str.replace("e", "$\\times 10^{{")
+                rmse_str += "}}$"
+                rmse_str = rmse_str.replace("+0", "")
+                rmse_str = rmse_str.replace("-0", "-")
+                rmse_str = rmse_str.replace("$\\times 10^{{0}}$", "")
             table += (
                 f"  {study.name} "
-                f"& {mean(sol.iterations)} "
+                f"& {mean_iterations} "
                 f"& {sol.real_time_to_optimize:0.3f} "
-                f"& {sol.real_time_to_optimize / mean(sol.iterations):0.3f} \\\\\n"
+                f"& {sol.real_time_to_optimize / mean_iterations:0.3f} "
+                f"& {rmse_str} \\\\\n"
             )
 
-        table += f"  \\hline\n" f" \\end{{tabular}}\n" f"\\end{{table}}"
+        table += f"  \\hline\n" f" \\end{{tabular}}\n" f"\\end{{table}}\n\n"
+        table += f"\\end{{document}}\n"
 
-        print("\n\nThis can be copy pasted to latex to generate the table from the thesis")
-        print("**************")
-        print(table)
-        print("**************")
-        print("\n")
+        save_path = f"{self._prepare_and_get_results_dir()}/results.tex"
+        with open(save_path, "w", encoding='utf8') as file:
+            file.write(table)
+        print("\n\nTex file generated in the results folder")
 
     def _rmse(self, data_type, key, idx_ref: int, sol: Solution):
-        data_ref = getattr(self.solutions[idx_ref], data_type.value)[key]
+        data_ref = getattr(self.solutions[idx_ref][0], data_type.value)[key]
         data = getattr(sol, data_type.value)[key]
 
         e = data_ref - data
@@ -204,6 +260,18 @@ class StudiesInternal:
         mse = np.sum(se, axis=1) / data_ref.shape[1]
         rmse = np.sqrt(mse)
         return rmse
+
+    def _prepare_and_get_results_dir(self):
+        try:
+            os.mkdir("results")
+        except FileExistsError:
+            pass
+
+        try:
+            os.mkdir(f"results/{self.name}")
+        except FileExistsError:
+            pass
+        return f"results/{self.name}"
 
 
 class StudyConfig:
