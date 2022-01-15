@@ -16,8 +16,8 @@ def main():
     cycle_time = 1
     cycle_from = 1
     n_cycles_simultaneous = 3
-    n_cycles = 900
-    n_threads = 32
+    n_cycles = 5
+    n_threads = 8
     solver = Solver.IPOPT()
     ode_solver = OdeSolver.RK4(n_integration_steps=3)
     with_fatigue = True
@@ -96,6 +96,7 @@ def main():
     sol = nmpc_violin.solve(nmpc_update_function, sol_pre, show_online=False, cycle_from=cycle_from)
 
     # Data output
+    sol.graphs()
     nmpc_violin.save(sol, ext=save_name)
     nmpc_violin.save(sol, ext=save_name, stand_alone=True)
     print(f"Running time: {perf_counter() - tic} seconds")
