@@ -9,8 +9,9 @@ def main():
         study.run()
 
         study.generate_latex_table()
+        study.save_solutions()
         study.prepare_plot_data(DataType.STATES, "q")
-        study.plot()
+        # study.plot()
         print("----------------")
 
 

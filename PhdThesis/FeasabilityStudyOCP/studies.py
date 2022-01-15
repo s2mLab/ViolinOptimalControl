@@ -428,6 +428,11 @@ class Study:
             file.write(table)
         print("\n\nTex file generated in the results folder")
 
+    def save_solutions(self):
+        for study, sol in zip(self.conditions.studies, self.solution):
+            study.ocp.save(sol, file_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}")
+            study.ocp.save(sol, file_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}", stand_alone=True)
+
     def _prepare_and_get_results_dir(self):
         try:
             os.mkdir("results")

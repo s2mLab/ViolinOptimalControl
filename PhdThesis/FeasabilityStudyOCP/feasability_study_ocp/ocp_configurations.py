@@ -42,6 +42,8 @@ class OcpConfiguration:
     ):
         # Initialize the meta ocp parameters
         self.name = name
+        self.save_name = name.replace("$", "")
+        self.save_name = self.save_name.replace("\\", "")
         self.n_shoot = n_shoot
         self.final_time = final_time
         self.use_sx = use_sx

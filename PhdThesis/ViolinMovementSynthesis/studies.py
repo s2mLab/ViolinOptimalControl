@@ -63,8 +63,6 @@ class StudyInternal:
             return False
 
         print(f"\n\nOptimizing cycle #{t + 1}..")
-        # if sol is not None:
-        #     nmpc_violin.save(sol, ext=f"tmp_{save_name}_{t}", stand_alone=True)
         return True
 
     def _initialize_nmpc(self):
