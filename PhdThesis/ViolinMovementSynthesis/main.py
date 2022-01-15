@@ -12,7 +12,7 @@ def main():
 
     for study in all_studies:
         # Perform the study
-        study.perform(limit_memory_max_iter=1, exact_max_iter=1, show_graphs=False)
+        study.perform(limit_memory_max_iter=100, exact_max_iter=1000, show_graphs=False)
 
         # Print the results
         study.save_solutions()
