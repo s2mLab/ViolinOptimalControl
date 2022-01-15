@@ -1,5 +1,6 @@
+import os
+import statistics
 from typing import Union
-from statistics import mean
 
 import numpy as np
 from bioptim import Solver, OdeSolver, Solution
@@ -14,6 +15,7 @@ from violin_ocp import (
     BowPosition,
     FatigueType,
     StructureType,
+    DataType,
 )
 
 
@@ -23,6 +25,8 @@ class StudyInternal:
         name: str,
         structure_type: StructureType,
         fatigue_type: FatigueType,
+        n_shoot_per_cycle: int,
+        n_integration_steps: int,
         n_cycles_total: int,
         n_cycles_simultaneous: int,
         rmse_index: int,
@@ -36,11 +40,11 @@ class StudyInternal:
         self.violin: Violin = Violin(self.model_name, ViolinString.G)
         self.bow: Bow = Bow(self.model_name)
         self.solver = Solver.IPOPT()
-        self.ode_solver = OdeSolver.RK4(n_integration_steps=5)
+        self.ode_solver = OdeSolver.RK4(n_integration_steps=n_integration_steps)
         self.n_threads = 8
 
         self.starting_position = BowPosition.TIP
-        self.n_shoot_per_cycle = 50
+        self.n_shoot_per_cycle = n_shoot_per_cycle
         self.n_cycles_simultaneous = n_cycles_simultaneous
         self.n_cycles_to_advance = 0 if self.n_cycles_simultaneous == 1 else 1
         self.n_cycles_total = n_cycles_total
@@ -284,6 +288,24 @@ class StudyConfig:
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.NO_FATIGUE,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
+                n_cycles_simultaneous=1,
+                rmse_index=0,
+            ),
+        ),
+    )
+
+    DEBUG_TAU_PE_FATIGUE_3_CYCLES: StudiesInternal = StudiesInternal(
+        name="DEBUG_TAU_PE_FATIGUE_3_CYCLES",
+        studies=(
+            StudyInternal(
+                name=r"$\condTauNf$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.EFFORT_PERCEPTION,
+                n_cycles_total=3,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
@@ -298,6 +320,8 @@ class StudyConfig:
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.NO_FATIGUE,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
@@ -306,6 +330,8 @@ class StudyConfig:
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.QCC,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
@@ -314,6 +340,8 @@ class StudyConfig:
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.EFFORT_PERCEPTION,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
@@ -328,6 +356,8 @@ class StudyConfig:
                 structure_type=StructureType.MUSCLE,
                 fatigue_type=FatigueType.NO_FATIGUE,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
@@ -336,6 +366,8 @@ class StudyConfig:
                 structure_type=StructureType.MUSCLE,
                 fatigue_type=FatigueType.QCC,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
@@ -344,6 +376,8 @@ class StudyConfig:
                 structure_type=StructureType.MUSCLE,
                 fatigue_type=FatigueType.EFFORT_PERCEPTION,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
@@ -359,6 +393,8 @@ class StudyConfig:
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.NO_FATIGUE,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
@@ -367,6 +403,8 @@ class StudyConfig:
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.QCC,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
@@ -375,6 +413,8 @@ class StudyConfig:
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.EFFORT_PERCEPTION,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
@@ -383,6 +423,8 @@ class StudyConfig:
                 structure_type=StructureType.MUSCLE,
                 fatigue_type=FatigueType.NO_FATIGUE,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=3,
             ),
@@ -391,6 +433,8 @@ class StudyConfig:
                 structure_type=StructureType.MUSCLE,
                 fatigue_type=FatigueType.QCC,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=3,
             ),
@@ -399,8 +443,88 @@ class StudyConfig:
                 structure_type=StructureType.MUSCLE,
                 fatigue_type=FatigueType.EFFORT_PERCEPTION,
                 n_cycles_total=1,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=3,
+            ),
+        ),
+    )
+
+    STUDY2_TAU_10_CYCLES: StudiesInternal = StudiesInternal(
+        name="DEBUG_TAU_PE_FATIGUE_3_CYCLES",
+        studies=(
+            StudyInternal(
+                name=r"$\condTauNf$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.NO_FATIGUE,
+                n_cycles_total=10,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
+                n_cycles_simultaneous=1,
+                rmse_index=0,
+            ),
+            StudyInternal(
+                name=r"$\condTauPe$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.EFFORT_PERCEPTION,
+                n_cycles_total=10,
+                n_shoot_per_cycle=50,
+                n_integration_steps=5,
+                n_cycles_simultaneous=1,
+                rmse_index=0,
+            ),
+        ),
+    )
+
+    STUDY3_TAU_10_CYCLES_3_AT_A_TIME: StudiesInternal = StudiesInternal(
+        name="STUDY2_TAU_10_CYCLES_3_AT_A_TIME",
+        studies=(
+            StudyInternal(
+                name=r"$\condTauNf$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.NO_FATIGUE,
+                n_cycles_total=4,
+                n_shoot_per_cycle=30,
+                n_integration_steps=3,
+                n_cycles_simultaneous=3,
+                rmse_index=0,
+            ),
+            StudyInternal(
+                name=r"$\condTauPe$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.EFFORT_PERCEPTION,
+                n_cycles_total=4,
+                n_shoot_per_cycle=30,
+                n_integration_steps=3,
+                n_cycles_simultaneous=3,
+                rmse_index=0,
+            ),
+        ),
+    )
+
+    STUDY4_VIOLIN: StudiesInternal = StudiesInternal(
+        name="STUDY2_TAU_10_CYCLES_3_AT_A_TIME",
+        studies=(
+            StudyInternal(
+                name=r"$\condTauNf$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.NO_FATIGUE,
+                n_cycles_total=900,
+                n_shoot_per_cycle=30,
+                n_integration_steps=3,
+                n_cycles_simultaneous=3,
+                rmse_index=0,
+            ),
+            StudyInternal(
+                name=r"$\condTauPe$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.EFFORT_PERCEPTION,
+                n_cycles_total=900,
+                n_shoot_per_cycle=30,
+                n_integration_steps=3,
+                n_cycles_simultaneous=3,
+                rmse_index=0,
             ),
         ),
     )

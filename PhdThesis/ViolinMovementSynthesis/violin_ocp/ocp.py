@@ -401,18 +401,16 @@ class ViolinOcp:
     def load(file_path: str):
         return MultiCyclicNonlinearModelPredictiveControl.load(file_path)
 
-    def save(self, sol: Solution, ext: str = "", stand_alone: bool = False):
+    def save(self, sol: Solution, save_path: str = "", stand_alone: bool = False):
         try:
             os.mkdir("results")
         except FileExistsError:
             pass
 
-        ext = "_" + ext if ext else ""
-        t = time.localtime(time.time())
         if stand_alone:
-            self.ocp.save(sol, f"results/{t.tm_year}_{t.tm_mon}_{t.tm_mday}{ext}_out.bo", stand_alone=True)
+            self.ocp.save(sol, f"{save_path}_out.bo", stand_alone=True)
         else:
-            self.ocp.save(sol, f"results/{t.tm_year}_{t.tm_mon}_{t.tm_mday}{ext}.bo")
+            self.ocp.save(sol, f"{save_path}.bo")
 
 
 class MultiCyclicWithFatigue(MultiCyclicNonlinearModelPredictiveControl):
@@ -489,7 +487,7 @@ class ViolinNMPC(ViolinOcp):
         warm_start_solution: Solution = None,
         show_online: bool = False,
         update_function_extra_params: dict = None,
-    ) -> Solution:
+    ) -> tuple[Solution, list[Solution]]:
         """
 
         Parameters
@@ -526,4 +524,5 @@ class ViolinNMPC(ViolinOcp):
             max_consecutive_failing=3,
             warm_start=warm_start_solution,
             update_function_extra_params=update_function_extra_params,
+            get_all_iterations=True,
         )
