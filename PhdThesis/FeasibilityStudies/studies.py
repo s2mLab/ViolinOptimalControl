@@ -15,7 +15,7 @@ from feasibility_studies import (
 
 class Study(Enum):
     # DEBUG OPTIONS
-    XIA_ONLY = StudyConfiguration(
+    DEBUG_XIA_ONLY = StudyConfiguration(
         fatigue_models=(
             FatigueModels.XIA(
                 FatigueParameters(),
@@ -42,7 +42,7 @@ class Study(Enum):
         ),
     )
 
-    XIA_STABILIZED_ONLY = StudyConfiguration(
+    DEBUG_XIA_STABILIZED_ONLY = StudyConfiguration(
         fatigue_models=(
             FatigueModels.XIA_STABILIZED(
                 FatigueParameters(),
@@ -61,7 +61,7 @@ class Study(Enum):
         ),
     )
 
-    XIA_LONG = StudyConfiguration(
+    DEBUG_XIA_LONG = StudyConfiguration(
         fatigue_models=(
             FatigueModels.XIA(
                 FatigueParameters(stabilization_factor=100),
@@ -88,7 +88,7 @@ class Study(Enum):
         ),
     )
 
-    MICHAUD_ONLY = StudyConfiguration(
+    DEBUG_MICHAUD_ONLY = StudyConfiguration(
         fatigue_models=(
             FatigueModels.MICHAUD(
                 FatigueParameters(),
@@ -124,7 +124,7 @@ class Study(Enum):
         ),
     )
 
-    EP_ONLY = StudyConfiguration(
+    DEBU_EP_ONLY = StudyConfiguration(
         fatigue_models=(
             FatigueModels.EFFORT_PERCEPTION(
                 FatigueParameters(),

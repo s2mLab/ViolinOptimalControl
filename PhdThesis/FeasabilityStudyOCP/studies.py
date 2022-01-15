@@ -232,7 +232,7 @@ class StudyConfiguration:
 
 
 class Conditions(Enum):
-    FAST_DEBUG = StudyConfiguration(
+    DEBUG_FAST = StudyConfiguration(
         studies=(StudyInternal.torque_driven_michaud(StudySetup(split_controls=False)),),
         rmse_index=None,
         plot_options=PlotOptions(
@@ -242,7 +242,7 @@ class Conditions(Enum):
         ),
     )
 
-    ALL_CONDITIONS_DEBUG = StudyConfiguration(
+    DEBUG_ALL_CONDITIONS = StudyConfiguration(
         studies=(
             StudyInternal.torque_driven_no_fatigue(StudySetup()),
             StudyInternal.muscles_driven_no_fatigue(StudySetup()),
