@@ -10,6 +10,7 @@ from .fatigue_model import FatigueModel
 class StudyConfiguration:
     def __init__(
         self,
+        name: str,
         fatigue_models: tuple[FatigueModel, ...],
         t_end: float,
         fixed_target: Union[float, tuple[float, ...]],
@@ -19,6 +20,7 @@ class StudyConfiguration:
         plot_options: PlotOptions = None,
         common_custom_analyses: tuple[CustomAnalysis, ...] = None,
     ):
+        self.name = name
         self.t_end = t_end
         self.fixed_target = fixed_target
         self.n_points = n_points

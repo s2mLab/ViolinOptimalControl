@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import numpy as np
@@ -121,7 +122,7 @@ class FatigueIntegrator:
         if self.study.plot_options.save_path:
             plt.show(block=False)
             plt.draw_all(True)
-            plt.savefig(self.study.plot_options.save_path, dpi=300)
+            plt.savefig(f"{self._prepare_and_get_results_dir()}/{self.study.plot_options.save_path}", dpi=300)
 
         plt.show()
 
@@ -155,23 +156,46 @@ class FatigueIntegrator:
         mse = np.sum(se, axis=1) / self.study.n_points
         rmse = np.sqrt(mse)
 
-        print(f"The RMSE between {type(models[0]).__name__} and {type(models[1]).__name__} is {rmse}")
+        table = f"The RMSE between {type(models[0]).__name__} and {type(models[1]).__name__} is {rmse}"
+
+        save_path = f"{self._prepare_and_get_results_dir()}/rmse.txt"
+        with open(save_path, "w", encoding="utf8") as file:
+            file.write(table)
+        print("RMSE written int results folder")
 
     def print_custom_analyses(self):
         if not self._has_run:
             raise RuntimeError("run() must be called before printing the results")
 
+        table = ""
         for model, results in zip(self.study.fatigue_models, self._results[-1]):
             if model.custom_analyses is None:
                 continue
             for custom_analysis in model.custom_analyses:
-                print(f"{custom_analysis.name} for {type(model).__name__}: {custom_analysis.fun(results)}")
+                table += f"{custom_analysis.name} for {type(model).__name__}: {custom_analysis.fun(results)}\n"
 
         if self.study.common_custom_analyses is not None:
             for custom_analysis in self.study.common_custom_analyses:
-                print(f"{custom_analysis.name} ")
+                table += f"{custom_analysis.name} \n"
                 for model, results in zip(self.study.fatigue_models, self._results[-1]):
-                    print(f"\tfor {type(model).__name__}: {custom_analysis.fun(results)}")
+                    table += f"\tfor {type(model).__name__}: {custom_analysis.fun(results)}\n"
+
+        save_path = f"{self._prepare_and_get_results_dir()}/custom_analysis.txt"
+        with open(save_path, "w", encoding="utf8") as file:
+            file.write(table)
+        print("Custom analyses written int results folder")
+
+    def _prepare_and_get_results_dir(self):
+        try:
+            os.mkdir("results")
+        except FileExistsError:
+            pass
+
+        try:
+            os.mkdir(f"results/{self.study.name}")
+        except FileExistsError:
+            pass
+        return f"results/{self.study.name}"
 
     def _dynamics(self, t, x, fatigue):
         return fatigue.apply_dynamics(self.study.target_function.function(t) / fatigue.scaling, x)

@@ -17,8 +17,8 @@ def main():
     )
 
     # Prepare and run the studies
-    for i, study in enumerate(all_studies):
-        print(f"Study #{i}")
+    for study in all_studies:
+        print(f"Performing study: {study.name}")
         runner = FatigueIntegrator(study.value)
         runner.perform()
 

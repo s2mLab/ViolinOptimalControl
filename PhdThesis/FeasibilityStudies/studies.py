@@ -16,6 +16,7 @@ from feasibility_studies import (
 class Study(Enum):
     # DEBUG OPTIONS
     DEBUG_XIA_ONLY = StudyConfiguration(
+        name="DEBUG_XIA_ONLY",
         fatigue_models=(
             FatigueModels.XIA(
                 FatigueParameters(),
@@ -43,6 +44,7 @@ class Study(Enum):
     )
 
     DEBUG_XIA_STABILIZED_ONLY = StudyConfiguration(
+        name="DEBUG_XIA_STABILIZED_ONLY",
         fatigue_models=(
             FatigueModels.XIA_STABILIZED(
                 FatigueParameters(),
@@ -62,6 +64,7 @@ class Study(Enum):
     )
 
     DEBUG_XIA_LONG = StudyConfiguration(
+        name="DEBUG_XIA_LONG",
         fatigue_models=(
             FatigueModels.XIA(
                 FatigueParameters(stabilization_factor=100),
@@ -89,6 +92,7 @@ class Study(Enum):
     )
 
     DEBUG_MICHAUD_ONLY = StudyConfiguration(
+        name="DEBUG_MICHAUD_ONLY",
         fatigue_models=(
             FatigueModels.MICHAUD(
                 FatigueParameters(),
@@ -125,6 +129,7 @@ class Study(Enum):
     )
 
     DEBU_EP_ONLY = StudyConfiguration(
+        name="DEBU_EP_ONLY",
         fatigue_models=(
             FatigueModels.EFFORT_PERCEPTION(
                 FatigueParameters(),
@@ -145,6 +150,7 @@ class Study(Enum):
 
     # Actual studies from the thesis
     STUDY1_1_XIA_STABILIZED = StudyConfiguration(
+        name="STUDY1_1_XIA_STABILIZED",
         repeat=1,
         fatigue_models=(
             FatigueModels.XIA_STABILIZED(
@@ -252,6 +258,7 @@ class Study(Enum):
     )
 
     STUDY1_2_XIA_VS_STABILIZED_GOOD_X0 = StudyConfiguration(
+        name="STUDY1_2_XIA_VS_STABILIZED_GOOD_X0",
         repeat=1,
         fatigue_models=(
             FatigueModels.XIA_STABILIZED(
@@ -290,6 +297,7 @@ class Study(Enum):
     )
 
     STUDY1_3_XIA_VS_STABILIZED_BAD_X0 = StudyConfiguration(
+        name="STUDY1_3_XIA_VS_STABILIZED_BAD_X0",
         repeat=1,
         fatigue_models=(
             FatigueModels.XIA_STABILIZED(
@@ -328,6 +336,7 @@ class Study(Enum):
     )
 
     STUDY1_4_XIA_STABILIZED_FATIGUE_NEGATIVE = StudyConfiguration(
+        name="STUDY1_4_XIA_STABILIZED_FATIGUE_NEGATIVE",
         repeat=1,
         fatigue_models=(
             FatigueModels.XIA_STABILIZED(
@@ -366,6 +375,7 @@ class Study(Enum):
     )
 
     STUDY2_1_MICHAUD_LONG = StudyConfiguration(
+        name="STUDY2_1_MICHAUD_LONG",
         fatigue_models=(
             FatigueModels.MICHAUD(
                 FatigueParameters(),
@@ -396,6 +406,7 @@ class Study(Enum):
     )
 
     STUDY2_2_MICHAUD_VELOCITY_COMPARISON = StudyConfiguration(
+        name="STUDY2_2_MICHAUD_VELOCITY_COMPARISON",
         fatigue_models=(
             FatigueModels.MICHAUD(
                 FatigueParameters(effort_factor=0.0075, effort_threshold=0.5),
@@ -474,6 +485,7 @@ class Study(Enum):
     )
 
     STUDY2_3_MICHAUD_THRESHOLD_COMPARISON = StudyConfiguration(
+        name="STUDY2_3_MICHAUD_THRESHOLD_COMPARISON",
         fatigue_models=(
             FatigueModels.MICHAUD(
                 FatigueParameters(effort_threshold=0.75),
@@ -551,6 +563,7 @@ class Study(Enum):
     )
 
     STUDY2_4_MICHAUD_VS_XIA = StudyConfiguration(
+        name="STUDY2_4_MICHAUD_VS_XIA",
         fatigue_models=(
             FatigueModels.MICHAUD(
                 FatigueParameters(effort_threshold=0.5, F=0.01 / 4),
@@ -602,6 +615,7 @@ class Study(Enum):
     )
 
     STUDY3_0_EFFORT_VS_MICHAUD_LONG = StudyConfiguration(
+        name="STUDY3_0_EFFORT_VS_MICHAUD_LONG",
         repeat=1,
         fatigue_models=(
             FatigueModels.EFFORT_PERCEPTION(
