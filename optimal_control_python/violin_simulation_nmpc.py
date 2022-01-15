@@ -24,9 +24,6 @@ def main():
     minimize_fatigue = True
     with_muscles = False
     pre_solve = True
-
-    # Final save name
-    save_name = f"{n_cycles}_cycles{'_with_fatigue' if with_fatigue else ''}"
     
     # Generate a full cycle target
     lim = bow.hair_limits if starting_position == BowPosition.FROG else [bow.hair_limits[1], bow.hair_limits[0]]
