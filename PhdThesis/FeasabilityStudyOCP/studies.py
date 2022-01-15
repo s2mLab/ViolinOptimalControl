@@ -7,7 +7,13 @@ import numpy as np
 from matplotlib import pyplot as plt, colors as mcolors
 
 from feasability_study_ocp import (
-    DynamicsFcn, FatigableStructure, OcpConfiguration, FatigueModels, FatigueParameters, PlotOptions, DataType
+    DynamicsFcn,
+    FatigableStructure,
+    OcpConfiguration,
+    FatigueModels,
+    FatigueParameters,
+    PlotOptions,
+    DataType,
 )
 
 
@@ -101,7 +107,7 @@ class StudyInternal:
     def torque_driven_michaud(study_setup: StudySetup):
         fatigue_model = FatigueModels.MICHAUD(
             FatigableStructure.JOINTS,
-            FatigueParameters(scaling=study_setup.tau_limits_no_muscles[1], split_controls=study_setup.split_controls)
+            FatigueParameters(scaling=study_setup.tau_limits_no_muscles[1], split_controls=study_setup.split_controls),
         )
 
         objectives = ObjectiveList()
@@ -159,7 +165,7 @@ class StudyInternal:
     def torque_driven_effort_perception(study_setup: StudySetup):
         fatigue_model = FatigueModels.EFFORT_PERCEPTION(
             FatigableStructure.JOINTS,
-            FatigueParameters(scaling=study_setup.tau_limits_no_muscles[1], split_controls=study_setup.split_controls)
+            FatigueParameters(scaling=study_setup.tau_limits_no_muscles[1], split_controls=study_setup.split_controls),
         )
 
         objectives = ObjectiveList()
@@ -227,15 +233,13 @@ class StudyConfiguration:
 
 class Conditions(Enum):
     FAST_DEBUG = StudyConfiguration(
-        studies=(
-            StudyInternal.torque_driven_michaud(StudySetup(split_controls=False)),
-        ),
+        studies=(StudyInternal.torque_driven_michaud(StudySetup(split_controls=False)),),
         rmse_index=None,
         plot_options=PlotOptions(
             title="%s pour les conditions $C/\\tau\\varnothing$  et $C/\\alpha\\varnothing$",
             legend_indices=None,
             options=({"linestyle": "-"}, {"linestyle": "--"}),
-        )
+        ),
     )
 
     ALL_CONDITIONS_DEBUG = StudyConfiguration(
@@ -265,7 +269,7 @@ class Conditions(Enum):
                 {"linestyle": "-"},
                 {"linestyle": "--"},
             ),
-        )
+        ),
     )
 
     STUDY1 = StudyConfiguration(
@@ -282,7 +286,17 @@ class Conditions(Enum):
         rmse_index=(0, 0, 0, 0, 0, 5, 5, 5),
         plot_options=PlotOptions(
             title="Degré de liberté %s en fonction du temps pour toutes les conditions",
-            legend_indices=(True, True, True, True, True, True, True, True, True,),
+            legend_indices=(
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+            ),
             options=(
                 {"linestyle": "-", "color": mcolors.CSS4_COLORS["black"]},
                 {"linestyle": "-", "color": mcolors.CSS4_COLORS["lightcoral"]},
@@ -295,7 +309,7 @@ class Conditions(Enum):
             ),
             maximize=False,
             save_path=("feasibility_q0", "feasibility_q1"),
-        )
+        ),
     )
 
 
@@ -328,27 +342,28 @@ class Study:
         if not self._has_run:
             raise RuntimeError("run() must be called before generating the latex table")
 
-        table = \
-            f"% These commented lines should be added to the preamble\n" \
-            f"% \\usepackage[table]{{xcolor}}\n" \
-            f"% \\usepackage{{makecell}}\n" \
-            f"% \\definecolor{{lightgray}}{{gray}}{{0.91}}\n" \
-            f"\\begin{{table}}[!ht]\n" \
-            f" \\rowcolors{{1}}{{}}{{lightgray}}\n" \
-            f" \\caption{{Comparaison des métriques d'efficacité et de comportement entre les modèles de fatigue " \
-                f"appliqués sur une dynamique musculaire ou articulaire lors de la résolution d'un \\ocp{{}}}}\n" \
-            f" \\label{{table:faisabilite}}\n" \
-            f" \\begin{{tabular}}{{lcccc}}\n" \
-            f"  \\hline\n" \
-            f"  \\bfseries Condition & " \
-                f"\\bfseries\\makecell[c]{{Nombre\\\\d'itération}} & " \
-                f"\\bfseries\\makecell[c]{{Temps\\\\d'optimisation\\\\(s)}} & " \
-                f"\\bfseries\\makecell[c]{{Temps moyen\\\\par itération\\\\(s/iteration)}} & " \
-                f"\\bfseries\\makecell[c]{{$\\sum\\text{{\\rmse{{}}}}$\\\\pour $\\q$\\\\(rad)}}\\\\ \n" \
+        table = (
+            f"% These commented lines should be added to the preamble\n"
+            f"% \\usepackage[table]{{xcolor}}\n"
+            f"% \\usepackage{{makecell}}\n"
+            f"% \\definecolor{{lightgray}}{{gray}}{{0.91}}\n"
+            f"\\begin{{table}}[!ht]\n"
+            f" \\rowcolors{{1}}{{}}{{lightgray}}\n"
+            f" \\caption{{Comparaison des métriques d'efficacité et de comportement entre les modèles de fatigue "
+            f"appliqués sur une dynamique musculaire ou articulaire lors de la résolution d'un \\ocp{{}}}}\n"
+            f" \\label{{table:faisabilite}}\n"
+            f" \\begin{{tabular}}{{lcccc}}\n"
             f"  \\hline\n"
+            f"  \\bfseries Condition & "
+            f"\\bfseries\\makecell[c]{{Nombre\\\\d'itération}} & "
+            f"\\bfseries\\makecell[c]{{Temps\\\\d'optimisation\\\\(s)}} & "
+            f"\\bfseries\\makecell[c]{{Temps moyen\\\\par itération\\\\(s/iteration)}} & "
+            f"\\bfseries\\makecell[c]{{$\\sum\\text{{\\rmse{{}}}}$\\\\pour $\\q$\\\\(rad)}}\\\\ \n"
+            f"  \\hline\n"
+        )
 
         for study, sol, rmse_index in zip(self.conditions.studies, self.solution, self.conditions.rmse_index):
-            rmse = np.sum(self._rmse(DataType.STATES, 'q', rmse_index, sol))
+            rmse = np.sum(self._rmse(DataType.STATES, "q", rmse_index, sol))
             rmse_str = f"{rmse:0.3e}" if rmse != 0 else "---"
             if rmse_str.find("e") >= 0:
                 rmse_str = rmse_str.replace("e", "$\\times 10^{{")
@@ -356,17 +371,15 @@ class Study:
                 rmse_str = rmse_str.replace("+0", "")
                 rmse_str = rmse_str.replace("-0", "-")
                 rmse_str = rmse_str.replace("$\\times 10^{{0}}$", "")
-            table += \
-                f"  {study.name} " \
-                f"& {sol.iterations} " \
-                f"& {sol.real_time_to_optimize:0.3f} " \
-                f"& {sol.real_time_to_optimize / sol.iterations:0.3f} " \
+            table += (
+                f"  {study.name} "
+                f"& {sol.iterations} "
+                f"& {sol.real_time_to_optimize:0.3f} "
+                f"& {sol.real_time_to_optimize / sol.iterations:0.3f} "
                 f"& {rmse_str} \\\\\n"
+            )
 
-        table += \
-            f"  \\hline\n" \
-            f" \\end{{tabular}}\n" \
-            f"\\end{{table}}"
+        table += f"  \\hline\n" f" \\end{{tabular}}\n" f"\\end{{table}}"
 
         print("\n\nThis can be copy pasted to latex to generate the table from the thesis")
         print("**************")
@@ -389,32 +402,33 @@ class Study:
         for i in range(n_plots):
             fig = plt.figure()
             fig.set_size_inches(16, 9)
-            plt.rcParams['text.usetex'] = True
-            plt.rcParams['text.latex.preamble'] = \
-                r"\usepackage{amssymb}" \
-                r"\newcommand{\condition}{C/}" \
-                r"\newcommand{\noFatigue}{\varnothing}" \
-                r"\newcommand{\qcc}{4\textsubscript{CC}}" \
-                r"\newcommand{\pe}{P\textsubscript{E}}" \
-                r"\newcommand{\taupm}{\tau^{\pm}}" \
-                r"\newcommand{\tauns}{\tau^{\times}}" \
-                r"\newcommand{\condTauNf}{{\condition}{\tau}{\noFatigue}}" \
-                r"\newcommand{\condTaupm}{{\condition}{\taupm}{}}" \
-                r"\newcommand{\condTaupmQcc}{{\condition}{\taupm}{\qcc}}" \
-                r"\newcommand{\condTaupmPe}{{\condition}{\taupm}{\pe}}" \
-                r"\newcommand{\condTauns}{{\condition}{\tauns}{}}" \
-                r"\newcommand{\condTaunsNf}{{\condition}{\tauns}{\noFatigue}}" \
-                r"\newcommand{\condTaunsQcc}{{\condition}{\tauns}{\qcc}}" \
-                r"\newcommand{\condTaunsPe}{{\condition}{\tauns}{\pe}}" \
-                r"\newcommand{\condAlpha}{{\condition}{\alpha}{}}" \
-                r"\newcommand{\condAlphaNf}{{\condition}{\alpha}{\noFatigue}}" \
-                r"\newcommand{\condAlphaQcc}{{\condition}{\alpha}{\qcc}}" \
+            plt.rcParams["text.usetex"] = True
+            plt.rcParams["text.latex.preamble"] = (
+                r"\usepackage{amssymb}"
+                r"\newcommand{\condition}{C/}"
+                r"\newcommand{\noFatigue}{\varnothing}"
+                r"\newcommand{\qcc}{4\textsubscript{CC}}"
+                r"\newcommand{\pe}{P\textsubscript{E}}"
+                r"\newcommand{\taupm}{\tau^{\pm}}"
+                r"\newcommand{\tauns}{\tau^{\times}}"
+                r"\newcommand{\condTauNf}{{\condition}{\tau}{\noFatigue}}"
+                r"\newcommand{\condTaupm}{{\condition}{\taupm}{}}"
+                r"\newcommand{\condTaupmQcc}{{\condition}{\taupm}{\qcc}}"
+                r"\newcommand{\condTaupmPe}{{\condition}{\taupm}{\pe}}"
+                r"\newcommand{\condTauns}{{\condition}{\tauns}{}}"
+                r"\newcommand{\condTaunsNf}{{\condition}{\tauns}{\noFatigue}}"
+                r"\newcommand{\condTaunsQcc}{{\condition}{\tauns}{\qcc}}"
+                r"\newcommand{\condTaunsPe}{{\condition}{\tauns}{\pe}}"
+                r"\newcommand{\condAlpha}{{\condition}{\alpha}{}}"
+                r"\newcommand{\condAlphaNf}{{\condition}{\alpha}{\noFatigue}}"
+                r"\newcommand{\condAlphaQcc}{{\condition}{\alpha}{\qcc}}"
                 r"\newcommand{\condAlphaPe}{{\condition}{\alpha}{\pe}}"
+            )
 
             ax = plt.axes()
-            ax.set_title(plot_options.title % f"{key}\\textsubscript{{{i}}}", fontsize=1.5*font_size)
-            ax.set_xlabel('Temps (s)', fontsize=font_size)
-            ax.set_ylabel('Angle (rad)', fontsize=font_size)
+            ax.set_title(plot_options.title % f"{key}\\textsubscript{{{i}}}", fontsize=1.5 * font_size)
+            ax.set_xlabel("Temps (s)", fontsize=font_size)
+            ax.set_ylabel("Angle (rad)", fontsize=font_size)
             ax.tick_params(axis="both", labelsize=font_size)
 
             for sol, options in zip(self.solution, plot_options.options):
@@ -440,7 +454,7 @@ class Study:
         data = getattr(sol, data_type.value)[key]
 
         e = data_ref - data
-        se = e**2
+        se = e ** 2
         mse = np.sum(se, axis=1) / data_ref.shape[1]
         rmse = np.sqrt(mse)
         return rmse

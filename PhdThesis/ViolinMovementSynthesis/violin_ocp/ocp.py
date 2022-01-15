@@ -88,18 +88,18 @@ class ViolinOcp:
             self.fatigue_dynamics = FatigueList()
             if self.structure_type == StructureType.TAU:
                 for i in range(self.n_tau):
-                    self.fatigue_dynamics.add(violin.fatigue_model(
+                    self.fatigue_dynamics.add(
+                        violin.fatigue_model(
                             self.fatigue_model,
                             self.structure_type,
                             state_only=self.state_only,
                             index=i,
-                            split_tau=self.split_tau
+                            split_tau=self.split_tau,
                         )
                     )
             for i in range(self.n_mus):
                 self.fatigue_dynamics.add(
-                    violin.fatigue_model(self.fatigue_model, self.structure_type),
-                    state_only=self.state_only
+                    violin.fatigue_model(self.fatigue_model, self.structure_type), state_only=self.state_only
                 )
 
         if self.structure_type == StructureType.MUSCLE:
@@ -137,7 +137,9 @@ class ViolinOcp:
             ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.01, list_index=1, expand=self.expand
         )
         if self.structure_type != StructureType.MUSCLE:
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=10, list_index=13, expand=self.expand)
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=10, list_index=13, expand=self.expand
+            )
 
         # Minimize controls
         if self.fatigue_model != FatigueType.NO_FATIGUE and self.structure_type == StructureType.TAU and self.split_tau:
@@ -254,7 +256,7 @@ class ViolinOcp:
 
             # Limit the fatigue below the max level
             if self.fatigue_model == FatigueType.EFFORT_PERCEPTION:
-                self.x_bounds.max[self.model.nbQ() * 2:, 1:] = 0.90
+                self.x_bounds.max[self.model.nbQ() * 2 :, 1:] = 0.90
             elif self.fatigue_model == FatigueType.QCC:
                 if self.structure_type == StructureType.TAU:
                     self.x_bounds.max[self.n_q * 2 + self.n_q * 3 : self.n_q * 2 + self.n_q * 4, 1:] = 0.90
@@ -281,7 +283,9 @@ class ViolinOcp:
 
     def _set_initial_guess(self, init_file):
         if init_file is None:
-            self.x_init = InitialGuess(np.concatenate((self.violin.q(self.model, self.bow, self.bow_starting), np.zeros(self.n_q))))
+            self.x_init = InitialGuess(
+                np.concatenate((self.violin.q(self.model, self.bow, self.bow_starting), np.zeros(self.n_q)))
+            )
             if self.fatigue_model != FatigueType.NO_FATIGUE:
                 self.x_init.concatenate(FatigueInitialGuess(self.fatigue_dynamics))
 
@@ -290,7 +294,9 @@ class ViolinOcp:
                     self.u_init = FatigueInitialGuess(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
                 elif self.structure_type == StructureType.MUSCLE:
                     self.u_init = InitialGuess(self.violin.tau_init)
-                    self.u_init.concatenate(FatigueInitialGuess(self.fatigue_dynamics, variable_type=VariableType.CONTROLS))
+                    self.u_init.concatenate(
+                        FatigueInitialGuess(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
+                    )
                 else:
                     raise NotImplementedError("Structure type not implemented yet")
             else:
@@ -312,9 +318,15 @@ class ViolinOcp:
             The slack to the bound constraint, based on the range of motion
         """
 
-        range_of_motion = self.ocp.nlp[0].x_bounds.max[:self.n_q * 2, 1] - self.ocp.nlp[0].x_bounds.min[:self.n_q * 2, 1]
-        self.ocp.nlp[0].x_bounds.min[:self.n_q * 2, 2] = self.ocp.nlp[0].x_bounds.min[:self.n_q * 2, 0] - range_of_motion * slack
-        self.ocp.nlp[0].x_bounds.max[:self.n_q * 2, 2] = self.ocp.nlp[0].x_bounds.max[:self.n_q * 2, 0] + range_of_motion * slack
+        range_of_motion = (
+            self.ocp.nlp[0].x_bounds.max[: self.n_q * 2, 1] - self.ocp.nlp[0].x_bounds.min[: self.n_q * 2, 1]
+        )
+        self.ocp.nlp[0].x_bounds.min[: self.n_q * 2, 2] = (
+            self.ocp.nlp[0].x_bounds.min[: self.n_q * 2, 0] - range_of_motion * slack
+        )
+        self.ocp.nlp[0].x_bounds.max[: self.n_q * 2, 2] = (
+            self.ocp.nlp[0].x_bounds.max[: self.n_q * 2, 0] + range_of_motion * slack
+        )
         self.ocp.update_bounds(self.ocp.nlp[0].x_bounds)
 
     def set_bow_target_objective(self, bow_target: np.ndarray, weight: float = 10000, sol: Solution = None):
@@ -471,12 +483,12 @@ class ViolinNMPC(ViolinOcp):
         )
 
     def solve(
-            self,
-            update_function,
-            max_iter: int = 1000,
-            warm_start_solution: Solution = None,
-            show_online: bool = False,
-            update_function_extra_params: dict = None,
+        self,
+        update_function,
+        max_iter: int = 1000,
+        warm_start_solution: Solution = None,
+        show_online: bool = False,
+        update_function_extra_params: dict = None,
     ) -> Solution:
         """
 
@@ -513,5 +525,5 @@ class ViolinNMPC(ViolinOcp):
             cyclic_options=cyclic_options,
             max_consecutive_failing=3,
             warm_start=warm_start_solution,
-            update_function_extra_params=update_function_extra_params
+            update_function_extra_params=update_function_extra_params,
         )

@@ -1,7 +1,16 @@
 from enum import Enum
 
 from scipy import optimize
-from bioptim import XiaFatigue, XiaTauFatigue, MichaudFatigue, MichaudTauFatigue, EffortPerception, TauEffortPerception, ObjectiveFcn, BiMapping
+from bioptim import (
+    XiaFatigue,
+    XiaTauFatigue,
+    MichaudFatigue,
+    MichaudTauFatigue,
+    EffortPerception,
+    TauEffortPerception,
+    ObjectiveFcn,
+    BiMapping,
+)
 from bioptim.optimization.optimization_variable import OptimizationVariableList
 from bioptim.dynamics.fatigue.tau_fatigue import TauFatigue
 import numpy as np
@@ -93,8 +102,9 @@ class Violin:
         pn = DummyPenalty(biorbd_model)
         val = ObjectiveFcn.Lagrange.TRACK_SEGMENT_WITH_CUSTOM_RT.value[0](pn, pn, idx_segment_bow_hair, rt_on_string)
         custom_rt = Function("custom_rt", [pn.nlp.states["q"].cx], [val]).expand()
-        val = ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS.value[0](pn, pn, first_marker=tag_bow_contact,
-                                                              second_marker=tag_violin)
+        val = ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS.value[0](
+            pn, pn, first_marker=tag_bow_contact, second_marker=tag_violin
+        )
         superimpose = Function("superimpose", [pn.nlp.states["q"].cx], [val]).expand()
 
         def objective_function(x, *args, **kwargs):
@@ -246,13 +256,27 @@ class Violin:
             return {"LD": LD, "LR": LR, "F": F, "R": R, "scaling": scaling}
 
         elif fatigue_type == MichaudFatigue:
-            return {"LD": LD, "LR": LR, "F": F, "R": R, "effort_factor": effort_factor,
-                    "stabilization_factor": stabilization_factor, "effort_threshold": effort_threshold}
+            return {
+                "LD": LD,
+                "LR": LR,
+                "F": F,
+                "R": R,
+                "effort_factor": effort_factor,
+                "stabilization_factor": stabilization_factor,
+                "effort_threshold": effort_threshold,
+            }
 
         elif fatigue_type == MichaudTauFatigue:
-            return {"LD": LD, "LR": LR, "F": F, "R": R, "effort_factor": effort_factor,
-                    "stabilization_factor": stabilization_factor, "effort_threshold": effort_threshold,
-                    "scaling": scaling}
+            return {
+                "LD": LD,
+                "LR": LR,
+                "F": F,
+                "R": R,
+                "effort_factor": effort_factor,
+                "stabilization_factor": stabilization_factor,
+                "effort_threshold": effort_threshold,
+                "scaling": scaling,
+            }
 
         elif fatigue_type == EffortPerception:
             return {"effort_factor": effort_factor, "effort_threshold": effort_threshold}

@@ -37,7 +37,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="DEBUG: Modèle de Xia seulement", options=({"linestyle": "-"}, {"linestyle": "--"}),
+            title="DEBUG: Modèle de Xia seulement",
+            options=({"linestyle": "-"}, {"linestyle": "--"}),
         ),
     )
 
@@ -56,7 +57,7 @@ class Study(Enum):
         n_points=4000,
         plot_options=PlotOptions(
             title="DEBUG: Modèle de Xia stabilisé seulement",
-            options=({"linestyle": "-"}, ),
+            options=({"linestyle": "-"},),
         ),
     )
 
@@ -75,7 +76,7 @@ class Study(Enum):
                 x0=(0, 1, 0),
                 rms_indices=(0, 1, 2),
                 colors=("tab:green", "tab:orange", "tab:red"),
-            )
+            ),
         ),
         t_end=3600,
         fixed_target=1,
@@ -93,14 +94,24 @@ class Study(Enum):
                 FatigueParameters(),
                 integrator=Integrator.RK45,
                 x0=(0, 1, 0, 0),
-                rms_indices=(0, 1, 2, 3,),
+                rms_indices=(
+                    0,
+                    1,
+                    2,
+                    3,
+                ),
                 colors=("tab:green", "tab:orange", "tab:red", "tab:gray"),
             ),
             FatigueModels.MICHAUD(
                 FatigueParameters(effort_factor=0.1),
                 integrator=Integrator.RK45,
                 x0=(0, 1, 0, 0),
-                rms_indices=(0, 1, 2, 3,),
+                rms_indices=(
+                    0,
+                    1,
+                    2,
+                    3,
+                ),
                 colors=("tab:green", "tab:orange", "tab:red", "tab:gray"),
             ),
         ),
@@ -109,8 +120,7 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="DEBUG: Modèle de Michaud seulement",
-            options=({"linestyle": "-"}, {"linestyle": "--"})
+            title="DEBUG: Modèle de Michaud seulement", options=({"linestyle": "-"}, {"linestyle": "--"})
         ),
     )
 
@@ -129,8 +139,7 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="DEBUG: Modèle de Pe seulement",
-            options=({"linestyle": "-"}, {"linestyle": "--"})
+            title="DEBUG: Modèle de Pe seulement", options=({"linestyle": "-"}, {"linestyle": "--"})
         ),
     )
 
@@ -145,21 +154,17 @@ class Study(Enum):
                 colors=("tab:green", "tab:orange", "tab:red"),
                 custom_analyses=(
                     CustomAnalysis(
-                        "First index with sum at 95%",
-                        lambda result: np.where(np.sum(result.y, axis=0) > 0.95)[0][0]
+                        "First index with sum at 95%", lambda result: np.where(np.sum(result.y, axis=0) > 0.95)[0][0]
                     ),
                     CustomAnalysis(
                         "First time with sum at 95%",
-                        lambda result: result.t[np.where(np.sum(result.y, axis=0) > 0.95)[0][0]]
+                        lambda result: result.t[np.where(np.sum(result.y, axis=0) > 0.95)[0][0]],
                     ),
                     CustomAnalysis(
                         "Fatigue at same time with sum at 95%",
-                        lambda result: result.y[2, np.where(np.sum(result.y, axis=0) > 0.95)[0][0]]
+                        lambda result: result.y[2, np.where(np.sum(result.y, axis=0) > 0.95)[0][0]],
                     ),
-                    CustomAnalysis(
-                        "Sum at the end of the trial",
-                        lambda result: np.sum(result.y, axis=0)[-1]
-                    ),
+                    CustomAnalysis("Sum at the end of the trial", lambda result: np.sum(result.y, axis=0)[-1]),
                 ),
             ),
             FatigueModels.XIA_STABILIZED(
@@ -169,21 +174,17 @@ class Study(Enum):
                 colors=("tab:green", "tab:orange", "tab:red"),
                 custom_analyses=(
                     CustomAnalysis(
-                        "First index with sum at 95%",
-                        lambda result: np.where(np.sum(result.y, axis=0) > 0.95)[0][0]
+                        "First index with sum at 95%", lambda result: np.where(np.sum(result.y, axis=0) > 0.95)[0][0]
                     ),
                     CustomAnalysis(
                         "First time with sum at 95%",
-                        lambda result: result.t[np.where(np.sum(result.y, axis=0) > 0.95)[0][0]]
+                        lambda result: result.t[np.where(np.sum(result.y, axis=0) > 0.95)[0][0]],
                     ),
                     CustomAnalysis(
                         "Fatigue at same time with sum at 95%",
-                        lambda result: result.y[2, np.where(np.sum(result.y, axis=0) > 0.95)[0][0]]
+                        lambda result: result.y[2, np.where(np.sum(result.y, axis=0) > 0.95)[0][0]],
                     ),
-                    CustomAnalysis(
-                        "Sum at the end of the trial",
-                        lambda result: np.sum(result.y, axis=0)[-1]
-                    ),
+                    CustomAnalysis("Sum at the end of the trial", lambda result: np.sum(result.y, axis=0)[-1]),
                 ),
             ),
             FatigueModels.XIA_STABILIZED(
@@ -193,21 +194,17 @@ class Study(Enum):
                 colors=("tab:green", "tab:orange", "tab:red"),
                 custom_analyses=(
                     CustomAnalysis(
-                        "First index with sum at 95%",
-                        lambda result: np.where(np.sum(result.y, axis=0) > 0.95)[0][0]
+                        "First index with sum at 95%", lambda result: np.where(np.sum(result.y, axis=0) > 0.95)[0][0]
                     ),
                     CustomAnalysis(
                         "First time with sum at 95%",
-                        lambda result: result.t[np.where(np.sum(result.y, axis=0) > 0.95)[0][0]]
+                        lambda result: result.t[np.where(np.sum(result.y, axis=0) > 0.95)[0][0]],
                     ),
                     CustomAnalysis(
                         "Fatigue at same time with sum at 95%",
-                        lambda result: result.y[2, np.where(np.sum(result.y, axis=0) > 0.95)[0][0]]
+                        lambda result: result.y[2, np.where(np.sum(result.y, axis=0) > 0.95)[0][0]],
                     ),
-                    CustomAnalysis(
-                        "Sum at the end of the trial",
-                        lambda result: np.sum(result.y[:, -1])
-                    ),
+                    CustomAnalysis("Sum at the end of the trial", lambda result: np.sum(result.y[:, -1])),
                 ),
             ),
             FatigueModels.XIA_STABILIZED(
@@ -216,10 +213,7 @@ class Study(Enum):
                 x0=(0, 0.6, 0),
                 colors=("tab:green", "tab:orange", "tab:red"),
                 custom_analyses=(
-                    CustomAnalysis(
-                        "Sum at the end of the trial",
-                        lambda result: np.sum(result.y[:, -1])
-                    ),
+                    CustomAnalysis("Sum at the end of the trial", lambda result: np.sum(result.y[:, -1])),
                 ),
             ),
         ),
@@ -229,14 +223,32 @@ class Study(Enum):
         n_points=1000,
         plot_options=PlotOptions(
             title="Remplissages des bassins du modèle $3CC^S$ en fonction du temps",
-            legend=("_", "_", "_", "_", "$S = 200$", "_", "_", "_", "$S = 100$", "_", "_", "_", "$S = 50$", "_", "_", "_", "$S = 0$"),
+            legend=(
+                "_",
+                "_",
+                "_",
+                "_",
+                "$S = 200$",
+                "_",
+                "_",
+                "_",
+                "$S = 100$",
+                "_",
+                "_",
+                "_",
+                "$S = 50$",
+                "_",
+                "_",
+                "_",
+                "$S = 0$",
+            ),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$\sum{}$"),
             options=({"linestyle": "-"}, {"linestyle": "--"}, {"linestyle": "-."}, {"linestyle": ":"}),
             save_path="xiaStabilized_short.png",
         ),
         common_custom_analyses=(
             CustomAnalysis("Sum of components at the final index", lambda results: np.sum(results.y[:, -1], axis=0)),
-        )
+        ),
     )
 
     STUDY1_2_XIA_VS_STABILIZED_GOOD_X0 = StudyConfiguration(
@@ -265,15 +277,15 @@ class Study(Enum):
             title="Remplissages des bassins des modèles $3CC$ et $3CC^S$ en fonction du temps",
             legend=("_", "_", "_", "_", "$3CC^S$", "_", "_", "_", "$3CC$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$\sum{}$"),
-            options=({"linestyle": "-"}, {"linestyle": "--"},),
+            options=(
+                {"linestyle": "-"},
+                {"linestyle": "--"},
+            ),
             save_path="xia_vs_xiaStabilized_goodStart.png",
         ),
         common_custom_analyses=(
             CustomAnalysis("Sum of components at the final index", lambda results: np.sum(results.y[:, -1], axis=0)),
-            CustomAnalysis(
-                "Fatigue at final node",
-                lambda result: result.y[2, -1]
-            ),
+            CustomAnalysis("Fatigue at final node", lambda result: result.y[2, -1]),
         ),
     )
 
@@ -303,15 +315,15 @@ class Study(Enum):
             title="Remplissages des bassins des modèles $3CC$ et $3CC^S$ en fonction du temps",
             legend=("_", "_", "_", "_", "$3CC^S$", "_", "_", "_", "$3CC$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$\sum{}$"),
-            options=({"linestyle": "-"}, {"linestyle": "--"},),
+            options=(
+                {"linestyle": "-"},
+                {"linestyle": "--"},
+            ),
             save_path="xia_vs_xiaStabilized_badStart.png",
         ),
         common_custom_analyses=(
             CustomAnalysis("Sum of components at the final index", lambda results: np.sum(results.y[:, -1], axis=0)),
-            CustomAnalysis(
-                "Fatigue at final node",
-                lambda result: result.y[2, -1]
-            ),
+            CustomAnalysis("Fatigue at final node", lambda result: result.y[2, -1]),
         ),
     )
 
@@ -341,15 +353,15 @@ class Study(Enum):
             title="Remplissages des bassins des modèles $3CC$ et $3CC^S$ en fonction du temps",
             legend=("_", "_", "_", "_", "$3CC^S$", "_", "_", "_", "$3CC$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$\sum{}$"),
-            options=({"linestyle": "-"}, {"linestyle": "--"},),
+            options=(
+                {"linestyle": "-"},
+                {"linestyle": "--"},
+            ),
             save_path="xiaStabilized_fatigueNegative.png",
         ),
         common_custom_analyses=(
             CustomAnalysis("Sum of components at the final index", lambda results: np.sum(results.y[:, -1], axis=0)),
-            CustomAnalysis(
-                "Fatigue at final node",
-                lambda result: result.y[2, -1]
-            ),
+            CustomAnalysis("Fatigue at final node", lambda result: result.y[2, -1]),
         ),
     )
 
@@ -379,7 +391,7 @@ class Study(Enum):
             legend=("_", "_", "_", "_", "_", "$4CC$", "_", "_", "_", "$3CC$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$M_E$", "$\sum{}$"),
             options=({"linestyle": "-"}, {"linestyle": "--"}),
-            save_path="michaud_vs_xia_long.png"
+            save_path="michaud_vs_xia_long.png",
         ),
     )
 
@@ -406,8 +418,8 @@ class Study(Enum):
                 colors=("tab:green", "tab:orange", "tab:red", "tab:gray"),
                 rms_indices=(),
             ),
-            FatigueModels.MICHAUD(FatigueParameters(
-                effort_factor=0.0000, effort_threshold=0.5),
+            FatigueModels.MICHAUD(
+                FatigueParameters(effort_factor=0.0000, effort_threshold=0.5),
                 integrator=Integrator.RK45,
                 x0=(0, 1, 0, 0),
                 colors=("tab:green", "tab:orange", "tab:red", "tab:gray"),
@@ -420,25 +432,44 @@ class Study(Enum):
         n_points=10000,  # 100000
         plot_options=PlotOptions(
             title="Remplissages des bassins du modèle $4CC$ en fonction du temps",
-            legend=("_", "_", "_", "_", "_", "$E = 0.0075$", "_", "_", "_", "_", "$E = 0.0050$",
-                    "_", "_", "_", "_", "$E = 0.0025$", "_", "_", "_", "_", "$E = 0.0000$"),
+            legend=(
+                "_",
+                "_",
+                "_",
+                "_",
+                "_",
+                "$E = 0.0075$",
+                "_",
+                "_",
+                "_",
+                "_",
+                "$E = 0.0050$",
+                "_",
+                "_",
+                "_",
+                "_",
+                "$E = 0.0025$",
+                "_",
+                "_",
+                "_",
+                "_",
+                "$E = 0.0000$",
+            ),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$M_E$", "$\sum{}$"),
-            options=({"linestyle": "-"}, {"linestyle": "--"}, {"linestyle": "-."}, {"linestyle": ":"},),
-            save_path="michaud_velocity.png"
+            options=(
+                {"linestyle": "-"},
+                {"linestyle": "--"},
+                {"linestyle": "-."},
+                {"linestyle": ":"},
+            ),
+            save_path="michaud_velocity.png",
         ),
         common_custom_analyses=(
             CustomAnalysis(
-                "Effort perception level at mid point",
-                lambda result: result.y[3, int(result.y.shape[1] // 2)]
+                "Effort perception level at mid point", lambda result: result.y[3, int(result.y.shape[1] // 2)]
             ),
-            CustomAnalysis(
-                "Effort perception level at end point",
-                lambda result: result.y[3, -1]
-            ),
-            CustomAnalysis(
-                "Rested level at end point",
-                lambda result: result.y[1, -1]
-            ),
+            CustomAnalysis("Effort perception level at end point", lambda result: result.y[3, -1]),
+            CustomAnalysis("Rested level at end point", lambda result: result.y[1, -1]),
         ),
     )
 
@@ -475,24 +506,46 @@ class Study(Enum):
         n_points=10000,  # 100000
         plot_options=PlotOptions(
             title="Remplissages des bassins du modèle $4CC$ en fonction du temps",
-            legend=("_", "_", "_", "_", "_", "$E_{seuil} = 75\%$", "_", "_", "_", "_", "$E_{seuil} = 50\%$",
-                    "_", "_", "_", "_", "$E_{seuil} = 25\%$", "_", "_", "_", "_", "$E_{seuil} \\approx 0\%$"),
+            legend=(
+                "_",
+                "_",
+                "_",
+                "_",
+                "_",
+                "$E_{seuil} = 75\%$",
+                "_",
+                "_",
+                "_",
+                "_",
+                "$E_{seuil} = 50\%$",
+                "_",
+                "_",
+                "_",
+                "_",
+                "$E_{seuil} = 25\%$",
+                "_",
+                "_",
+                "_",
+                "_",
+                "$E_{seuil} \\approx 0\%$",
+            ),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$M_E$", "$\sum{}$"),
-            options=({"linestyle": "-"}, {"linestyle": "--"}, {"linestyle": "-."}, {"linestyle": ":"},),
-            save_path="michaud_threshold.png"
+            options=(
+                {"linestyle": "-"},
+                {"linestyle": "--"},
+                {"linestyle": "-."},
+                {"linestyle": ":"},
+            ),
+            save_path="michaud_threshold.png",
         ),
         common_custom_analyses=(
             CustomAnalysis(
-                "Effort perception level at mid point",
-                lambda result: result.y[3, int(result.y.shape[1] // 2)]
+                "Effort perception level at mid point", lambda result: result.y[3, int(result.y.shape[1] // 2)]
             ),
-            CustomAnalysis(
-                "Effort perception level at end point",
-                lambda result: result.y[3, -1]
-            ),
+            CustomAnalysis("Effort perception level at end point", lambda result: result.y[3, -1]),
             CustomAnalysis(
                 "Difference effort perception level at mid vs end point",
-                lambda result: result.y[3, int(result.y.shape[1] // 2)] - result.y[3, -1]
+                lambda result: result.y[3, int(result.y.shape[1] // 2)] - result.y[3, -1],
             ),
         ),
     )
@@ -500,21 +553,17 @@ class Study(Enum):
     STUDY2_4_MICHAUD_VS_XIA = StudyConfiguration(
         fatigue_models=(
             FatigueModels.MICHAUD(
-                FatigueParameters(effort_threshold=0.5, F=0.01/4),
+                FatigueParameters(effort_threshold=0.5, F=0.01 / 4),
                 integrator=Integrator.RK45,
                 x0=(0, 1, 0, 0),
                 colors=("tab:green", "tab:orange", "tab:red", "tab:gray"),
                 rms_indices=(0, 1, 2),
                 custom_analyses=(
                     CustomAnalysis(
-                        "Effort perception at mid point",
-                        lambda result: result.y[3, int(result.y.shape[1] // 2 + 5)]
+                        "Effort perception at mid point", lambda result: result.y[3, int(result.y.shape[1] // 2 + 5)]
                     ),
-                    CustomAnalysis(
-                        "Effort perception at end point",
-                        lambda result: result.y[3, -1]
-                    ),
-                )
+                    CustomAnalysis("Effort perception at end point", lambda result: result.y[3, -1]),
+                ),
             ),
             FatigueModels.XIA(
                 FatigueParameters(F=0.01),
@@ -530,27 +579,25 @@ class Study(Enum):
         plot_options=PlotOptions(
             title="Remplissages des bassins des modèles $3CC$ et $4CC$ en fonction du temps",
             legend=("_", "_", "_", "_", "_", "$4CC$", "_", "_", "_", "$3CC$"),
-            supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$M_E$", "$\sum{}$", "_", "_", "_", ),
+            supplementary_legend=(
+                "Cible",
+                "$M_A$",
+                "$M_R$",
+                "$M_F$",
+                "$M_E$",
+                "$\sum{}$",
+                "_",
+                "_",
+                "_",
+            ),
             options=({"linestyle": "-"}, {"linestyle": "--"}),
-            save_path="michaud_vs_xia.png"
+            save_path="michaud_vs_xia.png",
         ),
         common_custom_analyses=(
-            CustomAnalysis(
-                "Rested level at mid point",
-                lambda result: result.y[1, int(result.y.shape[1] // 2 + 5)]
-            ),
-            CustomAnalysis(
-                "Rested level at end point",
-                lambda result: result.y[1, -1]
-            ),
-            CustomAnalysis(
-                "Fatigue level at mid point",
-                lambda result: result.y[2, int(result.y.shape[1] // 2 + 5)]
-            ),
-            CustomAnalysis(
-                "Fatigue level at end point",
-                lambda result: result.y[2, -1]
-            ),
+            CustomAnalysis("Rested level at mid point", lambda result: result.y[1, int(result.y.shape[1] // 2 + 5)]),
+            CustomAnalysis("Rested level at end point", lambda result: result.y[1, -1]),
+            CustomAnalysis("Fatigue level at mid point", lambda result: result.y[2, int(result.y.shape[1] // 2 + 5)]),
+            CustomAnalysis("Fatigue level at end point", lambda result: result.y[2, -1]),
         ),
     )
 
@@ -568,7 +615,12 @@ class Study(Enum):
             FatigueModels.MICHAUD(
                 FatigueParameters(),
                 integrator=Integrator.RK45,
-                x0=(0, 1, 0, 0,),
+                x0=(
+                    0,
+                    1,
+                    0,
+                    0,
+                ),
                 colors=("tab:green", "tab:orange", "tab:red", "tab:gray"),
                 rms_indices=(),
             ),
@@ -582,6 +634,6 @@ class Study(Enum):
             legend=("_", "PE", "_", "_", "_", "4CC"),
             supplementary_legend=("Cible", "$M_E$", "$M_A$", "$M_R$", "$M_F$", "_", "$\sum{}$"),
             options=({"linestyle": "-"}, {"linestyle": "--"}),
-            save_path="effortPerception_vs_michaud.png"
+            save_path="effortPerception_vs_michaud.png",
         ),
     )

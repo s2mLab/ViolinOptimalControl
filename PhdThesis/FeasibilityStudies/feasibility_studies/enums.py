@@ -8,7 +8,7 @@ class PlotOptions:
         legend: tuple[str, ...] = None,
         supplementary_legend: tuple[str, ...] = None,
         options: tuple[dict, ...] = None,
-        save_path: str = None
+        save_path: str = None,
     ):
         self.title = title
         self.legend = legend

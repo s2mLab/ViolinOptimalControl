@@ -80,19 +80,26 @@ class FatigueIntegrator:
     def plot_results(self, font_size: int = 20, maximized: bool = False):
         fig = plt.figure()
         fig.set_size_inches(16, 9)
-        plt.rcParams['text.usetex'] = True
+        plt.rcParams["text.usetex"] = True
         self.axes = plt.axes()
 
         if not self._has_run:
             raise RuntimeError("run() must be called before plotting the results")
 
-        plt.plot(self.study.t, [self.study.target_function.function(t) * 100 for t in self.study.t], color="tab:blue", linewidth=4)
-        for model, result, plot_options in zip(self.study.fatigue_models, self._results[-1], self.study.plot_options.options):
+        plt.plot(
+            self.study.t,
+            [self.study.target_function.function(t) * 100 for t in self.study.t],
+            color="tab:blue",
+            linewidth=4,
+        )
+        for model, result, plot_options in zip(
+            self.study.fatigue_models, self._results[-1], self.study.plot_options.options
+        ):
             self._add_result_to_plot(model, result, plot_options)
 
-        self.axes.set_title(self.study.plot_options.title, fontsize=1.5*font_size)
-        self.axes.set_xlabel('Temps (s)', fontsize=font_size)
-        self.axes.set_ylabel('Niveau (\%)', fontsize=font_size)
+        self.axes.set_title(self.study.plot_options.title, fontsize=1.5 * font_size)
+        self.axes.set_xlabel("Temps (s)", fontsize=font_size)
+        self.axes.set_ylabel("Niveau (\%)", fontsize=font_size)
         self.axes.tick_params(axis="both", labelsize=font_size)
         if self.study.plot_options.legend is not None:
             supplementary_legend = None
@@ -125,8 +132,10 @@ class FatigueIntegrator:
         print(f"Individual integration time:")
         time = np.array(self._performing_time).T
         for model, t in zip(self.study.fatigue_models, time):
-            print(f"\t{type(model).__name__}: {np.mean(t) / self.study.t[-1]:1.3f} seconds "
-                  f"per integrated second for {np.mean(t):1.3f} second total (mean of {t.shape[0]} trials)")
+            print(
+                f"\t{type(model).__name__}: {np.mean(t) / self.study.t[-1]:1.3f} seconds "
+                f"per integrated second for {np.mean(t):1.3f} second total (mean of {t.shape[0]} trials)"
+            )
 
     def print_rmse(self):
         if not self._has_run:
@@ -142,7 +151,7 @@ class FatigueIntegrator:
         models = self.study.fatigue_models
 
         e = self._results[-1][0].y[models[0].rms_indices, :] - self._results[-1][1].y[models[1].rms_indices, :]
-        se = e**2
+        se = e ** 2
         mse = np.sum(se, axis=1) / self.study.n_points
         rmse = np.sqrt(mse)
 
@@ -171,4 +180,4 @@ class FatigueIntegrator:
         for y, color in zip(results.y, model.colors):
             plt.plot(results.t, y * 100, color=color, **plot_options)
         if model.print_sum:
-            plt.plot(results.t, np.sum(results.y * 100,  axis=0), color="black", **plot_options)
+            plt.plot(results.t, np.sum(results.y * 100, axis=0), color="black", **plot_options)

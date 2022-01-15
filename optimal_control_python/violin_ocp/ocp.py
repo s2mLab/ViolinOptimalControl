@@ -245,7 +245,7 @@ class ViolinOcp:
 
         if self.fatigable:
             self.x_bounds.concatenate(FatigueBounds(self.fatigue_dynamics, fix_first_frame=True))
-            self.x_bounds.max[self.model.nbQ() * 2:, 1:] = 0.90  # Limit the fatigue below the max level
+            self.x_bounds.max[self.model.nbQ() * 2 :, 1:] = 0.90  # Limit the fatigue below the max level
 
         if self.fatigable:
             self.u_bounds = FatigueBounds(self.fatigue_dynamics, variable_type=VariableType.CONTROLS)
@@ -256,7 +256,9 @@ class ViolinOcp:
 
     def _set_initial_guess(self, init_file):
         if init_file is None:
-            self.x_init = InitialGuess(np.concatenate((self.violin.q(self.model, self.bow, self.bow_starting), np.zeros(self.n_q))))
+            self.x_init = InitialGuess(
+                np.concatenate((self.violin.q(self.model, self.bow, self.bow_starting), np.zeros(self.n_q)))
+            )
             if self.fatigable:
                 self.x_init.concatenate(FatigueInitialGuess(self.fatigue_dynamics))
 
@@ -280,9 +282,15 @@ class ViolinOcp:
             The slack to the bound constraint, based on the range of motion
         """
 
-        range_of_motion = self.ocp.nlp[0].x_bounds.max[:self.n_q * 2, 1] - self.ocp.nlp[0].x_bounds.min[:self.n_q * 2, 1]
-        self.ocp.nlp[0].x_bounds.min[:self.n_q * 2, 2] = self.ocp.nlp[0].x_bounds.min[:self.n_q * 2, 0] - range_of_motion * slack
-        self.ocp.nlp[0].x_bounds.max[:self.n_q * 2, 2] = self.ocp.nlp[0].x_bounds.max[:self.n_q * 2, 0] + range_of_motion * slack
+        range_of_motion = (
+            self.ocp.nlp[0].x_bounds.max[: self.n_q * 2, 1] - self.ocp.nlp[0].x_bounds.min[: self.n_q * 2, 1]
+        )
+        self.ocp.nlp[0].x_bounds.min[: self.n_q * 2, 2] = (
+            self.ocp.nlp[0].x_bounds.min[: self.n_q * 2, 0] - range_of_motion * slack
+        )
+        self.ocp.nlp[0].x_bounds.max[: self.n_q * 2, 2] = (
+            self.ocp.nlp[0].x_bounds.max[: self.n_q * 2, 0] + range_of_motion * slack
+        )
         self.ocp.update_bounds(self.ocp.nlp[0].x_bounds)
 
     def set_bow_target_objective(self, bow_target: np.ndarray, weight: float = 10000, sol: Solution = None):
@@ -438,7 +446,9 @@ class ViolinNMPC(ViolinOcp):
             n_threads=self.n_threads,
         )
 
-    def solve(self, update_function, warm_start_solution: Solution = None, cycle_from=-1, show_online: bool = False) -> Solution:
+    def solve(
+        self, update_function, warm_start_solution: Solution = None, cycle_from=-1, show_online: bool = False
+    ) -> Solution:
         """
 
         Parameters
@@ -463,4 +473,10 @@ class ViolinNMPC(ViolinOcp):
         self.solver.set_maximum_iterations(1000)
         cyclic_options = {"states": ["q", "qdot"]}
 
-        return self.ocp.solve(update_function, solver=self.solver, cyclic_options=cyclic_options, max_consecutive_failing=3, warm_start=warm_start_solution)
+        return self.ocp.solve(
+            update_function,
+            solver=self.solver,
+            cyclic_options=cyclic_options,
+            max_consecutive_failing=3,
+            warm_start=warm_start_solution,
+        )

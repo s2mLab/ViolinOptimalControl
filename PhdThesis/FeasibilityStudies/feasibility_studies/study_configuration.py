@@ -34,4 +34,3 @@ class StudyConfiguration:
             raise ValueError("len(plot_options) must be >= len(fatigue_models)")
 
         self.common_custom_analyses = common_custom_analyses
-

@@ -19,13 +19,13 @@ from violin_ocp import (
 
 class StudyInternal:
     def __init__(
-            self,
-            name: str,
-            structure_type: StructureType,
-            fatigue_type: FatigueType,
-            n_cycles_total: int,
-            n_cycles_simultaneous: int,
-            rmse_index: int
+        self,
+        name: str,
+        structure_type: StructureType,
+        fatigue_type: FatigueType,
+        n_cycles_total: int,
+        n_cycles_simultaneous: int,
+        rmse_index: int,
     ):
         self.name = name
         self.save_name = name.replace("$", "")
@@ -134,7 +134,7 @@ class StudyInternal:
             max_iter=exact_max_iter,
             warm_start_solution=pre_sol,
             show_online=show_graphs,
-            update_function_extra_params={"n_cycles_total": self.n_cycles_total}
+            update_function_extra_params={"n_cycles_total": self.n_cycles_total},
         )
 
 
@@ -160,35 +160,34 @@ class StudiesInternal:
         if not self._has_run:
             raise RuntimeError("run() must be called before generating the latex table")
 
-        table = \
-            f"% These commented lines should be added to the preamble\n" \
-            f"% \\usepackage[table]{{xcolor}}\n" \
-            f"% \\usepackage{{makecell}}\n" \
-            f"% \\definecolor{{lightgray}}{{gray}}{{0.91}}\n" \
-            f"\\begin{{table}}[!ht]\n" \
-            f" \\rowcolors{{1}}{{}}{{lightgray}}\n" \
-            f" \\caption{{Comparaison des métriques d'efficacité entre les modèles de fatigue " \
-            f"appliqués sur une dynamique musculaire ou articulaire lors de la résolution d'un \\ocp{{}}}}\n" \
-            f" \\label{{table:faisabilite}}\n" \
-            f" \\begin{{tabular}}{{lccc}}\n" \
-            f"  \\hline\n" \
-            f"  \\bfseries Condition & " \
-            f"\\bfseries\\makecell[c]{{Nombre\\\\d'itération}} & " \
-            f"\\bfseries\\makecell[c]{{Temps\\\\d'optimisation\\\\(s)}} & " \
-            f"\\bfseries\\makecell[c]{{Temps moyen\\\\par itération\\\\(s/iteration)}}\\\\ \n" \
+        table = (
+            f"% These commented lines should be added to the preamble\n"
+            f"% \\usepackage[table]{{xcolor}}\n"
+            f"% \\usepackage{{makecell}}\n"
+            f"% \\definecolor{{lightgray}}{{gray}}{{0.91}}\n"
+            f"\\begin{{table}}[!ht]\n"
+            f" \\rowcolors{{1}}{{}}{{lightgray}}\n"
+            f" \\caption{{Comparaison des métriques d'efficacité entre les modèles de fatigue "
+            f"appliqués sur une dynamique musculaire ou articulaire lors de la résolution d'un \\ocp{{}}}}\n"
+            f" \\label{{table:faisabilite}}\n"
+            f" \\begin{{tabular}}{{lccc}}\n"
             f"  \\hline\n"
+            f"  \\bfseries Condition & "
+            f"\\bfseries\\makecell[c]{{Nombre\\\\d'itération}} & "
+            f"\\bfseries\\makecell[c]{{Temps\\\\d'optimisation\\\\(s)}} & "
+            f"\\bfseries\\makecell[c]{{Temps moyen\\\\par itération\\\\(s/iteration)}}\\\\ \n"
+            f"  \\hline\n"
+        )
 
         for study, sol in zip(self.studies, self.solutions):
-            table += \
-                f"  {study.name} " \
-                f"& {mean(sol.iterations)} " \
-                f"& {sol.real_time_to_optimize:0.3f} " \
+            table += (
+                f"  {study.name} "
+                f"& {mean(sol.iterations)} "
+                f"& {sol.real_time_to_optimize:0.3f} "
                 f"& {sol.real_time_to_optimize / mean(sol.iterations):0.3f} \\\\\n"
+            )
 
-        table += \
-            f"  \\hline\n" \
-            f" \\end{{tabular}}\n" \
-            f"\\end{{table}}"
+        table += f"  \\hline\n" f" \\end{{tabular}}\n" f"\\end{{table}}"
 
         print("\n\nThis can be copy pasted to latex to generate the table from the thesis")
         print("**************")
@@ -201,7 +200,7 @@ class StudiesInternal:
         data = getattr(sol, data_type.value)[key]
 
         e = data_ref - data
-        se = e**2
+        se = e ** 2
         mse = np.sum(se, axis=1) / data_ref.shape[1]
         rmse = np.sqrt(mse)
         return rmse
@@ -220,7 +219,7 @@ class StudyConfig:
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
-        )
+        ),
     )
 
     DEBUG_ALL_TAU: StudiesInternal = StudiesInternal(
@@ -250,7 +249,7 @@ class StudyConfig:
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
-        )
+        ),
     )
 
     DEBUG_ALL_MUSCLE: StudiesInternal = StudiesInternal(
@@ -280,7 +279,7 @@ class StudyConfig:
                 n_cycles_simultaneous=1,
                 rmse_index=0,
             ),
-        )
+        ),
     )
 
     # Actual Studies
@@ -335,5 +334,5 @@ class StudyConfig:
                 n_cycles_simultaneous=1,
                 rmse_index=3,
             ),
-        )
+        ),
     )

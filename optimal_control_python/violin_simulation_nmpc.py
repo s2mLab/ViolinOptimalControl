@@ -24,7 +24,7 @@ def main():
     minimize_fatigue = True
     with_muscles = False
     pre_solve = True
-    
+
     # Generate a full cycle target
     lim = bow.hair_limits if starting_position == BowPosition.FROG else [bow.hair_limits[1], bow.hair_limits[0]]
     bow_trajectory = BowTrajectory(lim, full_cycle + 1)

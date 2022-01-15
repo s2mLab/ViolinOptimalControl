@@ -93,8 +93,9 @@ class Violin:
         pn = DummyPenalty(biorbd_model)
         val = ObjectiveFcn.Lagrange.TRACK_SEGMENT_WITH_CUSTOM_RT.value[0](pn, pn, idx_segment_bow_hair, rt_on_string)
         custom_rt = Function("custom_rt", [pn.nlp.states["q"].cx], [val]).expand()
-        val = ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS.value[0](pn, pn, first_marker=tag_bow_contact,
-                                                              second_marker=tag_violin)
+        val = ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS.value[0](
+            pn, pn, first_marker=tag_bow_contact, second_marker=tag_violin
+        )
         superimpose = Function("superimpose", [pn.nlp.states["q"].cx], [val]).expand()
 
         def objective_function(x, *args, **kwargs):
@@ -184,7 +185,7 @@ class Violin:
         structure_type: StructureType,
         state_only: bool = True,
         index: int = None,
-        split_tau: bool = False
+        split_tau: bool = False,
     ):
         if fatigue_type == FatigueType.QCC:
             if structure_type == StructureType.MUSCLE:
@@ -243,13 +244,27 @@ class Violin:
 
         if fatigue_type == FatigueType.QCC:
             if structure_type == StructureType.MUSCLE:
-                return {"LD": LD, "LR": LR, "F": F, "R": R, "effort_factor": effort_factor,
-                        "stabilization_factor": stabilization_factor, "effort_threshold": effort_threshold}
+                return {
+                    "LD": LD,
+                    "LR": LR,
+                    "F": F,
+                    "R": R,
+                    "effort_factor": effort_factor,
+                    "stabilization_factor": stabilization_factor,
+                    "effort_threshold": effort_threshold,
+                }
 
             elif structure_type == StructureType.TAU:
-                return {"LD": LD, "LR": LR, "F": F, "R": R, "effort_factor": effort_factor,
-                        "stabilization_factor": stabilization_factor, "effort_threshold": effort_threshold,
-                        "scaling": scaling}
+                return {
+                    "LD": LD,
+                    "LR": LR,
+                    "F": F,
+                    "R": R,
+                    "effort_factor": effort_factor,
+                    "stabilization_factor": stabilization_factor,
+                    "effort_threshold": effort_threshold,
+                    "scaling": scaling,
+                }
             else:
                 raise NotImplementedError("Structure type not implemented yet")
 

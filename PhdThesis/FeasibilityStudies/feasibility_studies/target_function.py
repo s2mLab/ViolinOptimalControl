@@ -20,7 +20,7 @@ class TargetFunctionInternal:
         t_end: float,
         n_points: int,
         fixed_target: Union[int, float, tuple, list],
-        chosen_function: TargetFunctions
+        chosen_function: TargetFunctions,
     ):
         self.t_end = t_end
         self.fixed_target = fixed_target

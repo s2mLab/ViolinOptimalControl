@@ -49,7 +49,8 @@ class Michaud(FatigueModel):
                     stabilization_factor=fatigue_params.stabilization_factor,
                     effort_factor=fatigue_params.effort_factor,
                     scaling=-fatigue_params.scaling,
-                ), MichaudFatigue(
+                ),
+                MichaudFatigue(
                     LD=fatigue_params.LD,
                     LR=fatigue_params.LR,
                     F=fatigue_params.F,
@@ -59,7 +60,7 @@ class Michaud(FatigueModel):
                     effort_factor=fatigue_params.effort_factor,
                     scaling=fatigue_params.scaling,
                 ),
-                split_controls=fatigue_params.split_controls
+                split_controls=fatigue_params.split_controls,
             )
         elif fatigable_structure == FatigableStructure.MUSCLES:
             model = MichaudFatigue(
@@ -92,7 +93,7 @@ class EffortPerception(FatigueModel):
                     effort_factor=fatigue_params.effort_factor,
                     scaling=fatigue_params.scaling,
                 ),
-                split_controls=fatigue_params.split_controls
+                split_controls=fatigue_params.split_controls,
             )
         elif fatigable_structure == FatigableStructure.MUSCLES:
             model = EP(

@@ -11,7 +11,7 @@ class PlotOptions:
         legend_indices: Union[tuple[bool, ...], None],
         options: tuple[dict, ...],
         maximize: bool = False,
-        save_path: Union[tuple[str, ...], None] = None
+        save_path: Union[tuple[str, ...], None] = None,
     ):
         self.title = title
         self.legend_indices = legend_indices

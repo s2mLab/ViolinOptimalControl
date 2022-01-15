@@ -15,7 +15,7 @@ class FatigueParameters:
         scaling: float = 1,
         stabilization_factor: float = 10,
         effort_factor: float = 0.0075,
-        effort_threshold: float = 0.2
+        effort_threshold: float = 0.2,
     ):
         self.LD = LD
         self.LR = LR

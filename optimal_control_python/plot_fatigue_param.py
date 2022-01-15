@@ -30,7 +30,7 @@ def plot_result(t, out, target, linestyle):
     if out.shape[0] > 3:
         plt.plot(t, out[3, :], "tab:gray", linestyle=linestyle)
     # plt.plot(t, [target_load(_t, target) for _t in t], "tab:blue", alpha=0.5)
-    plt.plot(t, np.sum(out[:4, :],  axis=0), "k")
+    plt.plot(t, np.sum(out[:4, :], axis=0), "k")
 
 
 def main():
@@ -48,10 +48,15 @@ def main():
     t = np.linspace(0, t_end, n_points)
     violin = Violin("WuViolin", ViolinString.E)
 
-
     fatigue_models = [
-        MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1, index=0, effort_threshold=0, stabilization_factor=0, effort_factor=0)),  # Behaves like Xia original
-        MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1, index=0, effort_threshold=0, effort_factor=0)),  # Behaves like Xia stabilized
+        MichaudFatigue(
+            **violin.fatigue_parameters(
+                MichaudTauFatigue, 1, index=0, effort_threshold=0, stabilization_factor=0, effort_factor=0
+            )
+        ),  # Behaves like Xia original
+        MichaudFatigue(
+            **violin.fatigue_parameters(MichaudTauFatigue, 1, index=0, effort_threshold=0, effort_factor=0)
+        ),  # Behaves like Xia stabilized
         # MichaudFatigue(**violin.fatigue_parameters(MichaudTauFatigue, 1, index=0)),
         # EffortPerception(**violin.fatigue_parameters(TauEffortPerception, -1, index=0)),
         # EffortPerception(**violin.fatigue_parameters(TauEffortPerception, 1, index=0)),

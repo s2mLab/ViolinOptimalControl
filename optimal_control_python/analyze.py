@@ -16,7 +16,7 @@ class DataType(Enum):
 def load_data(path: str, n_cycles: int, use_bo: bool = True):
 
     if use_bo:
-        with open(path, "rb") as file:self.ocp_solver.opts =
+        with open(path, "rb") as file:
             data = pickle.load(file)
     else:
         data_tp = OptimalControlProgram.load(path)[1]
@@ -93,7 +93,9 @@ def main():
     y_label = "Angle (°)"  # "Accumulated fatigue"  #
 
     # Get data
-    all_data = [load_data(f"{folder}/{n_cycles}_{file}{'_out' if use_bo else ''}.bo", n_cycles, use_bo) for file in files]
+    all_data = [
+        load_data(f"{folder}/{n_cycles}_{file}{'_out' if use_bo else ''}.bo", n_cycles, use_bo) for file in files
+    ]
 
     # Show
     if show_shaded or show_all:
