@@ -1,13 +1,13 @@
 from enum import Enum
 
 from scipy import optimize
-from bioptim import XiaFatigue, XiaTauFatigue, MichaudFatigue, MichaudTauFatigue, EffortPerception, TauEffortPerception, ObjectiveFcn, BiMapping
+from bioptim import MichaudFatigue, MichaudTauFatigue, EffortPerception, TauEffortPerception, ObjectiveFcn, BiMapping
 from bioptim.optimization.optimization_variable import OptimizationVariableList
-from bioptim.dynamics.fatigue.tau_fatigue import TauFatigue
 import numpy as np
 from casadi import MX, Function
 import biorbd_casadi as biorbd
 
+from .enums import FatigueType, StructureType
 from .bow import Bow, BowPosition
 
 
@@ -178,45 +178,48 @@ class Violin:
             "G": np.array([0.0, 0.0, 0.0, 0.05865013, 1.05013794, 1.7011086]),
         }[self.string.value]
 
-    def fatigue_model(self, fatigue_type, index: int = None):
-        if fatigue_type == XiaFatigue:
-            XiaFatigue(**self.fatigue_parameters(fatigue_type), state_only=True)
+    def fatigue_model(
+        self,
+        fatigue_type: FatigueType,
+        structure_type: StructureType,
+        state_only: bool = True,
+        index: int = None,
+        split_tau: bool = False
+    ):
+        if fatigue_type == FatigueType.QCC:
+            if structure_type == StructureType.MUSCLE:
+                return MichaudFatigue(**self.fatigue_parameters(fatigue_type, structure_type))
 
-        elif fatigue_type == XiaTauFatigue:
-            return XiaTauFatigue(
-                XiaFatigue(**self.fatigue_parameters(fatigue_type, -1)),
-                XiaFatigue(**self.fatigue_parameters(fatigue_type, 1)),
-                state_only=True,
-                split_controls=False,
-            )
+            elif structure_type == StructureType.TAU:
+                return MichaudTauFatigue(
+                    MichaudFatigue(**self.fatigue_parameters(fatigue_type, structure_type, -1, index)),
+                    MichaudFatigue(**self.fatigue_parameters(fatigue_type, structure_type, 1, index)),
+                    state_only=state_only,
+                    split_controls=split_tau,
+                )
+            else:
+                raise NotImplementedError("Structure type not implemented yet")
 
-        elif fatigue_type == MichaudFatigue:
-            return MichaudFatigue(**self.fatigue_parameters(fatigue_type), state_only=True)
+        elif fatigue_type == FatigueType.EFFORT_PERCEPTION:
+            if structure_type == StructureType.MUSCLE:
+                return EffortPerception(**self.fatigue_parameters(fatigue_type, structure_type))
 
-        elif fatigue_type == MichaudTauFatigue:
-            return MichaudTauFatigue(
-                MichaudFatigue(**self.fatigue_parameters(fatigue_type, -1)),
-                MichaudFatigue(**self.fatigue_parameters(fatigue_type, 1)),
-                state_only=True,
-                split_controls=False,
-            )
-
-        elif fatigue_type == EffortPerception:
-            return EffortPerception(**self.fatigue_parameters(fatigue_type))
-
-        elif fatigue_type == TauEffortPerception:
-            return TauEffortPerception(
-                EffortPerception(**self.fatigue_parameters(fatigue_type, -1, index)),
-                EffortPerception(**self.fatigue_parameters(fatigue_type, 1, index)),
-                split_controls=False,
-            )
+            elif structure_type == StructureType.TAU:
+                return TauEffortPerception(
+                    EffortPerception(**self.fatigue_parameters(fatigue_type, structure_type, -1, index)),
+                    EffortPerception(**self.fatigue_parameters(fatigue_type, structure_type, 1, index)),
+                    split_controls=split_tau,
+                )
+            else:
+                raise NotImplementedError("Structure type not implemented yet")
 
         else:
-            raise NotImplementedError("The fatigue model is not implemented")
+            raise NotImplementedError("Fatigue type not implemented yet")
 
     def fatigue_parameters(
         self,
-        fatigue_type,
+        fatigue_type: FatigueType,
+        structure_type: StructureType,
         direction: int = 0,
         index: int = None,
         LD: float = 100,
@@ -230,7 +233,7 @@ class Violin:
     ):
         if scaling is None:
             scaling = 1
-            if issubclass(fatigue_type, TauFatigue):
+            if structure_type == StructureType.TAU:
                 if not (direction < 0 or direction > 0):
                     raise ValueError("direction should be < 0 or > 0")
                 scaling = self.tau_min[index] if direction < 0 else self.tau_max[index]
@@ -238,29 +241,26 @@ class Violin:
         if effort_threshold is None:
             effort_threshold = scaling / 5
 
-        if fatigue_type == XiaFatigue:
-            return {"LD": LD, "LR": LR, "F": F, "R": R}
+        if fatigue_type == FatigueType.QCC:
+            if structure_type == StructureType.MUSCLE:
+                return {"LD": LD, "LR": LR, "F": F, "R": R, "effort_factor": effort_factor,
+                        "stabilization_factor": stabilization_factor, "effort_threshold": effort_threshold}
 
-        elif fatigue_type == XiaTauFatigue:
+            elif structure_type == StructureType.TAU:
+                return {"LD": LD, "LR": LR, "F": F, "R": R, "effort_factor": effort_factor,
+                        "stabilization_factor": stabilization_factor, "effort_threshold": effort_threshold,
+                        "scaling": scaling}
+            else:
+                raise NotImplementedError("Structure type not implemented yet")
 
-            return {"LD": LD, "LR": LR, "F": F, "R": R, "scaling": scaling}
+        elif fatigue_type == FatigueType.EFFORT_PERCEPTION:
+            if structure_type == StructureType.MUSCLE:
+                return {"effort_factor": effort_factor, "effort_threshold": effort_threshold}
 
-        elif fatigue_type == MichaudFatigue:
-            return {"LD": LD, "LR": LR, "F": F, "R": R, "effort_factor": effort_factor,
-                    "stabilization_factor": stabilization_factor, "effort_threshold": effort_threshold}
-
-        elif fatigue_type == MichaudTauFatigue:
-            return {"LD": LD, "LR": LR, "F": F, "R": R, "effort_factor": effort_factor,
-                    "stabilization_factor": stabilization_factor, "effort_threshold": effort_threshold,
-                    "scaling": scaling}
-
-        elif fatigue_type == EffortPerception:
-            return {"effort_factor": effort_factor, "effort_threshold": effort_threshold}
-
-        elif fatigue_type == TauEffortPerception:
-            return {"effort_factor": effort_factor, "effort_threshold": effort_threshold, "scaling": scaling}
+            elif structure_type == StructureType.TAU:
+                return {"effort_factor": effort_factor, "effort_threshold": effort_threshold, "scaling": scaling}
+            else:
+                raise NotImplementedError("Structure type not implemented yet")
 
         else:
-            raise NotImplementedError(
-                "Implemented fatigue_type are XiaFatigue, XiaTauFatigue, " "MichaudFatigue and MichaudTauFatigue"
-            )
+            raise NotImplementedError("Fatigue type not implemented yet")
