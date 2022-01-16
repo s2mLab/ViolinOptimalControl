@@ -298,7 +298,7 @@ class StudyConfig:
         name="DEBUG_TAU_PE_FATIGUE_3_CYCLES",
         studies=(
             StudyInternal(
-                name=r"$\condTauNf$",
+                name=r"$\condTauPe$",
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.EFFORT_PERCEPTION,
                 n_cycles_total=3,
@@ -450,7 +450,7 @@ class StudyConfig:
     )
 
     STUDY2_TAU_10_CYCLES: StudiesInternal = StudiesInternal(
-        name="DEBUG_TAU_PE_FATIGUE_3_CYCLES",
+        name="STUDY2_TAU_10_CYCLES",
         studies=(
             StudyInternal(
                 name=r"$\condTauNf$",
@@ -476,7 +476,7 @@ class StudyConfig:
     )
 
     STUDY3_TAU_10_CYCLES_3_AT_A_TIME: StudiesInternal = StudiesInternal(
-        name="STUDY2_TAU_10_CYCLES_3_AT_A_TIME",
+        name="STUDY3_TAU_10_CYCLES_3_AT_A_TIME",
         studies=(
             StudyInternal(
                 name=r"$\condTauNf$",
@@ -502,7 +502,7 @@ class StudyConfig:
     )
 
     STUDY4_VIOLIN: StudiesInternal = StudiesInternal(
-        name="STUDY2_TAU_10_CYCLES_3_AT_A_TIME",
+        name="STUDY4_VIOLIN",
         studies=(
             StudyInternal(
                 name=r"$\condTauNf$",
