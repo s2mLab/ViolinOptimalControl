@@ -1,5 +1,4 @@
 import os
-import time
 from typing import Union
 
 import biorbd_casadi as biorbd
@@ -180,14 +179,14 @@ class ViolinOcp:
                 self.objective_functions.add(
                     ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
                     key="tau_minus",
-                    weight=100_000,
+                    weight=1000,
                     list_index=2,
                     expand=self.expand,
                 )
                 self.objective_functions.add(
                     ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
                     key="tau_plus",
-                    weight=100_000,
+                    weight=1000,
                     list_index=3,
                     expand=self.expand,
                 )
@@ -195,7 +194,7 @@ class ViolinOcp:
                 self.objective_functions.add(
                     ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE,
                     key="muscles",
-                    weight=100_000,
+                    weight=1000,
                     list_index=8,
                     expand=self.expand,
                 )
@@ -521,7 +520,6 @@ class ViolinNMPC(ViolinOcp):
             update_function,
             solver=self.solver,
             cyclic_options=cyclic_options,
-            max_consecutive_failing=3,
             warm_start=warm_start_solution,
             update_function_extra_params=update_function_extra_params,
             get_all_iterations=True,
