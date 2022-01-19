@@ -435,7 +435,7 @@ class StudyConfig:
                 LatexAnalysesFcn.MEAN_ITERATION_TIME,
                 LatexAnalysesFcn.RMSE_Q,
             ),
-        )
+        ),
     )
 
     STUDY2_TAU_10_CYCLES: StudiesInternal = StudiesInternal(
@@ -476,7 +476,30 @@ class StudyConfig:
                 LatexAnalysesFcn.MEAN_ITERATION_TIME,
                 LatexAnalysesFcn.RMSE_Q,
             ),
-        )
+        ),
+        figures=Figures(
+            figures=(
+                FigureOptions(
+                    title="",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="study2_clav_elev",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True},
+                ),
+                FigureOptions(
+                    title="",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="study2_scap_rotLat",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 2, "to_degree": True},
+                ),
+                FigureOptions(
+                    title="",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="study2_humerus_abd",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 4, "to_degree": True},
+                ),
+            ),
+            font_size=30,
+        ),
     )
 
     STUDY3_TAU_10_CYCLES_3_AT_A_TIME: StudiesInternal = StudiesInternal(
@@ -521,22 +544,37 @@ class StudyConfig:
         figures=Figures(
             figures=(
                 FigureOptions(
-                    title="$q_1$ one go",
+                    title="",
                     fcn=FiguresFcn.DATA_IN_ONE_GO,
-                    save_name="q_1__one_go",
+                    save_name="study3_clav_elev",
                     params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True},
                 ),
                 FigureOptions(
-                    title="$q_1$ stacked",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="q_1__stacked",
-                    params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True},
+                    title="",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="study3_scap_rotLat",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 2, "to_degree": True},
                 ),
                 FigureOptions(
-                    title="$q_{7-1}$ phase diagram",
+                    title="",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="study3_humerus_abd",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 4, "to_degree": True},
+                ),
+                FigureOptions(
+                    title="$q_{4-2}$ phase diagram",
                     fcn=FiguresFcn.PHASE_DIAGRAM,
-                    save_name="q_7_1__phase_diagram",
-                    params={"data_meta": ((DataType.STATES, "q", 7), (DataType.STATES, "q", 1)), "to_degree": True},
+                    params={"data_meta": ((DataType.STATES, "q", 4), (DataType.STATES, "q", 2)), "to_degree": True},
+                ),
+                FigureOptions(
+                    title="$q_{4-1}$ phase diagram",
+                    fcn=FiguresFcn.PHASE_DIAGRAM,
+                    params={"data_meta": ((DataType.STATES, "q", 4), (DataType.STATES, "q", 1)), "to_degree": True},
+                ),
+                FigureOptions(
+                    title="$q_{2-1}$ phase diagram",
+                    fcn=FiguresFcn.PHASE_DIAGRAM,
+                    params={"data_meta": ((DataType.STATES, "q", 2), (DataType.STATES, "q", 1)), "to_degree": True},
                 ),
             ),
         ),

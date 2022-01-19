@@ -20,7 +20,7 @@ def main():
             limit_memory_max_iter=100,
             exact_max_iter=1000,
             show_graphs=False,
-            save_solutions=True
+            save_solutions=True,
         )
 
         # Print the results
