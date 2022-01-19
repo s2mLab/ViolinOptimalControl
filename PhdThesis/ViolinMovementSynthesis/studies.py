@@ -1,5 +1,4 @@
 import os
-import statistics
 from typing import Union
 
 import numpy as np
@@ -15,7 +14,8 @@ from violin_ocp import (
     BowPosition,
     FatigueType,
     StructureType,
-    DataType,
+    LatexTable,
+    LatexAnalysesFcn,
 )
 
 
@@ -124,9 +124,12 @@ class StudyInternal:
         optimal_program.set_bow_target_objective(target)
         optimal_program.set_cyclic_bound(0.01)
 
-    def perform(self, limit_memory_max_iter: int, exact_max_iter: int, show_graphs: bool):
+    def initialize(self):
         if not self._is_initialized:
             self._initialize_nmpc()
+
+    def perform(self, limit_memory_max_iter: int, exact_max_iter: int, show_graphs: bool):
+        self.initialize()
 
         ocp = self.get_ocp()
         pre_sol = ocp.solve(limit_memory_max_iter=limit_memory_max_iter, exact_max_iter=0, force_no_graph=True)
@@ -141,17 +144,50 @@ class StudyInternal:
 
 
 class StudiesInternal:
-    def __init__(self, name: str, studies: tuple[StudyInternal, ...]):
+    def __init__(self, name: str, studies: tuple[StudyInternal, ...], latex_table: LatexTable = None):
         self.name = name
         self._has_run = False
         self.studies = studies
         self.solutions: list[tuple[Solution, list[Solution]], ...] = []
+        self.latex_table = latex_table
 
-    def perform(self, limit_memory_max_iter: int = 100, exact_max_iter: int = 1000, show_graphs: bool = False):
+    def perform(
+            self,
+            reload_if_exists: bool,
+            limit_memory_max_iter: int = 100,
+            exact_max_iter: int = 1000,
+            show_graphs: bool = False,
+            save_solutions: bool = True,
+    ):
+        perform = not reload_if_exists
+        if reload_if_exists:
+            try:
+                self.load_solutions()
+            except FileNotFoundError:
+                perform = True
+
+        if perform:
+            self.solutions: list[tuple[Solution, list[Solution]], ...] = []
+            for study in self.studies:
+                self.solutions.append(study.perform(limit_memory_max_iter, exact_max_iter, show_graphs))
+        self._has_run = True
+
+        if perform and save_solutions:
+            self.save_solutions()
+
+    def load_solutions(self):
+        print("Loading data, this may take some time...")
         self.solutions: list[tuple[Solution, list[Solution]], ...] = []
         for study in self.studies:
-            self.solutions.append(study.perform(limit_memory_max_iter, exact_max_iter, show_graphs))
-        self._has_run = True
+            study.initialize()
+            _, sol = study.nmpc.load(f"{self._prepare_and_get_results_dir()}/{study.save_name}.bo")
+            all_iterations = []
+            for i in range(study.n_cycles_total):
+                _, sol_iter = study.nmpc.load(
+                        f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
+                    )
+                all_iterations.append(sol_iter)
+            self.solutions.append((sol, all_iterations))
 
     def save_solutions(self):
         for study, (sol, all_iterations) in zip(self.studies, self.solutions):
@@ -163,105 +199,25 @@ class StudiesInternal:
                     iterations,
                     save_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}"
                 )
+                study.nmpc.save(
+                    iterations,
+                    save_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}",
+                    stand_alone=True
+                )
 
     def generate_latex_table(self):
         if not self._has_run:
             raise RuntimeError("run() must be called before generating the latex table")
 
-        table = (
-            f"\\documentclass{{article}}\n"
-            f"\n"
-            f"\\usepackage{{amsmath}}\n"
-            f"\\usepackage{{amssymb}}\n"
-            f"\\usepackage[table]{{xcolor}}\n"
-            f"\\usepackage{{makecell}}\n"
-            f"\\definecolor{{lightgray}}{{gray}}{{0.91}}\n"
-            f"\n\n"
-            f"% Aliases\n"
-            f"\\newcommand{{\\rmse}}{{RMSE}}\n"
-            f"\\newcommand{{\\ocp}}{{OCP}}\n"
-            f"\\newcommand{{\\controls}}{{\\mathbf{{u}}}}\n"
-            f"\\newcommand{{\\states}}{{\\mathbf{{x}}}}\n"
-            f"\\newcommand{{\\statesDot}}{{\\mathbf{{\\dot{{x}}}}}}\n"
-            f"\\newcommand{{\\q}}{{\\mathbf{{q}}}}\n"
-            f"\\newcommand{{\\qdot}}{{\\mathbf{{\\dot{{q}}}}}}\n"
-            f"\\newcommand{{\\qddot}}{{\\mathbf{{\\ddot{{q}}}}}}\n"
-            f"\\newcommand{{\\f}}{{\\mathbf{{f}}}}\n"
-            f"\\newcommand{{\\taupm}}{{\\tau^{{\\pm}}}}\n"
-            f"\\newcommand{{\\tauns}}{{\\tau^{{\\times}}}}\n"
-            f"\n"
-            f"\\newcommand{{\\condition}}{{C/}}\n"
-            f"\\newcommand{{\\noFatigue}}{{\\varnothing}}\n"
-            f"\\newcommand{{\\qcc}}{{4\\textsubscript{{CC}}}}\n"
-            f"\\newcommand{{\\pe}}{{P\\textsubscript{{E}}}}\n"
-            f"\\newcommand{{\\condTau}}{{{{\\condition}}{{\\tau}}{{}}}}\n"
-            f"\\newcommand{{\\condTauNf}}{{{{\\condition}}{{\\tau}}{{\\noFatigue}}}}\n"
-            f"\\newcommand{{\\condTauQcc}}{{{{\\condition}}{{\\tau}}{{\\qcc}}}}\n"
-            f"\\newcommand{{\\condTauPe}}{{{{\\condition}}{{\\tau}}{{\\pe}}}}\n"
-            f"\\newcommand{{\\condTaupm}}{{{{\\condition}}{{\\taupm}}{{}}}}\n"
-            f"\\newcommand{{\\condTaupmQcc}}{{{{\\condition}}{{\\taupm}}{{\\qcc}}}}\n"
-            f"\\newcommand{{\\condTaupmPe}}{{{{\\condition}}{{\\taupm}}{{\\pe}}}}\n"
-            f"\\newcommand{{\\condTauns}}{{{{\\condition}}{{\\tauns}}{{}}}}\n"
-            f"\\newcommand{{\\condTaunsQcc}}{{{{\\condition}}{{\\tauns}}{{\\qcc}}}}\n"
-            f"\\newcommand{{\\condTaunsPe}}{{{{\\condition}}{{\\tauns}}{{\\pe}}}}\n"
-            f"\\newcommand{{\\condAlpha}}{{{{\\condition}}{{\\alpha}}{{}}}}\n"
-            f"\\newcommand{{\\condAlphaNf}}{{{{\\condition}}{{\\alpha}}{{\\noFatigue}}}}\n"
-            f"\\newcommand{{\\condAlphaQcc}}{{{{\\condition}}{{\\alpha}}{{\\qcc}}}}\n"
-            f"\\newcommand{{\\condAlphaPe}}{{{{\\condition}}{{\\alpha}}{{\\pe}}}}\n"
-            f"\n\n"
-            f"\\begin{{document}}\n"
-            f"\n"
-            f"\\begin{{table}}[!ht]\n"
-            f" \\rowcolors{{1}}{{}}{{lightgray}}\n"
-            f" \\caption{{Comparaison des métriques d'efficacité entre les modèles de fatigue "
-            f"appliqués sur une dynamique musculaire ou articulaire lors de la résolution d'un \\ocp{{}}}}\n"
-            f" \\label{{table:faisabilite}}\n"
-            f" \\begin{{tabular}}{{lcccc}}\n"
-            f"  \\hline\n"
-            f"  \\bfseries Condition & "
-            f"\\bfseries\\makecell[c]{{Nombre\\\\d'itération}} & "
-            f"\\bfseries\\makecell[c]{{Temps\\\\d'optimisation\\\\(s)}} & "
-            f"\\bfseries\\makecell[c]{{Temps moyen\\\\par itération\\\\(s/iteration)}} & "
-            f"\\bfseries\\makecell[c]{{$\\sum\\text{{\\rmse{{}}}}$\\\\pour $\\q$\\\\(rad)}}\\\\ \n"
-            f"  \\hline\n"
-        )
+        if self.latex_table is None:
+            raise ValueError(f"No paradigm for a latex table was found for the current study ({self.name})")
 
-        for study, (sol, all_iterations) in zip(self.studies, self.solutions):
-            mean_iterations = statistics.mean([iteration.iterations for iteration in all_iterations])
-
-            rmse = np.sum(self._rmse(DataType.STATES, "q", study.rmse_index, sol))
-            rmse_str = f"{rmse:0.3e}" if rmse != 0 else "---"
-            if rmse_str.find("e") >= 0:
-                rmse_str = rmse_str.replace("e", "$\\times 10^{{")
-                rmse_str += "}}$"
-                rmse_str = rmse_str.replace("+0", "")
-                rmse_str = rmse_str.replace("-0", "-")
-                rmse_str = rmse_str.replace("$\\times 10^{{0}}$", "")
-            table += (
-                f"  {study.name} "
-                f"& {mean_iterations} "
-                f"& {sol.real_time_to_optimize:0.3f} "
-                f"& {sol.real_time_to_optimize / mean_iterations:0.3f} "
-                f"& {rmse_str} \\\\\n"
-            )
-
-        table += f"  \\hline\n" f" \\end{{tabular}}\n" f"\\end{{table}}\n\n"
-        table += f"\\end{{document}}\n"
+        table = self.latex_table.get_table_text(self, self.solutions)
 
         save_path = f"{self._prepare_and_get_results_dir()}/results.tex"
         with open(save_path, "w", encoding='utf8') as file:
             file.write(table)
         print("\n\nTex file generated in the results folder")
-
-    def _rmse(self, data_type, key, idx_ref: int, sol: Solution):
-        data_ref = getattr(self.solutions[idx_ref][0], data_type.value)[key]
-        data = getattr(sol, data_type.value)[key]
-
-        e = data_ref - data
-        se = e ** 2
-        mse = np.sum(se, axis=1) / data_ref.shape[1]
-        rmse = np.sqrt(mse)
-        return rmse
 
     def _prepare_and_get_results_dir(self):
         try:
@@ -447,6 +403,21 @@ class StudyConfig:
                 rmse_index=3,
             ),
         ),
+        latex_table=LatexTable(
+            table_caption=(
+                f"Comparaison des métriques d'efficacité entre les modèles de fatigue "
+                f"appliqués sur une dynamique musculaire ou articulaire lors de la résolution d'un \\ocp{{}}"
+            ),
+            add_non_converged_notice=True,
+            add_bfgs_dagger_notice=True,
+            table_label="table:aller_retour_ocp",
+            analyses=(
+                LatexAnalysesFcn.MEAN_OPTIMIZATION_TIME,
+                LatexAnalysesFcn.MEAN_NUMBER_ITERATIONS,
+                LatexAnalysesFcn.MEAN_ITERATION_TIME,
+                LatexAnalysesFcn.RMSE_Q,
+            ),
+        )
     )
 
     STUDY2_TAU_10_CYCLES: StudiesInternal = StudiesInternal(
@@ -473,6 +444,21 @@ class StudyConfig:
                 rmse_index=0,
             ),
         ),
+        latex_table=LatexTable(
+            table_caption=(
+                f"Comparaison des métriques d'efficacité entre les conditions $\\condTauNf$ et $\\condTauPe$ "
+                f"lors d'un \\cyclicNMPC{{}} à $10$~cycles"
+            ),
+            add_non_converged_notice=True,
+            add_bfgs_dagger_notice=True,
+            table_label="table:nmpc_cyclic",
+            analyses=(
+                LatexAnalysesFcn.TOTAL_OPTIMIZATION_TIME,
+                LatexAnalysesFcn.MEAN_NUMBER_ITERATIONS,
+                LatexAnalysesFcn.MEAN_ITERATION_TIME,
+                LatexAnalysesFcn.RMSE_Q,
+            ),
+        )
     )
 
     STUDY3_TAU_10_CYCLES_3_AT_A_TIME: StudiesInternal = StudiesInternal(
@@ -482,7 +468,7 @@ class StudyConfig:
                 name=r"$\condTauNf$",
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.NO_FATIGUE,
-                n_cycles_total=4,
+                n_cycles_total=10,
                 n_shoot_per_cycle=30,
                 n_integration_steps=3,
                 n_cycles_simultaneous=3,
@@ -492,13 +478,28 @@ class StudyConfig:
                 name=r"$\condTauPe$",
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.EFFORT_PERCEPTION,
-                n_cycles_total=4,
+                n_cycles_total=10,
                 n_shoot_per_cycle=30,
                 n_integration_steps=3,
                 n_cycles_simultaneous=3,
                 rmse_index=0,
             ),
         ),
+        latex_table=LatexTable(
+            table_caption=(
+                f"Comparaison des métriques d'efficacité entre les conditions $\\condTauNf$ et $\\condTauPe$ "
+                f"lors d'un \\multiCyclicNMPC{{}} à $3$~cycles simultanés sur un total de $10$~allers-retours"
+            ),
+            add_non_converged_notice=False,
+            add_bfgs_dagger_notice=True,
+            table_label="table:multi_cyclic_nmpc",
+            analyses=(
+                LatexAnalysesFcn.TOTAL_OPTIMIZATION_TIME,
+                LatexAnalysesFcn.MEAN_NUMBER_ITERATIONS,
+                LatexAnalysesFcn.MEAN_ITERATION_TIME,
+                LatexAnalysesFcn.RMSE_Q,
+            ),
+        )
     )
 
     STUDY4_VIOLIN: StudiesInternal = StudiesInternal(
@@ -525,4 +526,20 @@ class StudyConfig:
                 rmse_index=0,
             ),
         ),
+        latex_table=LatexTable(
+            table_caption=(
+                f"Comparaison des métriques d'efficacité entre les conditions $\\condTauNf$ et $\\condTauPe$ "
+                f"lors d'un mouvement de violon synthétisé par \\multiCyclicNMPC{{}} à $3$~cycles simultanés "
+                f"sur un total de $900$~allers-retours"
+            ),
+            add_non_converged_notice=False,
+            add_bfgs_dagger_notice=True,
+            table_label="table:multi_cyclic_nmpc",
+            analyses=(
+                LatexAnalysesFcn.TOTAL_OPTIMIZATION_TIME,
+                LatexAnalysesFcn.MEAN_NUMBER_ITERATIONS,
+                LatexAnalysesFcn.MEAN_ITERATION_TIME,
+                LatexAnalysesFcn.RMSE_Q,
+            ),
+        )
     )
