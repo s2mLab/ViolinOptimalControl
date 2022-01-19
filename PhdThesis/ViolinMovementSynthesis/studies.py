@@ -233,7 +233,7 @@ class StudiesInternal:
             raise RuntimeError("run() must be called before generating the figures")
 
         if self.figures is None:
-            raise ValueError(f"No paradigm for a latex table was found for the current study ({self.name})")
+            return
 
         self.figures.generate_figure(self, self.solutions, save_folder=self._prepare_and_get_results_dir())
 
