@@ -3,7 +3,8 @@ from studies import StudyConfig
 
 def main():
 
-    reload_data = True
+    reload_data = False
+    skip_iterations_while_reload = False
     all_studies = (
         StudyConfig.STUDY1_OCP,
         StudyConfig.STUDY2_TAU_10_CYCLES,
@@ -15,6 +16,7 @@ def main():
         # Perform the study (or reload)
         study.perform(
             reload_if_exists=reload_data,
+            skip_iterations_while_reload=skip_iterations_while_reload,
             limit_memory_max_iter=100,
             exact_max_iter=1000,
             show_graphs=False,
@@ -22,6 +24,7 @@ def main():
         )
 
         # Print the results
+        study.generate_figures()
         study.generate_latex_table()
         print("----------")
 

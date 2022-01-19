@@ -16,6 +16,10 @@ from violin_ocp import (
     StructureType,
     LatexTable,
     LatexAnalysesFcn,
+    Figures,
+    FiguresFcn,
+    DataType,
+    FigureOptions,
 )
 
 
@@ -144,16 +148,20 @@ class StudyInternal:
 
 
 class StudiesInternal:
-    def __init__(self, name: str, studies: tuple[StudyInternal, ...], latex_table: LatexTable = None):
+    def __init__(
+            self, name: str, studies: tuple[StudyInternal, ...], latex_table: LatexTable = None, figures: Figures = None
+    ):
         self.name = name
         self._has_run = False
         self.studies = studies
         self.solutions: list[tuple[Solution, list[Solution]], ...] = []
         self.latex_table = latex_table
+        self.figures = figures
 
     def perform(
             self,
             reload_if_exists: bool,
+            skip_iterations_while_reload: bool = False,
             limit_memory_max_iter: int = 100,
             exact_max_iter: int = 1000,
             show_graphs: bool = False,
@@ -162,7 +170,7 @@ class StudiesInternal:
         perform = not reload_if_exists
         if reload_if_exists:
             try:
-                self.load_solutions()
+                self.load_solutions(skip_iterations_while_reload)
             except FileNotFoundError:
                 perform = True
 
@@ -175,18 +183,19 @@ class StudiesInternal:
         if perform and save_solutions:
             self.save_solutions()
 
-    def load_solutions(self):
+    def load_solutions(self, skip_iterations_while_reload):
         print("Loading data, this may take some time...")
         self.solutions: list[tuple[Solution, list[Solution]], ...] = []
         for study in self.studies:
             study.initialize()
             _, sol = study.nmpc.load(f"{self._prepare_and_get_results_dir()}/{study.save_name}.bo")
             all_iterations = []
-            for i in range(study.n_cycles_total):
-                _, sol_iter = study.nmpc.load(
-                        f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
-                    )
-                all_iterations.append(sol_iter)
+            if not skip_iterations_while_reload:
+                for i in range(study.n_cycles_total):
+                    _, sol_iter = study.nmpc.load(
+                            f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
+                        )
+                    all_iterations.append(sol_iter)
             self.solutions.append((sol, all_iterations))
 
     def save_solutions(self):
@@ -218,6 +227,15 @@ class StudiesInternal:
         with open(save_path, "w", encoding='utf8') as file:
             file.write(table)
         print("\n\nTex file generated in the results folder")
+
+    def generate_figures(self):
+        if not self._has_run:
+            raise RuntimeError("run() must be called before generating the figures")
+
+        if self.figures is None:
+            raise ValueError(f"No paradigm for a latex table was found for the current study ({self.name})")
+
+        self.figures.generate_figure(self, self.solutions, save_folder=self._prepare_and_get_results_dir())
 
     def _prepare_and_get_results_dir(self):
         try:
@@ -499,7 +517,29 @@ class StudyConfig:
                 LatexAnalysesFcn.MEAN_ITERATION_TIME,
                 LatexAnalysesFcn.RMSE_Q,
             ),
-        )
+        ),
+        figures=Figures(
+            figures=(
+                FigureOptions(
+                    title="$q_1$ one go",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="q_1__one_go",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True},
+                ),
+                FigureOptions(
+                    title="$q_1$ stacked",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="q_1__stacked",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True},
+                ),
+                FigureOptions(
+                    title="$q_{7-1}$ phase diagram",
+                    fcn=FiguresFcn.PHASE_DIAGRAM,
+                    save_name="q_7_1__phase_diagram",
+                    params={"data_meta": ((DataType.STATES, "q", 7), (DataType.STATES, "q", 1)), "to_degree": True},
+                ),
+            ),
+        ),
     )
 
     STUDY4_VIOLIN: StudiesInternal = StudiesInternal(
@@ -509,7 +549,7 @@ class StudyConfig:
                 name=r"$\condTauNf$",
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.NO_FATIGUE,
-                n_cycles_total=900,
+                n_cycles_total=600,
                 n_shoot_per_cycle=30,
                 n_integration_steps=3,
                 n_cycles_simultaneous=3,
@@ -519,7 +559,7 @@ class StudyConfig:
                 name=r"$\condTauPe$",
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.EFFORT_PERCEPTION,
-                n_cycles_total=900,
+                n_cycles_total=600,
                 n_shoot_per_cycle=30,
                 n_integration_steps=3,
                 n_cycles_simultaneous=3,
@@ -541,5 +581,87 @@ class StudyConfig:
                 LatexAnalysesFcn.MEAN_ITERATION_TIME,
                 LatexAnalysesFcn.RMSE_Q,
             ),
-        )
+        ),
+        figures=Figures(
+            figures=(
+                FigureOptions(
+                    title="$q_1$ one go",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="q_1__one_go",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True},
+                ),
+                FigureOptions(
+                    title="$q_1$ stacked",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="q_1__stacked",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True},
+                ),
+                FigureOptions(
+                    title="$mf_0$ stacked",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="mf_0__stacked",
+                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 0, "is_fatigue": True},
+                ),
+                FigureOptions(
+                    title="$mf_1$ stacked",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="mf_1__stacked",
+                    params={"data_type": DataType.STATES, "key": "tau_plus_mf", "index": 1, "is_fatigue": True},
+                ),
+                FigureOptions(
+                    title="$mf_2$ stacked",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="mf_2__stacked",
+                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 2, "is_fatigue": True},
+                ),
+                FigureOptions(
+                    title="$mf_4$ stacked",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="mf_4 stacked",
+                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 4, "is_fatigue": True},
+                ),
+                FigureOptions(
+                    title="$mf_5$ stacked",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="mf_5__stacked",
+                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 5, "is_fatigue": True},
+                ),
+                FigureOptions(
+                    title="$mf_0$ one go",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="mf_0__one_go",
+                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 0, "is_fatigue": True},
+                ),
+                FigureOptions(
+                    title="$mf_1$ one go",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="mf_1__one_go",
+                    params={"data_type": DataType.STATES, "key": "tau_plus_mf", "index": 1, "is_fatigue": True},
+                ),
+                FigureOptions(
+                    title="$mf_2$ one go",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="mf_2__one_go",
+                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 2, "is_fatigue": True},
+                ),
+                FigureOptions(
+                    title="$mf_4$ one go",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="mf_4__one_go",
+                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 4, "is_fatigue": True},
+                ),
+                FigureOptions(
+                    title="$mf_5$ one go",
+                    fcn=FiguresFcn.DATA_IN_ONE_GO,
+                    save_name="mf_5__one_go",
+                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 5, "is_fatigue": True},
+                ),
+                FigureOptions(
+                    title="$q_{7-1}$ phase diagram",
+                    fcn=FiguresFcn.PHASE_DIAGRAM,
+                    save_name="q_7_1__phase_diagram",
+                    params={"data_meta": ((DataType.STATES, "q", 7), (DataType.STATES, "q", 1)), "to_degree": True},
+                ),
+            ),
+        ),
     )
