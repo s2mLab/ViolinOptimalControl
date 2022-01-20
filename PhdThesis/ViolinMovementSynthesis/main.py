@@ -25,6 +25,7 @@ def main():
 
         # Print the results
         study.generate_figures()
+        study.perform_custom_analyses()
         study.generate_latex_table()
         print("----------")
 

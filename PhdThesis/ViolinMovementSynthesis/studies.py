@@ -20,6 +20,8 @@ from violin_ocp import (
     FiguresFcn,
     DataType,
     FigureOptions,
+    CustomAnalysesFcn,
+    CustomAnalyses,
 )
 
 
@@ -149,7 +151,11 @@ class StudyInternal:
 
 class StudiesInternal:
     def __init__(
-            self, name: str, studies: tuple[StudyInternal, ...], latex_table: LatexTable = None, figures: Figures = None
+            self, name: str,
+            studies: tuple[StudyInternal, ...],
+            latex_table: LatexTable = None,
+            figures: Figures = None,
+            custom_analyses: CustomAnalyses = None,
     ):
         self.name = name
         self._has_run = False
@@ -157,6 +163,7 @@ class StudiesInternal:
         self.solutions: list[tuple[Solution, list[Solution]], ...] = []
         self.latex_table = latex_table
         self.figures = figures
+        self.custom_analyses = custom_analyses
 
     def perform(
             self,
@@ -219,7 +226,7 @@ class StudiesInternal:
             raise RuntimeError("run() must be called before generating the latex table")
 
         if self.latex_table is None:
-            raise ValueError(f"No paradigm for a latex table was found for the current study ({self.name})")
+            return
 
         table = self.latex_table.get_table_text(self, self.solutions)
 
@@ -227,6 +234,15 @@ class StudiesInternal:
         with open(save_path, "w", encoding='utf8') as file:
             file.write(table)
         print("\n\nTex file generated in the results folder")
+
+    def perform_custom_analyses(self):
+        if not self._has_run:
+            raise RuntimeError("run() must be called before performing the custom analyses")
+
+        if self.custom_analyses is None:
+            return
+
+        self.custom_analyses.perform(self)
 
     def generate_figures(self):
         if not self._has_run:
@@ -500,6 +516,11 @@ class StudyConfig:
             ),
             font_size=30,
         ),
+        custom_analyses=CustomAnalyses(
+            (
+                CustomAnalysesFcn.PRINT_NUMBER_OF_ITERATIONS,
+            )
+        ),
     )
 
     STUDY3_TAU_10_CYCLES_3_AT_A_TIME: StudiesInternal = StudiesInternal(
@@ -577,6 +598,11 @@ class StudyConfig:
                     params={"data_meta": ((DataType.STATES, "q", 2), (DataType.STATES, "q", 1)), "to_degree": True},
                 ),
             ),
+        ),
+        custom_analyses=CustomAnalyses(
+            (
+                CustomAnalysesFcn.PRINT_NUMBER_OF_ITERATIONS,
+            )
         ),
     )
 

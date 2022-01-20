@@ -8,7 +8,7 @@ from bioptim import Solution
 from .enums import DataType
 
 
-class LatexAnalysesFunctionImplementation:
+class LatexAnalysesImplementation:
     @staticmethod
     def mean_number_iterations(study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]) -> tuple[str, str]:
         header = r"Nombre\\d'itérations" if len(all_iterations) == 1 else r"Nombre moyen\\d'itérations"
@@ -62,11 +62,11 @@ class LatexAnalysesFunctionImplementation:
 
 
 class LatexAnalysesFcn(Enum):
-    MEAN_NUMBER_ITERATIONS = LatexAnalysesFunctionImplementation.mean_number_iterations
-    TOTAL_OPTIMIZATION_TIME = LatexAnalysesFunctionImplementation.total_optimisation_time
-    MEAN_OPTIMIZATION_TIME = LatexAnalysesFunctionImplementation.mean_optimisation_time
-    MEAN_ITERATION_TIME = LatexAnalysesFunctionImplementation.mean_iteration_time
-    RMSE_Q = LatexAnalysesFunctionImplementation.rmse_q
+    MEAN_NUMBER_ITERATIONS = LatexAnalysesImplementation.mean_number_iterations
+    TOTAL_OPTIMIZATION_TIME = LatexAnalysesImplementation.total_optimisation_time
+    MEAN_OPTIMIZATION_TIME = LatexAnalysesImplementation.mean_optimisation_time
+    MEAN_ITERATION_TIME = LatexAnalysesImplementation.mean_iteration_time
+    RMSE_Q = LatexAnalysesImplementation.rmse_q
 
 
 class LatexTable:
