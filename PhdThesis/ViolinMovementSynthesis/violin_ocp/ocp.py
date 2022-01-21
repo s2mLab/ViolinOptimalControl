@@ -255,13 +255,13 @@ class ViolinOcp:
 
             # Limit the fatigue below the max level
             if self.fatigue_model == FatigueType.EFFORT_PERCEPTION:
-                self.x_bounds.max[self.model.nbQ() * 2 :, 1:] = 0.90
+                self.x_bounds.max[self.model.nbQ() * 2 :, 1:] = self.violin.fatigue_max_threshold
             elif self.fatigue_model == FatigueType.QCC:
                 if self.structure_type == StructureType.TAU:
-                    self.x_bounds.max[self.n_q * 2 + self.n_q * 3 : self.n_q * 2 + self.n_q * 4, 1:] = 0.90
-                    self.x_bounds.max[self.n_q * 2 + self.n_q * 7 : self.n_q * 2 + self.n_q * 8, 1:] = 0.90
+                    self.x_bounds.max[self.n_q * 2 + self.n_q * 3 : self.n_q * 2 + self.n_q * 4, 1:] = self.violin.fatigue_max_threshold
+                    self.x_bounds.max[self.n_q * 2 + self.n_q * 7 : self.n_q * 2 + self.n_q * 8, 1:] = self.violin.fatigue_max_threshold
                 elif self.structure_type == StructureType.MUSCLE:
-                    self.x_bounds.max[self.n_q * 2 + self.n_mus * 3 : self.n_q * 2 + self.n_mus * 4, 1:] = 0.90
+                    self.x_bounds.max[self.n_q * 2 + self.n_mus * 3 : self.n_q * 2 + self.n_mus * 4, 1:] = self.violin.fatigue_max_threshold
                 else:
                     raise NotImplementedError("Fatigue type not implemented yet")
             else:

@@ -61,6 +61,7 @@ class Violin:
     def __init__(self, model: str, string: ViolinString):
         self.model = model
         self.string = string
+        self.fatigue_max_threshold = 0.8
         if self.model == "BrasViolon":
             self.residual_tau = range(0, 7)  # To be verified
             self.segment_idx = 17
@@ -229,7 +230,7 @@ class Violin:
         R: float = 0.005,
         scaling: float = None,  # Default 1
         stabilization_factor: float = 10,
-        effort_factor: float = 0.1,
+        effort_factor: float = 0.01,
         effort_threshold: float = None,  # Default 0.2 * scaling
     ):
         if scaling is None:
