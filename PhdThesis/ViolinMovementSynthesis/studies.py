@@ -649,22 +649,10 @@ class StudyConfig:
         figures=Figures(
             figures=(
                 FigureOptions(
-                    title="$q_1$ one go",
-                    fcn=FiguresFcn.DATA_IN_ONE_GO,
-                    save_name="q_1__one_go",
-                    params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True},
-                ),
-                FigureOptions(
                     title="$q_1$ stacked",
                     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
                     save_name="q_1__stacked",
                     params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True},
-                ),
-                FigureOptions(
-                    title="$mf_0$ stacked",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="mf_0__stacked",
-                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 0, "is_fatigue": True},
                 ),
                 FigureOptions(
                     title="$mf_1$ stacked",
@@ -679,24 +667,6 @@ class StudyConfig:
                     params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 2, "is_fatigue": True},
                 ),
                 FigureOptions(
-                    title="$mf_4$ stacked",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="mf_4 stacked",
-                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 4, "is_fatigue": True},
-                ),
-                FigureOptions(
-                    title="$mf_5$ stacked",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="mf_5__stacked",
-                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 5, "is_fatigue": True},
-                ),
-                FigureOptions(
-                    title="$mf_0$ one go",
-                    fcn=FiguresFcn.DATA_IN_ONE_GO,
-                    save_name="mf_0__one_go",
-                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 0, "is_fatigue": True},
-                ),
-                FigureOptions(
                     title="$mf_1$ one go",
                     fcn=FiguresFcn.DATA_IN_ONE_GO,
                     save_name="mf_1__one_go",
@@ -708,24 +678,12 @@ class StudyConfig:
                     save_name="mf_2__one_go",
                     params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 2, "is_fatigue": True},
                 ),
-                FigureOptions(
-                    title="$mf_4$ one go",
-                    fcn=FiguresFcn.DATA_IN_ONE_GO,
-                    save_name="mf_4__one_go",
-                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 4, "is_fatigue": True},
-                ),
-                FigureOptions(
-                    title="$mf_5$ one go",
-                    fcn=FiguresFcn.DATA_IN_ONE_GO,
-                    save_name="mf_5__one_go",
-                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 5, "is_fatigue": True},
-                ),
-                FigureOptions(
-                    title="$q_{7-1}$ phase diagram",
-                    fcn=FiguresFcn.PHASE_DIAGRAM,
-                    save_name="q_7_1__phase_diagram",
-                    params={"data_meta": ((DataType.STATES, "q", 7), (DataType.STATES, "q", 1)), "to_degree": True},
-                ),
+                # FigureOptions(
+                #     title="$q_{7-1}$ phase diagram",
+                #     fcn=FiguresFcn.PHASE_DIAGRAM,
+                #     save_name="q_7_1__phase_diagram",
+                #     params={"data_meta": ((DataType.STATES, "q", 7), (DataType.STATES, "q", 1)), "to_degree": True},
+                # ),
                 # FigureOptions(
                 #     title="$tau_1$ stacked",
                 #     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,

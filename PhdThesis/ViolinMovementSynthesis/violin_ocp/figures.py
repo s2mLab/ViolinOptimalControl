@@ -19,13 +19,16 @@ class FiguresFunctionImplementation:
             data_type: DataType,
             key: str,
             index: int,
-            to_degree: bool = True,
+            to_degree: bool = False,
             is_fatigue: bool = False,
     ) -> tuple[np.ndarray, np.ndarray, list[dict, ...], dict]:
         ns = solution.states["q"].shape[1]
 
         t = np.linspace(*solution.phase_time, ns)
         data = copy(getattr(solution, data_type.value)[key][index, :])
+
+        if is_fatigue:
+            data *= 100
         if to_degree:
             data *= 180/np.pi
 
@@ -49,7 +52,7 @@ class FiguresFunctionImplementation:
             data_type: DataType,
             key: str,
             index: int,
-            to_degree: bool = True,
+            to_degree: bool = False,
             is_fatigue: bool = False,
     ) -> tuple[np.ndarray, np.ndarray, list[dict, ...], dict]:
         n_cycle = studies.studies[idx_study].n_cycles_total
@@ -62,9 +65,10 @@ class FiguresFunctionImplementation:
 
         data = copy(getattr(solution, data_type.value)[key][index, :])
         data = data.reshape((-1, ns), order="C")
+
         if is_fatigue:
             data *= 100
-        elif to_degree:
+        if to_degree:
             data *= 180/np.pi
 
         if is_fatigue:
