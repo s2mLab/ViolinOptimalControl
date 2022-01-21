@@ -726,6 +726,18 @@ class StudyConfig:
                     save_name="q_7_1__phase_diagram",
                     params={"data_meta": ((DataType.STATES, "q", 7), (DataType.STATES, "q", 1)), "to_degree": True},
                 ),
+                # FigureOptions(
+                #     title="$tau_1$ stacked",
+                #     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                #     save_name="tau_1__stacked",
+                #     params={"data_type": DataType.CONTROLS, "key": "tau", "index": 1, "to_degree": False},
+                # ),
+                # FigureOptions(
+                #     title="$tau_2$ stacked",
+                #     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                #     save_name="tau_2__",
+                #     params={"data_type": DataType.CONTROLS, "key": "tau", "index": 2, "to_degree": False},
+                # ),
             ),
         ),
     )
