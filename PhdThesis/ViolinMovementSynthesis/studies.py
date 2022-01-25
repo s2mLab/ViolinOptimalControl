@@ -169,7 +169,6 @@ class StudiesInternal:
     def perform(
             self,
             reload_if_exists: bool,
-            skip_iterations_while_reload: bool = False,
             limit_memory_max_iter: int = 100,
             exact_max_iter: int = 1000,
             show_graphs: bool = False,
@@ -178,7 +177,7 @@ class StudiesInternal:
         perform = not reload_if_exists
         if reload_if_exists:
             try:
-                self.load_solutions(skip_iterations_while_reload)
+                self.load_solutions()
             except FileNotFoundError:
                 perform = True
 
@@ -191,19 +190,18 @@ class StudiesInternal:
         if perform and save_solutions:
             self.save_solutions()
 
-    def load_solutions(self, skip_iterations_while_reload):
+    def load_solutions(self):
         print("Loading data, this may take some time...")
         self.solutions: list[tuple[Solution, list[Solution, ...]], ...] = []
         for study in self.studies:
             study.initialize()
             _, sol = study.nmpc.load(f"{self._prepare_and_get_results_dir()}/{study.save_name}.bo")
             all_iterations = []
-            if not skip_iterations_while_reload:
-                for i in range(study.n_cycles_total):
-                    file_path = f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
-                    with open(file_path, "rb") as file:
-                        data = pickle.load(file)
-                    all_iterations.append(data["sol"])
+            for i in range(study.n_cycles_total):
+                file_path = f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
+                with open(file_path, "rb") as file:
+                    data = pickle.load(file)
+                all_iterations.append(data["sol"])
             self.solutions.append((sol, all_iterations))
 
     def save_solutions(self):
