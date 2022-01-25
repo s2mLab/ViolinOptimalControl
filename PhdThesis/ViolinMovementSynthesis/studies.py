@@ -1,5 +1,6 @@
 import os
 from typing import Union
+import pickle
 
 import numpy as np
 from bioptim import Solver, OdeSolver, Solution
@@ -160,7 +161,7 @@ class StudiesInternal:
         self.name = name
         self._has_run = False
         self.studies = studies
-        self.solutions: list[tuple[Solution, list[Solution]], ...] = []
+        self.solutions: list[tuple[Solution, list[Solution, ...]], ...] = []
         self.latex_table = latex_table
         self.figures = figures
         self.custom_analyses = custom_analyses
@@ -192,17 +193,17 @@ class StudiesInternal:
 
     def load_solutions(self, skip_iterations_while_reload):
         print("Loading data, this may take some time...")
-        self.solutions: list[tuple[Solution, list[Solution]], ...] = []
+        self.solutions: list[tuple[Solution, list[Solution, ...]], ...] = []
         for study in self.studies:
             study.initialize()
             _, sol = study.nmpc.load(f"{self._prepare_and_get_results_dir()}/{study.save_name}.bo")
             all_iterations = []
             if not skip_iterations_while_reload:
                 for i in range(study.n_cycles_total):
-                    _, sol_iter = study.nmpc.load(
-                            f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
-                        )
-                    all_iterations.append(sol_iter)
+                    file_path = f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
+                    with open(file_path, "rb") as file:
+                        data = pickle.load(file)
+                    all_iterations.append(data["sol"])
             self.solutions.append((sol, all_iterations))
 
     def save_solutions(self):
@@ -634,7 +635,7 @@ class StudyConfig:
             table_caption=(
                 f"Comparaison des métriques d'efficacité entre les conditions $\\condTauNf$ et $\\condTauPe$ "
                 f"lors d'un mouvement de violon synthétisé par \\multiCyclicNMPC{{}} à $3$~cycles simultanés "
-                f"sur un total de $900$~allers-retours"
+                f"sur un total de $600$~allers-retours"
             ),
             add_non_converged_notice=False,
             add_bfgs_dagger_notice=True,
@@ -649,53 +650,93 @@ class StudyConfig:
         figures=Figures(
             figures=(
                 FigureOptions(
-                    title="$q_1$ stacked",
+                    title="Évolution au cours du temps pour le bassin\nde fatigue positif de $\\tau_1$ pour tous les cycles",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="fatigue_m1_full",
+                    params={"dynamics_source_idx": 1, "key": "tau_plus_mf", "index": 1, "is_fatigue": True, "ylim": (0, 100)}
+                ),
+                FigureOptions(
+                    title="Évolution au cours du temps pour le bassin\nde fatigue positif de $\\tau_1$ pour les cycles de $495$ à $515$",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="fatigue_m1_495_515",
+                    params={"dynamics_source_idx": 1, "key": "tau_plus_mf", "index": 1, "is_fatigue": True, "first_cycle": 495, "last_cycle": 515}
+                ),
+                FigureOptions(
+                    title="Évolution au cours du temps pour le bassin\nde fatigue négatif de $\\tau_2$ pour tous les cycles",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="fatigue_m2_full",
+                    params={"dynamics_source_idx": 1, "key": "tau_minus_mf", "index": 2, "is_fatigue": True, "ylim": (0, 100)}
+                ),
+                FigureOptions(
+                    title="Évolution au cours du temps pour le bassin\nde fatigue négatif de $\\tau_2$ pour les cycles de $400$ à la fin",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="fatigue_m2_from_400",
+                    params={"dynamics_source_idx": 1, "key": "tau_minus_mf", "index": 2, "is_fatigue": True, "first_cycle": 400}
+                ),
+                FigureOptions(
+                    title="Évolution au cours du temps pour le bassin\nde fatigue négatif de $\\tau_5$ pour tous les cycles",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="fatigue_m5_full",
+                    params={"dynamics_source_idx": 1, "key": "tau_minus_mf", "index": 5, "is_fatigue": True, "ylim": (0, 100)}
+                ),
+                FigureOptions(
+                    title="Évolution au cours du temps pour le bassin\nde fatigue négatif de $\\tau_5$ pour les cycles de $400$ à la fin",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="fatigue_m5_from_400",
+                    params={"dynamics_source_idx": 1, "key": "tau_minus_mf", "index": 5, "is_fatigue": True, "first_cycle": 400}
+                ),
+
+                FigureOptions(
+                    title="Évolution de $q_1$ au cours du temps pour les cycles de $10$ à $500$",
                     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="q_1__stacked",
-                    params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True},
+                    save_name="q_1_from_10_to_500",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True, "first_cycle": 10, "last_cycle": 500},
+                    use_subplots=False,
                 ),
                 FigureOptions(
-                    title="$mf_1$ stacked",
+                    title="Évolution de $q_1$ au cours du temps pour les cycles de $500$ à la fin",
                     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="mf_1__stacked",
-                    params={"data_type": DataType.STATES, "key": "tau_plus_mf", "index": 1, "is_fatigue": True},
+                    save_name="q_1_from_500",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 1, "to_degree": True, "first_cycle": 500},
+                    use_subplots=False,
                 ),
                 FigureOptions(
-                    title="$mf_2$ stacked",
+                    title="$\\tau_1$ au cours du temps pour pour les cycles de $500$ à la fin",
                     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="mf_2__stacked",
-                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 2, "is_fatigue": True},
+                    save_name="tau_1_from_500",
+                    params={"data_type": DataType.CONTROLS, "key": "tau", "index": 1, "to_degree": False, "first_cycle": 500},
+                    use_subplots=False,
+                ),
+
+                FigureOptions(
+                    title="Évolution de $q_2$ au cours du temps pour les cycles de $500$ à la fin",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="q_2_from_500",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 2, "to_degree": True, "first_cycle": 500},
+                    use_subplots=False,
                 ),
                 FigureOptions(
-                    title="$mf_1$ one go",
-                    fcn=FiguresFcn.DATA_IN_ONE_GO,
-                    save_name="mf_1__one_go",
-                    params={"data_type": DataType.STATES, "key": "tau_plus_mf", "index": 1, "is_fatigue": True},
+                    title="$\\tau_2$ au cours du temps pour pour les cycles de $500$ à la fin",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="tau_2_from_500",
+                    params={"data_type": DataType.CONTROLS, "key": "tau", "index": 2, "to_degree": False, "first_cycle": 500},
+                    use_subplots=False,
+                ),
+
+                FigureOptions(
+                    title="Évolution de $q_5$ au cours du temps pour les cycles de $500$ à la fin",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="q_5_from_500",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 5, "to_degree": True, "first_cycle": 500},
+                    use_subplots=False,
                 ),
                 FigureOptions(
-                    title="$mf_2$ one go",
-                    fcn=FiguresFcn.DATA_IN_ONE_GO,
-                    save_name="mf_2__one_go",
-                    params={"data_type": DataType.STATES, "key": "tau_minus_mf", "index": 2, "is_fatigue": True},
+                    title="$\\tau_5$ au cours du temps pour pour les cycles de $500$ à la fin",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="tau_5_from_500",
+                    params={"data_type": DataType.CONTROLS, "key": "tau", "index": 5, "to_degree": False, "first_cycle": 500},
+                    use_subplots=False,
                 ),
-                # FigureOptions(
-                #     title="$q_{7-1}$ phase diagram",
-                #     fcn=FiguresFcn.PHASE_DIAGRAM,
-                #     save_name="q_7_1__phase_diagram",
-                #     params={"data_meta": ((DataType.STATES, "q", 7), (DataType.STATES, "q", 1)), "to_degree": True},
-                # ),
-                # FigureOptions(
-                #     title="$tau_1$ stacked",
-                #     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                #     save_name="tau_1__stacked",
-                #     params={"data_type": DataType.CONTROLS, "key": "tau", "index": 1, "to_degree": False},
-                # ),
-                # FigureOptions(
-                #     title="$tau_2$ stacked",
-                #     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                #     save_name="tau_2__",
-                #     params={"data_type": DataType.CONTROLS, "key": "tau", "index": 2, "to_degree": False},
-                # ),
             ),
         ),
     )

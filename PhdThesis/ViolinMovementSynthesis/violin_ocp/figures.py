@@ -4,12 +4,50 @@ from copy import copy
 
 import numpy as np
 from matplotlib import pyplot as plt
-from bioptim import Solution
+from bioptim import Solution, InitialGuess, InterpolationType
 
 from .enums import DataType
 
 
 class FiguresFunctionImplementation:
+    @staticmethod
+    def _get_data(
+            studies,
+            idx_study: int,
+            solution: Solution,
+            first_cycle: Union[int, None],
+            last_cycle: Union[int, None],
+            data_type: DataType,
+            key: str,
+            index: Union[int, tuple],
+    ):
+        n_cycles = studies.studies[idx_study].n_cycles_total
+        if first_cycle is None:
+            first_cycle = 0
+        elif first_cycle < 0:
+            first_cycle = n_cycles - first_cycle
+
+        if last_cycle is None:
+            last_cycle = n_cycles
+        elif last_cycle < 0:
+            last_cycle = n_cycles - last_cycle
+
+        ns = solution.states["q"].shape[1]
+        ns_per_cycle = int(ns / n_cycles)
+        if ns_per_cycle != ns / n_cycles:
+            raise RuntimeError("ns should be divisible by n_cycle")
+
+        n_cycles = last_cycle - first_cycle
+        first_frame = first_cycle * ns_per_cycle
+        last_frame = last_cycle * ns_per_cycle
+        t = np.linspace(first_cycle, last_cycle, n_cycles * ns_per_cycle)
+
+        if isinstance(index, int):
+            index = (index, )
+        data = copy(getattr(solution, data_type.value)[key][index, first_frame:last_frame])
+
+        return t, data, n_cycles
+
     @staticmethod
     def data_in_one_go(
             studies,
@@ -18,14 +56,14 @@ class FiguresFunctionImplementation:
             all_iterations: tuple[Solution, ...],
             data_type: DataType,
             key: str,
-            index: int,
+            index: Union[int, tuple],
+            first_cycle: int = None,
+            last_cycle: int = None,
             to_degree: bool = False,
             is_fatigue: bool = False,
+            ylim: tuple[float, float] = None
     ) -> tuple[np.ndarray, np.ndarray, list[dict, ...], dict]:
-        ns = solution.states["q"].shape[1]
-
-        t = np.linspace(*solution.phase_time, ns)
-        data = copy(getattr(solution, data_type.value)[key][index, :])
+        t, data, _ = FiguresFunctionImplementation._get_data(studies, idx_study, solution, first_cycle, last_cycle, data_type, key, index)
 
         if is_fatigue:
             data *= 100
@@ -40,8 +78,8 @@ class FiguresFunctionImplementation:
         plot_options = [
             {"color": plt.rcParams['axes.prop_cycle'].by_key()['color'][idx_study]}
         ]
-        ax_options = {"xlabel": "Temps (s)", "ylabel": y_label}
-        return t, data[np.newaxis, :], plot_options, ax_options
+        ax_options = {"xlabel": "Temps (s)", "ylabel": y_label, "ylim": ylim}
+        return t, data, plot_options, ax_options
 
     @staticmethod
     def data_stacked_per_cycle(
@@ -51,20 +89,16 @@ class FiguresFunctionImplementation:
             all_iterations: tuple[Solution, ...],
             data_type: DataType,
             key: str,
-            index: int,
+            index: Union[int, tuple],
+            first_cycle: int = None,
+            last_cycle: int = None,
             to_degree: bool = False,
             is_fatigue: bool = False,
+            ylim: tuple[float, float] = None
     ) -> tuple[np.ndarray, np.ndarray, list[dict, ...], dict]:
-        n_cycle = studies.studies[idx_study].n_cycles_total
-        ns = int(solution.states["q"].shape[1] / n_cycle)
-        if ns != solution.states["q"].shape[1] / n_cycle:
-            raise RuntimeError("ns should be divisible by n_cycle")
-
-        t0, tf = solution.phase_time[0], solution.phase_time[1] / n_cycle
-        t = np.linspace(t0, tf, ns)
-
-        data = copy(getattr(solution, data_type.value)[key][index, :])
-        data = data.reshape((-1, ns), order="C")
+        t, data, n_cycles = FiguresFunctionImplementation._get_data(studies, idx_study, solution, first_cycle, last_cycle, data_type, key, index)
+        t = t[:int(data.shape[1] / n_cycles)] - t[0]
+        data = data.reshape((-1, int(data.shape[1] / n_cycles)), order="C")
 
         if is_fatigue:
             data *= 100
@@ -74,7 +108,7 @@ class FiguresFunctionImplementation:
         if is_fatigue:
             y_label = "Niveau (\%)"
         else:
-            y_label = "Angle (degree)" if to_degree else "Angle (rad)"
+            y_label = "Angle ($^\circ$)" if to_degree else "Angle (rad)"
 
         plot_options = []
         alpha_range = (0.2, 1)
@@ -85,7 +119,7 @@ class FiguresFunctionImplementation:
                     "alpha": alpha_range[0] + (i / data.shape[0]) * (alpha_range[1] - alpha_range[0])
                 }
             )
-        ax_options = {"xlabel": "Temps (s)", "ylabel": y_label}
+        ax_options = {"xlabel": "Temps (s)", "ylabel": y_label, "ylim": ylim}
         return t, data, plot_options, ax_options
 
     @staticmethod
@@ -95,12 +129,14 @@ class FiguresFunctionImplementation:
             solution: Solution,
             all_iterations: tuple[Solution, ...],
             data_meta: tuple[tuple[DataType, str, int], tuple[DataType, str, int]],
+            first_cycle: int = None,
+            last_cycle: int = None,
             to_degree: bool = True,
     ) -> tuple[np.ndarray, np.ndarray, list[dict, ...], dict]:
         (data_type_x, key_x, index_x), (data_type_y, key_y, index_y) = data_meta
 
-        data_x = copy(getattr(solution, data_type_x.value)[key_x][index_x, :])
-        data_y = copy(getattr(solution, data_type_y.value)[key_y][index_y, :])
+        _, data_x, _ = FiguresFunctionImplementation._get_data(studies, idx_study, solution, first_cycle, last_cycle, data_type_x, key_x, index_x)
+        _, data_y, _ = FiguresFunctionImplementation._get_data(studies, idx_study, solution, first_cycle, last_cycle, data_type_y, key_y, index_y)
         if to_degree:
             data_x *= 180/np.pi
             data_y *= 180 / np.pi
@@ -112,13 +148,74 @@ class FiguresFunctionImplementation:
             {"color": plt.rcParams['axes.prop_cycle'].by_key()['color'][idx_study]}
         ]
         ax_options = {"xlabel": x_label, "ylabel": y_label, "aspect": "equal"}
-        return data_x, data_y[np.newaxis, :], plot_options, ax_options
+        return data_x[0, :], data_y, plot_options, ax_options
+
+    @staticmethod
+    def integration_from_another_dynamics(
+            studies,
+            idx_study: int,
+            solution: Solution,
+            all_iterations: tuple[Solution, ...],
+            dynamics_source_idx: int,
+            key: str,
+            index: Union[int, tuple],
+            first_cycle: int = None,
+            last_cycle: int = None,
+            to_degree: bool = False,
+            is_fatigue: bool = False,
+            ylim: tuple[float, float] = None
+    ):
+        if not hasattr(studies, "integrated_solutions"):
+            studies.integrated_solutions: list[Union[None, Solution], ...] = [None] * len(studies.studies)
+
+        if idx_study == dynamics_source_idx:
+            studies.integrated_solutions[idx_study] = studies.solutions[idx_study][0]
+
+        elif not studies.integrated_solutions[idx_study]:
+            print(f"Integrating {studies.studies[idx_study].name} using {studies.studies[dynamics_source_idx].name}"
+                  f", this may take some time...")
+            n_cycles = studies.studies[0].n_cycles_total
+            ns = solution.states["q"].shape[1]
+            ns_per_cycle = int(ns / n_cycles)
+            d = dynamics_source_idx
+
+            # Integrate using the PE model
+            ocp = studies.solutions[d][0].ocp
+            ocp.nlp[0].dynamics = [studies.studies[dynamics_source_idx].nmpc.ocp.nlp[0].dynamics[0]] * n_cycles * ns_per_cycle
+            ocp.nlp[0].ns = n_cycles * ns_per_cycle - 1
+            ocp.v.n_phase_x[0] = studies.solutions[d][0].states["all"].shape[0] * studies.solutions[d][0].states["all"].shape[1]
+            ocp.v.n_phase_u[0] = studies.solutions[d][0].controls["all"].shape[0] * (studies.solutions[d][0].controls["all"].shape[1] - 1)
+            ocp.v.n_all_x = sum(ocp.v.n_phase_x)
+            ocp.v.n_all_u = sum(ocp.v.n_phase_u)
+
+            x_init = InitialGuess(copy(studies.solutions[d][0].states["all"][:, 0]))
+            u_init = InitialGuess(
+                copy(studies.solutions[idx_study][0].controls["all"]),
+                interpolation=InterpolationType.EACH_FRAME
+            )
+            sol = Solution(ocp, [x_init, u_init])
+            studies.integrated_solutions[idx_study] = sol.integrate()
+
+        integrated_solution = studies.integrated_solutions[idx_study]
+        t, data, _ = FiguresFunctionImplementation._get_data(studies, idx_study, integrated_solution, first_cycle, last_cycle, DataType.STATES, key, index)
+
+        if is_fatigue:
+            data *= 100
+        if to_degree:
+            data *= 180/np.pi
+
+        plot_options = [
+            {"color": plt.rcParams['axes.prop_cycle'].by_key()['color'][idx_study]}
+        ]
+        ax_options = {"xlabel": "Temps (s)", "ylabel": "Niveau (\%)", "ylim": ylim}
+        return t, data, plot_options, ax_options
 
 
 class FiguresFcn(Enum):
     DATA_IN_ONE_GO = FiguresFunctionImplementation.data_in_one_go
     DATA_STACKED_PER_CYCLE = FiguresFunctionImplementation.data_stacked_per_cycle
     PHASE_DIAGRAM = FiguresFunctionImplementation.phase_diagram
+    INTEGRATION_FROM_ANOTHER_DYNAMICS = FiguresFunctionImplementation.integration_from_another_dynamics
 
 
 class FigureOptions:
@@ -126,12 +223,14 @@ class FigureOptions:
             self,
             title: str,
             fcn: Union[Callable, FiguresFcn],
+            use_subplots: bool = False,
             params: dict = None,
             save_name: str = ""
     ):
         self.title = title
         self.fcn: Union[Callable, FiguresFcn] = fcn
         self.extra_params = {} if params is None else params
+        self.use_subplots = use_subplots
         self.save_name = save_name
 
 
@@ -205,7 +304,12 @@ class Figures:
                 except KeyError:
                     continue
                 for data_tp, options in zip(data, plot_options):
-                    plt.plot(t, data_tp, **options)
+                    if "data_type" not in figure.extra_params or figure.extra_params["data_type"] == DataType.STATES:
+                        plt.plot(t, data_tp, **options)
+                    elif figure.extra_params["data_type"] == DataType.CONTROLS:
+                        plt.step(t, data_tp, where="post", **options)
+                    else:
+                        raise ValueError(f"Wrong data_type ({figure.extra_params['data_type']})")
 
                 legend.extend(["_"] * (data.shape[0] - 1))
                 legend.append(studies.studies[i].name)
@@ -217,7 +321,7 @@ class Figures:
             ax.set_xlabel(ax.get_xlabel(), fontsize=self.font_size)
             ax.set_ylabel(ax.get_ylabel(), fontsize=self.font_size)
             ax.tick_params(axis="both", labelsize=self.font_size)
-            ax.legend(legend, loc="upper right", fontsize=self.font_size, framealpha=0.9)
+            ax.legend(legend, loc="lower right", fontsize=self.font_size, framealpha=0.9)
 
             if figure.save_name and save_folder is not None:
                 plt.show(block=False)
