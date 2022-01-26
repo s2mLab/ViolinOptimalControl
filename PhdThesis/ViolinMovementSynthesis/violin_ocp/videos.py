@@ -1,15 +1,15 @@
 from bioptim import Solution
+import bioviz
 
 
-class Video:
-    def __init__(self, cycle_from: int, cycle_to: int):
-        self.cycle_from = cycle_from
-        self.cycle_to = cycle_to
+class Videos:
+    def __init__(self, cycle_in_and_out: tuple[tuple[int, int], ...]):
+        self.cycle_in_and_out = cycle_in_and_out
 
-    @staticmethod
-    def generate_video(all_solutions: list[tuple[Solution, list[Solution, ...]], ...], save_path: str):
-        for solution, all_iterations in all_solutions:
-            solution.animate(
+    def generate_video(self, studies, all_solutions: list[tuple[Solution, list[Solution, ...]], ...], save_folder: str):
+        for study, (solution, all_iterations) in zip(studies.studies, all_solutions):
+            b: bioviz.Viz = solution.animate(
+                show_now=False,
                 show_meshes=True,
                 show_global_center_of_mass=False,
                 show_gravity_vector=False,
@@ -21,4 +21,14 @@ class Video:
                 show_muscles=False,
                 show_wrappings=False,
                 background_color=(0, 1, 0),
-            )
+            )[0]
+
+            b.resize(1920, 1080)
+            ns_per_cycle = study.nmpc.n_shooting_per_cycle
+            for cycles in self.cycle_in_and_out:
+                b.start_recording(f"{save_folder}/{study.save_name}_from_{cycles[0]}_to_{cycles[1]}")
+                for f in range(cycles[0] * ns_per_cycle, cycles[1] * ns_per_cycle):
+                    b.movement_slider[0].setValue(f)
+                    b.add_frame()
+                b.stop_recording()
+            b.quit()

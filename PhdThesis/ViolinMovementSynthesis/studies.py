@@ -23,6 +23,7 @@ from violin_ocp import (
     FigureOptions,
     CustomAnalysesFcn,
     CustomAnalyses,
+    Videos,
 )
 
 
@@ -157,6 +158,7 @@ class StudiesInternal:
             latex_table: LatexTable = None,
             figures: Figures = None,
             custom_analyses: CustomAnalyses = None,
+            videos: Videos = None
     ):
         self.name = name
         self._has_run = False
@@ -164,6 +166,7 @@ class StudiesInternal:
         self.solutions: list[tuple[Solution, list[Solution, ...]], ...] = []
         self.latex_table = latex_table
         self.figures = figures
+        self.videos = videos
         self.custom_analyses = custom_analyses
 
     def perform(
@@ -242,6 +245,15 @@ class StudiesInternal:
             return
 
         self.custom_analyses.perform(self)
+
+    def generate_videos(self):
+        if not self._has_run:
+            raise RuntimeError("run() must be called before generating videos")
+
+        if self.videos is None:
+            return
+
+        self.videos.generate_video(self, self.solutions, save_folder=self._prepare_and_get_results_dir())
 
     def generate_figures(self):
         if not self._has_run:
@@ -648,37 +660,43 @@ class StudyConfig:
         figures=Figures(
             figures=(
                 FigureOptions(
-                    title="Évolution au cours du temps pour le bassin\nde fatigue positif de $\\tau_1$ pour tous les cycles",
+                    title="Évolution au cours du temps pour le bassin\n"
+                          "de fatigue positif de $\\tau_1$ pour tous les cycles",
                     fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
                     save_name="fatigue_m1_full",
                     params={"dynamics_source_idx": 1, "key": "tau_plus_mf", "index": 1, "is_fatigue": True, "ylim": (0, 100)}
                 ),
                 FigureOptions(
-                    title="Évolution au cours du temps pour le bassin\nde fatigue positif de $\\tau_1$ pour les cycles de $495$ à $515$",
+                    title="Évolution au cours du temps pour le bassin\n"
+                          "de fatigue positif de $\\tau_1$ pour les cycles de $495$ à $515$",
                     fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
                     save_name="fatigue_m1_495_515",
                     params={"dynamics_source_idx": 1, "key": "tau_plus_mf", "index": 1, "is_fatigue": True, "first_cycle": 495, "last_cycle": 515}
                 ),
                 FigureOptions(
-                    title="Évolution au cours du temps pour le bassin\nde fatigue négatif de $\\tau_2$ pour tous les cycles",
+                    title="Évolution au cours du temps pour le bassin\n"
+                          "de fatigue négatif de $\\tau_2$ pour tous les cycles",
                     fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
                     save_name="fatigue_m2_full",
                     params={"dynamics_source_idx": 1, "key": "tau_minus_mf", "index": 2, "is_fatigue": True, "ylim": (0, 100)}
                 ),
                 FigureOptions(
-                    title="Évolution au cours du temps pour le bassin\nde fatigue négatif de $\\tau_2$ pour les cycles de $400$ à la fin",
+                    title="Évolution au cours du temps pour le bassin\n"
+                          "de fatigue négatif de $\\tau_2$ pour les cycles de $400$ à la fin",
                     fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
                     save_name="fatigue_m2_from_400",
                     params={"dynamics_source_idx": 1, "key": "tau_minus_mf", "index": 2, "is_fatigue": True, "first_cycle": 400}
                 ),
                 FigureOptions(
-                    title="Évolution au cours du temps pour le bassin\nde fatigue négatif de $\\tau_5$ pour tous les cycles",
+                    title="Évolution au cours du temps pour le bassin\n"
+                          "de fatigue négatif de $\\tau_5$ pour tous les cycles",
                     fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
                     save_name="fatigue_m5_full",
                     params={"dynamics_source_idx": 1, "key": "tau_minus_mf", "index": 5, "is_fatigue": True, "ylim": (0, 100)}
                 ),
                 FigureOptions(
-                    title="Évolution au cours du temps pour le bassin\nde fatigue négatif de $\\tau_5$ pour les cycles de $400$ à la fin",
+                    title="Évolution au cours du temps pour le bassin\n"
+                          "de fatigue négatif de $\\tau_5$ pour les cycles de $400$ à la fin",
                     fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
                     save_name="fatigue_m5_from_400",
                     params={"dynamics_source_idx": 1, "key": "tau_minus_mf", "index": 5, "is_fatigue": True, "first_cycle": 400}
@@ -737,4 +755,5 @@ class StudyConfig:
                 ),
             ),
         ),
+        videos=Videos(cycle_in_and_out=((500, 507),))
     )
