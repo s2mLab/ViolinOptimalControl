@@ -82,6 +82,9 @@ class FatigueIntegrator:
         fig = plt.figure()
         fig.set_size_inches(16, 9)
         plt.rcParams["text.usetex"] = True
+        plt.rcParams["text.latex.preamble"] = (
+            r"\usepackage{siunitx}"
+        )
         self.axes = plt.axes()
 
         if not self._has_run:
@@ -99,8 +102,8 @@ class FatigueIntegrator:
             self._add_result_to_plot(model, result, plot_options)
 
         self.axes.set_title(self.study.plot_options.title, fontsize=1.5 * font_size)
-        self.axes.set_xlabel("Temps (s)", fontsize=font_size)
-        self.axes.set_ylabel("Niveau (\%)", fontsize=font_size)
+        self.axes.set_xlabel(r"Temps (\SI{}{\second})", fontsize=font_size)
+        self.axes.set_ylabel(r"Niveau (\SI{}{\percent})", fontsize=font_size)
         self.axes.tick_params(axis="both", labelsize=font_size)
         if self.study.plot_options.legend is not None:
             supplementary_legend = None

@@ -83,7 +83,7 @@ class LatexTable:
         self.non_converged_text = "Condition n'ayant pas convergé (maximum d'itérations atteint)"
         self.add_bfgs_dagger_to_caption = add_bfgs_dagger_notice
         self.table_caption += f"$\\dagger$"
-        self.bfgs_dagger_text = f"Le nombre d'itération et les temps rapportés n'incluent pas la " \
+        self.bfgs_dagger_text = f"Le nombre d'itérations et les temps rapportés n'incluent pas la " \
                                 f"préoptimisation de $100$ itérations en utilisant l'approximation BFGS"
         self.table_label = table_label
         self.analyses: tuple[Union[Callable, LatexAnalysesFcn], ...] = analyses

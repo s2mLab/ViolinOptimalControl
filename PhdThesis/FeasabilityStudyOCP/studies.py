@@ -463,6 +463,7 @@ class Study:
             plt.rcParams["text.usetex"] = True
             plt.rcParams["text.latex.preamble"] = (
                 r"\usepackage{amssymb}"
+                r"\usepackage{siunitx}"
                 r"\newcommand{\condition}{C/}"
                 r"\newcommand{\noFatigue}{\varnothing}"
                 r"\newcommand{\qcc}{4\textsubscript{CC}}"
@@ -485,8 +486,8 @@ class Study:
 
             ax = plt.axes()
             ax.set_title(plot_options.title % f"{key}\\textsubscript{{{i}}}", fontsize=1.5 * font_size)
-            ax.set_xlabel("Temps (s)", fontsize=font_size)
-            ax.set_ylabel("Angle (rad)", fontsize=font_size)
+            ax.set_xlabel(r"Temps (\SI{}{\second})", fontsize=font_size)
+            ax.set_ylabel(r"Angle (\SI{}{\rad})", fontsize=font_size)
             ax.tick_params(axis="both", labelsize=font_size)
 
             for sol, options in zip(self.solution, plot_options.options):
