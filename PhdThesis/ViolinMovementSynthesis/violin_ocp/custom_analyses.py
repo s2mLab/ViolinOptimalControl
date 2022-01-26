@@ -60,7 +60,6 @@ class CustomAnalysesImplementation:
                 sol.print(CostType.OBJECTIVES)
 
 
-
 class CustomAnalysesFcn(Enum):
     PRINT_NUMBER_OF_ITERATIONS = CustomAnalysesImplementation.print_number_of_iterations
     RMSE_UP_TO_CYCLE_450 = CustomAnalysesImplementation.rmse_up_to_cycle_500

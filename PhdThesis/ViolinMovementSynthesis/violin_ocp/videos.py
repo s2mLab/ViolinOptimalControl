@@ -3,7 +3,11 @@ import bioviz
 
 
 class Videos:
-    def __init__(self, cycle_in_and_out: tuple[tuple[int, int], ...], camera_name_pos_roll: tuple[tuple[str, tuple[float, float, float], float], ...]):
+    def __init__(
+        self,
+        cycle_in_and_out: tuple[tuple[int, int], ...],
+        camera_name_pos_roll: tuple[tuple[str, tuple[float, float, float], float], ...],
+    ):
         self.cycle_in_and_out = cycle_in_and_out
         self.camera_name_pos_roll = camera_name_pos_roll
 

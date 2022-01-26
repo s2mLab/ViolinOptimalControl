@@ -424,7 +424,7 @@ class Study:
 
         save_path = f"{self._prepare_and_get_results_dir()}/results.tex"
 
-        with open(save_path, "w", encoding='utf8') as file:
+        with open(save_path, "w", encoding="utf8") as file:
             file.write(table)
         print("\n\nTex file generated in the results folder")
 

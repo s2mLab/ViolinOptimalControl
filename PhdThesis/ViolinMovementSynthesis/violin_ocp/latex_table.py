@@ -10,23 +10,31 @@ from .enums import DataType
 
 class LatexAnalysesImplementation:
     @staticmethod
-    def mean_number_iterations(study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]) -> tuple[str, str]:
+    def mean_number_iterations(
+        study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]
+    ) -> tuple[str, str]:
         header = r"Nombre\\d'itérations" if len(all_iterations) == 1 else r"Nombre moyen\\d'itérations"
         values = mean([sol.iterations for sol in all_iterations])
         return header, f"${values:0.0f}$" if len(all_iterations) == 1 else f"${values:0.1f}$"
 
     @staticmethod
-    def mean_optimisation_time(study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]) -> tuple[str, str]:
+    def mean_optimisation_time(
+        study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]
+    ) -> tuple[str, str]:
         header = r"Temps\\d'optimisation\\(s)" if len(all_iterations) == 1 else r"Temps moyen\\d'optimisation\\(s)"
         return header, f"${mean([sol.real_time_to_optimize for sol in all_iterations]):0.1f}$"
 
     @staticmethod
-    def total_optimisation_time(study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]) -> tuple[str, str]:
+    def total_optimisation_time(
+        study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]
+    ) -> tuple[str, str]:
         header = r"Temps total\\d'optimisation\\(s)"
         return header, f"${sum([sol.real_time_to_optimize for sol in all_iterations]):0.1f}$"
 
     @staticmethod
-    def mean_iteration_time(study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]) -> tuple[str, str]:
+    def mean_iteration_time(
+        study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]
+    ) -> tuple[str, str]:
         n_iter = sum([sol.iterations for sol in all_iterations])
         total_time = sum([sol.real_time_to_optimize for sol in all_iterations])
         header = r"Temps moyen\\par itération\\(s/itération)"
@@ -71,20 +79,22 @@ class LatexAnalysesFcn(Enum):
 
 class LatexTable:
     def __init__(
-            self,
-            table_caption: str,
-            table_label: str,
-            analyses: tuple[LatexAnalysesFcn, ...],
-            add_non_converged_notice: bool,
-            add_bfgs_dagger_notice: bool
+        self,
+        table_caption: str,
+        table_label: str,
+        analyses: tuple[LatexAnalysesFcn, ...],
+        add_non_converged_notice: bool,
+        add_bfgs_dagger_notice: bool,
     ):
         self.table_caption = table_caption
         self.add_non_converged_notice = add_non_converged_notice
         self.non_converged_text = "Condition n'ayant pas convergé (maximum d'itérations atteint)"
         self.add_bfgs_dagger_to_caption = add_bfgs_dagger_notice
         self.table_caption += f"$\\dagger$"
-        self.bfgs_dagger_text = f"Le nombre d'itérations et les temps rapportés n'incluent pas la " \
-                                f"préoptimisation de $100$ itérations en utilisant l'approximation BFGS"
+        self.bfgs_dagger_text = (
+            f"Le nombre d'itérations et les temps rapportés n'incluent pas la "
+            f"préoptimisation de $100$ itérations en utilisant l'approximation BFGS"
+        )
         self.table_label = table_label
         self.analyses: tuple[Union[Callable, LatexAnalysesFcn], ...] = analyses
         self.has_non_converging = False
@@ -134,10 +144,7 @@ class LatexTable:
             f"\\newcommand{{\\condAlphaPe}}{{{{\\condition}}{{\\alpha}}{{\\pe}}}}\n"
             f"\n\n"
         )
-        self.begin_document = (
-            f"\\begin{{document}}\n"
-            f"\n"
-        )
+        self.begin_document = f"\\begin{{document}}\n" f"\n"
         self.begin_table = (
             f"\\begin{{table}}[!ht]\n"
             f" \\rowcolors{{1}}{{}}{{lightgray}}\n"
@@ -145,13 +152,8 @@ class LatexTable:
             f" \\label{{{self.table_label}}}\n"
             f" \\begin{{threeparttable}}\n"
         )
-        self.end_table = (
-            f" \\end{{threeparttable}}\n"
-            f"\\end{{table}}\n\n"
-        )
-        self.end_document = (
-            f"\\end{{document}}\n"
-        )
+        self.end_table = f" \\end{{threeparttable}}\n" f"\\end{{table}}\n\n"
+        self.end_document = f"\\end{{document}}\n"
 
     def get_table_text(self, studies, all_solutions: list[tuple[Solution, list[Solution]], ...]) -> str:
         header = ""
@@ -162,7 +164,9 @@ class LatexTable:
                 header = " & ".join([f"\\bfseries\\makecell[c]{{{result[0]}}}" for result in results])
 
             name_condition = studies.studies[i].name
-            if self.add_non_converged_notice and True in [iteration.iterations == studies.studies[i].solver.max_iter for iteration in all_iterations]:
+            if self.add_non_converged_notice and True in [
+                iteration.iterations == studies.studies[i].solver.max_iter for iteration in all_iterations
+            ]:
                 name_condition += "*"
                 self.has_non_converging = True
             values.append(name_condition + " & " + " & ".join([str(result[1]) for result in results]))
@@ -174,7 +178,7 @@ class LatexTable:
             f"   \\bfseries Condition & {header} \\\\ \n"
             f"   \\hline\n"
             f"   {all_values} \\\\ \n"
-            f"   \\hline\n" 
+            f"   \\hline\n"
             f"  \\end{{tabular}}\n"
         )
 

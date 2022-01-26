@@ -2,7 +2,7 @@ from studies import Study, Conditions, DataType
 
 
 def main():
-    all_studies = (Study(Conditions.STUDY1), )
+    all_studies = (Study(Conditions.STUDY1),)
 
     # --- Solve the program --- #
     for study in all_studies:
