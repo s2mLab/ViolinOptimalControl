@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Union, Callable
 
+from bioptim import CostType
 import numpy as np
 
 
@@ -47,11 +48,24 @@ class CustomAnalysesImplementation:
         print(f"La valeur minimale des RMSE à partir du cycle {first_cycle} est de : {min(rmse[:-1]):0.3f}")
         print(f"La somme des RMSE à partir du cycle {first_cycle} est de : {sum_rmse:0.3f}")
 
+    @staticmethod
+    def objective_function_at_50_and_550(studies):
+        cycles_to_print = (50, 550)
+
+        for study in studies.studies:
+            for i in cycles_to_print:
+                f_path = f"{studies._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
+                ocp, sol = study.nmpc.load(f_path)
+                print(f"Fonctions objectifs pour {study.save_name} au cycle {i}")
+                sol.print(CostType.OBJECTIVES)
+
+
 
 class CustomAnalysesFcn(Enum):
     PRINT_NUMBER_OF_ITERATIONS = CustomAnalysesImplementation.print_number_of_iterations
     RMSE_UP_TO_CYCLE_450 = CustomAnalysesImplementation.rmse_up_to_cycle_500
     RMSE_FROM_CYCLE_510 = CustomAnalysesImplementation.rmse_from_cycle_500
+    OBJECTIVE_FUNCTION_AT_50_AND_550 = CustomAnalysesImplementation.objective_function_at_50_and_550
 
 
 class CustomAnalyses:

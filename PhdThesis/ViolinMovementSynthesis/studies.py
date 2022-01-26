@@ -661,6 +661,7 @@ class StudyConfig:
             analyses=(
                 CustomAnalysesFcn.RMSE_UP_TO_CYCLE_450,
                 CustomAnalysesFcn.RMSE_FROM_CYCLE_510,
+                CustomAnalysesFcn.OBJECTIVE_FUNCTION_AT_50_AND_550,
             ),
         ),
         figures=Figures(
@@ -766,6 +767,23 @@ class StudyConfig:
                 ),
 
                 FigureOptions(
+                    ##title="Superposition des cycles $500$ jusqu'à final de l'évolution de $q_4$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_q_4_from_500",
+                    params={"data_type": DataType.STATES, "key": "q", "index": 4, "to_degree": True, "first_cycle": 500},
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $500$ jusqu'à final de la commande de $\\tau_4$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_tau_4_from_500",
+                    params={"data_type": DataType.CONTROLS, "key": "tau", "index": 4, "to_degree": False, "first_cycle": 500},
+                    use_subplots=False,
+                ),
+
+                FigureOptions(
                     ##title="Superposition des cycles $500$ jusqu'à final de l'évolution de $q_5$ au cours du temps",
                     title="",
                     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
@@ -774,7 +792,7 @@ class StudyConfig:
                     use_subplots=False,
                 ),
                 FigureOptions(
-                    # title="Superposition des cycles $500$ jusqu'à final de la commande de $\\tau_2$ au cours du temps",
+                    # title="Superposition des cycles $500$ jusqu'à final de la commande de $\\tau_5$ au cours du temps",
                     title="",
                     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
                     save_name="study4_tau_5_from_500",
