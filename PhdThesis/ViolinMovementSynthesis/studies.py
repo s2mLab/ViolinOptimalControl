@@ -723,6 +723,15 @@ class StudyConfig:
                     use_subplots=False,
                 ),
                 FigureOptions(
+                    # title="Superposition des cycles $10$ à $500$ de l'évolution de $q_1$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_tau_1_from_10_to_500",
+                    params={"data_type": DataType.CONTROLS, "key": "tau", "index": 1, "to_degree": False, "first_cycle": 10, "last_cycle": 500},
+                    use_subplots=False,
+                ),
+
+                FigureOptions(
                     # title="Superposition des cycles $500$ jusqu'à final de l'évolution de $q_1$ au cours du temps",
                     title="",
                     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
