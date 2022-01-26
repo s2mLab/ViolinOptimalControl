@@ -70,15 +70,20 @@ class FiguresFunctionImplementation:
         if to_degree:
             data *= 180/np.pi
 
-        if is_fatigue:
-            y_label = "Niveau (\%)"
+        if data_type == DataType.STATES:
+            if is_fatigue:
+                y_label = r"Niveau (\SI{}{\percent})"
+            else:
+                y_label = r"Angle (\SI{}{\degree})" if to_degree else r"Angle (\SI{}{\radian})"
+        elif data_type == DataType.CONTROLS:
+            y_label = r"Effort (\SI{}{\newton\meter})"
         else:
-            y_label = "Angle (degree)" if to_degree else "Angle (rad)"
+            raise NotImplementedError("data_type not implemented yet")
 
         plot_options = [
             {"color": plt.rcParams['axes.prop_cycle'].by_key()['color'][idx_study]}
         ]
-        ax_options = {"xlabel": "Temps (s)", "ylabel": y_label, "ylim": ylim}
+        ax_options = {"xlabel": r"Temps (\SI{}{\second})", "ylabel": y_label, "ylim": ylim}
         return t, data, plot_options, ax_options
 
     @staticmethod
@@ -105,10 +110,15 @@ class FiguresFunctionImplementation:
         if to_degree:
             data *= 180/np.pi
 
-        if is_fatigue:
-            y_label = "Niveau (\%)"
+        if data_type == DataType.STATES:
+            if is_fatigue:
+                y_label = r"Niveau (\SI{}{\percent})"
+            else:
+                y_label = r"Angle (\SI{}{\degree})" if to_degree else "Angle (rad)"
+        elif data_type == DataType.CONTROLS:
+            y_label = r"Effort (\SI{}{\newton\meter})"
         else:
-            y_label = "Angle ($^\circ$)" if to_degree else "Angle (rad)"
+            raise NotImplementedError("data_type not implemented yet")
 
         plot_options = []
         alpha_range = (0.2, 1)
@@ -119,7 +129,7 @@ class FiguresFunctionImplementation:
                     "alpha": alpha_range[0] + (i / data.shape[0]) * (alpha_range[1] - alpha_range[0])
                 }
             )
-        ax_options = {"xlabel": "Temps (s)", "ylabel": y_label, "ylim": ylim}
+        ax_options = {"xlabel": r"Temps (\SI{}{\second})", "ylabel": y_label, "ylim": ylim}
         return t, data, plot_options, ax_options
 
     @staticmethod
@@ -141,8 +151,18 @@ class FiguresFunctionImplementation:
             data_x *= 180/np.pi
             data_y *= 180 / np.pi
 
-        x_label = "Angle (degree)" if to_degree else "Angle (rad)"
-        y_label = "Angle (degree)" if to_degree else "Angle (rad)"
+        if data_type_x == DataType.STATES:
+            x_label = r"Angle (\SI{}{\degree})" if to_degree else r"Angle (\SI{}{\radian})"
+        elif data_type_x == DataType.CONTROLS:
+            x_label = r"Effort (\SI{}{\newton\meter})"
+        else:
+            raise NotImplementedError("data_type not implemented yet")
+        if data_type_x == DataType.STATES:
+            y_label = r"Angle (\SI{}{\degree})" if to_degree else r"Angle (\SI{}{\radian})"
+        elif data_type_x == DataType.CONTROLS:
+            y_label = r"Effort (\SI{}{\newton\meter})"
+        else:
+            raise NotImplementedError("data_type not implemented yet")
 
         plot_options = [
             {"color": plt.rcParams['axes.prop_cycle'].by_key()['color'][idx_study]}
@@ -207,7 +227,7 @@ class FiguresFunctionImplementation:
         plot_options = [
             {"color": plt.rcParams['axes.prop_cycle'].by_key()['color'][idx_study]}
         ]
-        ax_options = {"xlabel": "Temps (s)", "ylabel": "Niveau (\%)", "ylim": ylim}
+        ax_options = {"xlabel": r"Temps (\SI{}{\second})", "ylabel": r"Niveau (\SI{}{\percent})", "ylim": ylim}
         return t, data, plot_options, ax_options
 
 
@@ -249,6 +269,7 @@ class Figures:
             r"\usepackage[table]{xcolor}"
             r"\usepackage{threeparttable}"
             r"\usepackage{makecell}"
+            r"\usepackage{siunitx}"
             r"\definecolor{lightgray}{gray}{0.91}"
             r"\newcommand{\rmse}{RMSE}"
             r"\newcommand{\ocp}{OCP}"
@@ -314,6 +335,8 @@ class Figures:
                 legend.extend(["_"] * (data.shape[0] - 1))
                 legend.append(studies.studies[i].name)
 
+                ax.relim()
+                ax.autoscale()
                 if not axes_options_set:
                     ax.set(**ax_options)
                     axes_options_set = True
@@ -321,7 +344,7 @@ class Figures:
             ax.set_xlabel(ax.get_xlabel(), fontsize=self.font_size)
             ax.set_ylabel(ax.get_ylabel(), fontsize=self.font_size)
             ax.tick_params(axis="both", labelsize=self.font_size)
-            ax.legend(legend, loc="lower right", fontsize=self.font_size, framealpha=0.9)
+            ax.legend(legend, loc="upper left", fontsize=self.font_size, framealpha=0.9)
 
             if figure.save_name and save_folder is not None:
                 plt.show(block=False)
