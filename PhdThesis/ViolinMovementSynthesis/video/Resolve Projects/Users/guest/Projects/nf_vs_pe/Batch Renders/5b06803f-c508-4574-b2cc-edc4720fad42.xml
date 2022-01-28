@@ -70,7 +70,7 @@
  <RecordAudioNumChannels>2</RecordAudioNumChannels>
  <RecordAudioBitDepth>16</RecordAudioBitDepth>
  <TimelineFilter>
-  <SmTimelineFilter DbId="fc3c0843-2f4b-4f57-9ac0-a3ba731ec430">
+  <SmTimelineFilter DbId="274a8689-bb42-4465-92a7-dcc734567014">
    <FieldsBlob/>
    <FilterMajorMode>FILTER_NONE</FilterMajorMode>
    <FilterFlagSubMode>FILTER_DEPRECATED_FLAG</FilterFlagSubMode>
@@ -139,7 +139,7 @@
  <UseRenderCachedImagesForRecording>false</UseRenderCachedImagesForRecording>
  <TgtSysId>None</TgtSysId>
  <CurSysId/>
- <TimeTakenToRenderInMs>2350</TimeTakenToRenderInMs>
+ <TimeTakenToRenderInMs>4122</TimeTakenToRenderInMs>
  <EstimatedTimeRemainingInMs>0</EstimatedTimeRemainingInMs>
  <ErrorCode>0</ErrorCode>
  <ErrorStr/>
