@@ -123,7 +123,7 @@ class FatigueIntegrator:
         if self.study.plot_options.save_path:
             plt.show(block=False)
             plt.draw_all(True)
-            plt.savefig(f"{self._prepare_and_get_results_dir()}/{self.study.plot_options.save_path}", dpi=300)
+            plt.savefig(f"{self.prepare_and_get_results_dir()}/{self.study.plot_options.save_path}", dpi=300)
 
         plt.show()
 
@@ -159,7 +159,7 @@ class FatigueIntegrator:
 
         table = f"The RMSE between {type(models[0]).__name__} and {type(models[1]).__name__} is {rmse}"
 
-        save_path = f"{self._prepare_and_get_results_dir()}/rmse.txt"
+        save_path = f"{self.prepare_and_get_results_dir()}/rmse.txt"
         with open(save_path, "w", encoding="utf8") as file:
             file.write(table)
         print("RMSE written int results folder")
@@ -181,12 +181,12 @@ class FatigueIntegrator:
                 for model, results in zip(self.study.fatigue_models, self._results[-1]):
                     table += f"\tfor {type(model).__name__}: {custom_analysis.fun(results)}\n"
 
-        save_path = f"{self._prepare_and_get_results_dir()}/custom_analysis.txt"
+        save_path = f"{self.prepare_and_get_results_dir()}/custom_analysis.txt"
         with open(save_path, "w", encoding="utf8") as file:
             file.write(table)
         print("Custom analyses written int results folder")
 
-    def _prepare_and_get_results_dir(self):
+    def prepare_and_get_results_dir(self):
         try:
             os.mkdir("results")
         except FileExistsError:

@@ -54,7 +54,7 @@ class CustomAnalysesImplementation:
 
         for study in studies.studies:
             for i in cycles_to_print:
-                f_path = f"{studies._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
+                f_path = f"{studies.prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
                 ocp, sol = study.nmpc.load(f_path)
                 print(f"Fonctions objectifs pour {study.save_name} au cycle {i}")
                 sol.print(CostType.OBJECTIVES)

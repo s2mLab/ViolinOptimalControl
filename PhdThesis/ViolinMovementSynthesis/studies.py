@@ -199,10 +199,10 @@ class StudiesInternal:
         self.solutions: list[tuple[Solution, list[Solution, ...]], ...] = []
         for study in self.studies:
             study.initialize()
-            _, sol = study.nmpc.load(f"{self._prepare_and_get_results_dir()}/{study.save_name}.bo")
+            _, sol = study.nmpc.load(f"{self.prepare_and_get_results_dir()}/{study.save_name}.bo")
             all_iterations = []
             for i in range(study.n_cycles_total):
-                file_path = f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
+                file_path = f"{self.prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}.bo"
                 with open(file_path, "rb") as file:
                     data = pickle.load(file)
                 all_iterations.append(data["sol"])
@@ -210,17 +210,17 @@ class StudiesInternal:
 
     def save_solutions(self):
         for study, (sol, all_iterations) in zip(self.studies, self.solutions):
-            study.nmpc.save(sol, save_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}")
-            study.nmpc.save(sol, save_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}", stand_alone=True)
+            study.nmpc.save(sol, save_path=f"{self.prepare_and_get_results_dir()}/{study.save_name}")
+            study.nmpc.save(sol, save_path=f"{self.prepare_and_get_results_dir()}/{study.save_name}", stand_alone=True)
 
             for i, iterations in enumerate(all_iterations):
                 study.nmpc.save(
                     iterations,
-                    save_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}",
+                    save_path=f"{self.prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}",
                 )
                 study.nmpc.save(
                     iterations,
-                    save_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}",
+                    save_path=f"{self.prepare_and_get_results_dir()}/{study.save_name}_iterations/iteration_{i:04d}",
                     stand_alone=True,
                 )
 
@@ -233,7 +233,7 @@ class StudiesInternal:
 
         table = self.latex_table.get_table_text(self, self.solutions)
 
-        save_path = f"{self._prepare_and_get_results_dir()}/results.tex"
+        save_path = f"{self.prepare_and_get_results_dir()}/results.tex"
         with open(save_path, "w", encoding="utf8") as file:
             file.write(table)
         print("\n\nTex file generated in the results folder")
@@ -254,7 +254,7 @@ class StudiesInternal:
         if self.videos is None:
             return
 
-        self.videos.generate_video(self, self.solutions, save_folder=self._prepare_and_get_results_dir())
+        self.videos.generate_video(self, self.solutions, save_folder=self.prepare_and_get_results_dir())
 
     def generate_figures(self):
         if not self._has_run:
@@ -263,9 +263,9 @@ class StudiesInternal:
         if self.figures is None:
             return
 
-        self.figures.generate_figure(self, self.solutions, save_folder=self._prepare_and_get_results_dir())
+        self.figures.generate_figure(self, self.solutions, save_folder=self.prepare_and_get_results_dir())
 
-    def _prepare_and_get_results_dir(self):
+    def prepare_and_get_results_dir(self):
         try:
             os.mkdir("results")
         except FileExistsError:

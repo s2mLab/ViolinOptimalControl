@@ -422,7 +422,7 @@ class Study:
         table += f"  \\hline\n" f" \\end{{tabular}}\n" f"\\end{{table}}\n\n"
         table += f"\\end{{document}}\n"
 
-        save_path = f"{self._prepare_and_get_results_dir()}/results.tex"
+        save_path = f"{self.prepare_and_get_results_dir()}/results.tex"
 
         with open(save_path, "w", encoding="utf8") as file:
             file.write(table)
@@ -430,10 +430,10 @@ class Study:
 
     def save_solutions(self):
         for study, sol in zip(self.conditions.studies, self.solution):
-            study.ocp.save(sol, file_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}")
-            study.ocp.save(sol, file_path=f"{self._prepare_and_get_results_dir()}/{study.save_name}", stand_alone=True)
+            study.ocp.save(sol, file_path=f"{self.prepare_and_get_results_dir()}/{study.save_name}")
+            study.ocp.save(sol, file_path=f"{self.prepare_and_get_results_dir()}/{study.save_name}", stand_alone=True)
 
-    def _prepare_and_get_results_dir(self):
+    def prepare_and_get_results_dir(self):
         try:
             os.mkdir("results")
         except FileExistsError:
@@ -504,7 +504,7 @@ class Study:
             if plot_options.save_path is not None and plot_options.save_path[i] is not None:
                 plt.show(block=False)
                 plt.draw_all(True)
-                plt.savefig(f"{self._prepare_and_get_results_dir()}/{plot_options.save_path[i]}", dpi=300)
+                plt.savefig(f"{self.prepare_and_get_results_dir()}/{plot_options.save_path[i]}", dpi=300)
 
         self._plots_are_prepared = True
 
