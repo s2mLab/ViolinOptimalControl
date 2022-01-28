@@ -241,12 +241,26 @@ class FiguresFunctionImplementation:
         ax_options = {"xlabel": r"Temps (\SI{}{\second})", "ylabel": r"Niveau (\SI{}{\percent})", "ylim": ylim}
         return t, data, plot_options, ax_options
 
+    @staticmethod
+    def plot_target_function(
+            studies,
+            idx_study: int,
+            solution: Solution,
+            all_iterations: tuple[Solution, ...],
+    ):
+        bow_trajectory = studies.studies[idx_study].get_bow_trajectory()
+
+        plot_options = [{"color": plt.rcParams["axes.prop_cycle"].by_key()["color"][0]}]
+        ax_options = {"xlabel": r"Temps (\SI{}{\second})", "ylabel": r"Position (\SI{}{\centi\meter})"}
+        return bow_trajectory.t / 2, bow_trajectory.target, plot_options, ax_options
+
 
 class FiguresFcn(Enum):
     DATA_IN_ONE_GO = FiguresFunctionImplementation.data_in_one_go
     DATA_STACKED_PER_CYCLE = FiguresFunctionImplementation.data_stacked_per_cycle
     PHASE_DIAGRAM = FiguresFunctionImplementation.phase_diagram
     INTEGRATION_FROM_ANOTHER_DYNAMICS = FiguresFunctionImplementation.integration_from_another_dynamics
+    PLOT_TARGET_FUNCTION = FiguresFunctionImplementation.plot_target_function
 
 
 class FigureOptions:
@@ -257,11 +271,13 @@ class FigureOptions:
         use_subplots: bool = False,
         params: dict = None,
         save_name: str = "",
+        show_legend: bool = True,
     ):
         self.title = title
         self.fcn: Union[Callable, FiguresFcn] = fcn
         self.extra_params = {} if params is None else params
         self.use_subplots = use_subplots
+        self.show_legend = show_legend
         self.save_name = save_name
 
 
@@ -357,7 +373,8 @@ class Figures:
             ax.set_xlabel(ax.get_xlabel(), fontsize=self.font_size)
             ax.set_ylabel(ax.get_ylabel(), fontsize=self.font_size)
             ax.tick_params(axis="both", labelsize=self.font_size)
-            ax.legend(legend, loc="upper left", fontsize=self.font_size, framealpha=0.9)
+            if figure.show_legend:
+                ax.legend(legend, loc="upper left", fontsize=self.font_size, framealpha=0.9)
 
             if figure.save_name and save_folder is not None:
                 plt.show(block=False)

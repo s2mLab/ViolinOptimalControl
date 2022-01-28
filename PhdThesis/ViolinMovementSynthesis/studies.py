@@ -449,6 +449,16 @@ class StudyConfig:
                 rmse_index=3,
             ),
         ),
+        figures=Figures(
+            figures=(
+                FigureOptions(
+                    title=r"Évolution au cours du temps de la cible pour le degré de liberté $q_{13}$",
+                    fcn=FiguresFcn.PLOT_TARGET_FUNCTION,
+                    save_name="bow_target",
+                    show_legend=False,
+                ),
+            ),
+        ),
         latex_table=LatexTable(
             table_caption=(
                 f"Comparaison des métriques d'efficacité entre les modèles de fatigue "
@@ -880,6 +890,34 @@ class StudyConfig:
                         "data_type": DataType.CONTROLS,
                         "key": "tau",
                         "index": 5,
+                        "to_degree": False,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    ##title="Superposition des cycles $500$ jusqu'à final de l'évolution de $q_6$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_q_6_from_500",
+                    params={
+                        "data_type": DataType.STATES,
+                        "key": "q",
+                        "index": 6,
+                        "to_degree": True,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $500$ jusqu'à final de la commande de $\\tau_6$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_tau_6_from_500",
+                    params={
+                        "data_type": DataType.CONTROLS,
+                        "key": "tau",
+                        "index": 6,
                         "to_degree": False,
                         "first_cycle": 500,
                     },
