@@ -1,0 +1,7 @@
+# create a dev conda environment with: `make create_env` or `conda env create -f environment.yml`
+name: phd
+channels:
+- conda-forge
+- default
+dependencies:
+- bioptim =2.2.0

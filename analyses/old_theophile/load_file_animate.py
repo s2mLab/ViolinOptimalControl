@@ -24,7 +24,9 @@ b = Viz(
     show_segments_center_of_mass=False,
     show_local_ref_frame=False,
     show_global_ref_frame=False,
-    show_muscles=False
+    show_muscles=False,
 )
-b.load_movement(data_interpolate["q"].T,)
+b.load_movement(
+    data_interpolate["q"].T,
+)
 b.exec()

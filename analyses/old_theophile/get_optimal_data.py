@@ -29,7 +29,13 @@ else:
 
 if ocp.nb_phases == 1:
     optimal_states = np.concatenate(
-        (states["q"], states["q_dot"], states["muscles_active"], states["muscles_fatigue"], states["muscles_resting"],),
+        (
+            states["q"],
+            states["q_dot"],
+            states["muscles_active"],
+            states["muscles_fatigue"],
+            states["muscles_resting"],
+        ),
         0,
     )
     optimal_controls = np.concatenate((controls["tau"], controls["muscles"]), 0)[:, :-1]
