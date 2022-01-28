@@ -55,6 +55,8 @@ class LatexAnalysesImplementation:
 
         if sum_rmse == 0:
             rmse_str = "---"
+        elif mean([sol.iterations for sol in all_iterations]) == studies.studies[study_index].solver.max_iter:
+            rmse_str = "N/A"
         else:
             rmse_str = f"{sum_rmse:0.3e}"
             if rmse_str.find("e") >= 0:
