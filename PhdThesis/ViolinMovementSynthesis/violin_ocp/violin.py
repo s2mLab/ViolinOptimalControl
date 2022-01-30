@@ -58,10 +58,10 @@ class Violin:
     Contains initial values and references from useful markers and segments.
     """
 
-    def __init__(self, model: str, string: ViolinString):
+    def __init__(self, model: str, string: ViolinString, fatigue_max_threshold: float = 0.8):
         self.model = model
         self.string = string
-        self.fatigue_max_threshold = 0.8
+        self.fatigue_max_threshold = fatigue_max_threshold
         if self.model == "BrasViolon":
             self.residual_tau = range(0, 7)  # To be verified
             self.segment_idx = 17

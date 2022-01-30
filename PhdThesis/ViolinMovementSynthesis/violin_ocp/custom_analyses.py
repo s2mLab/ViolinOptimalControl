@@ -14,8 +14,8 @@ class CustomAnalysesImplementation:
         print("")
 
     @staticmethod
-    def rmse_up_to_cycle_500(studies):
-        last_cycle = 500
+    def rmse_before_fatigue(studies):
+        last_cycle = 200
         idx = 1
         ref_idx = studies.studies[idx].rmse_index
 
@@ -31,8 +31,8 @@ class CustomAnalysesImplementation:
         print(f"La somme des RMSE jusqu'au cycle {last_cycle} est de : {sum_rmse:0.3f}")
 
     @staticmethod
-    def rmse_from_cycle_500(studies):
-        first_cycle = 500
+    def rmse_after_fatigue(studies):
+        first_cycle = 550
         idx = 1
         ref_idx = studies.studies[idx].rmse_index
 
@@ -62,8 +62,8 @@ class CustomAnalysesImplementation:
 
 class CustomAnalysesFcn(Enum):
     PRINT_NUMBER_OF_ITERATIONS = CustomAnalysesImplementation.print_number_of_iterations
-    RMSE_UP_TO_CYCLE_450 = CustomAnalysesImplementation.rmse_up_to_cycle_500
-    RMSE_FROM_CYCLE_510 = CustomAnalysesImplementation.rmse_from_cycle_500
+    RMSE_BEFORE_FATIGUE = CustomAnalysesImplementation.rmse_before_fatigue
+    RMSE_AFTER_FATIGUE = CustomAnalysesImplementation.rmse_after_fatigue
     OBJECTIVE_FUNCTION_AT_50_AND_550 = CustomAnalysesImplementation.objective_function_at_50_and_550
 
 
