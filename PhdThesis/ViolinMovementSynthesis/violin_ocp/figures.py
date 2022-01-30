@@ -377,6 +377,4 @@ class Figures:
                 ax.legend(legend, loc="upper left", fontsize=self.font_size, framealpha=0.9)
 
             if figure.save_name and save_folder is not None:
-                plt.show(block=False)
-                plt.draw_all(True)
                 plt.savefig(f"{save_folder}/{figure.save_name}", dpi=300)

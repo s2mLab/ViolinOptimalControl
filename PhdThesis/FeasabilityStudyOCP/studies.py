@@ -502,8 +502,6 @@ class Study:
                 plt.get_current_fig_manager().window.showMaximized()
 
             if plot_options.save_path is not None and plot_options.save_path[i] is not None:
-                plt.show(block=False)
-                plt.draw_all(True)
                 plt.savefig(f"{self.prepare_and_get_results_dir()}/{plot_options.save_path[i]}", dpi=300)
 
         self._plots_are_prepared = True

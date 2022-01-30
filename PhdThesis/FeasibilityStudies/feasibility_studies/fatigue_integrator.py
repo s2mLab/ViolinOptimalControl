@@ -121,8 +121,6 @@ class FatigueIntegrator:
             plt.get_current_fig_manager().window.showMaximized()
 
         if self.study.plot_options.save_path:
-            plt.show(block=False)
-            plt.draw_all(True)
             plt.savefig(f"{self.prepare_and_get_results_dir()}/{self.study.plot_options.save_path}", dpi=300)
 
         plt.show()
