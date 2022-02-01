@@ -3,11 +3,11 @@ from studies import StudyConfig
 
 def main():
 
-    reload_data = False
+    reload_data = True
     all_studies = (
-        StudyConfig.STUDY1_OCP,
-        StudyConfig.STUDY2_TAU_10_CYCLES,
-        StudyConfig.STUDY3_TAU_10_CYCLES_3_AT_A_TIME,
+        # StudyConfig.STUDY1_OCP,
+        # StudyConfig.STUDY2_TAU_10_CYCLES,
+        # StudyConfig.STUDY3_TAU_10_CYCLES_3_AT_A_TIME,
         StudyConfig.STUDY4_VIOLIN,
     )
 
@@ -22,10 +22,10 @@ def main():
         )
 
         # Print the results
-        study.generate_figures()
-        study.perform_custom_analyses()
-        study.generate_latex_table()
-        study.generate_videos()
+        # study.generate_figures()
+        # study.perform_custom_analyses()
+        # study.generate_latex_table()
+        # study.generate_videos()
         print("----------")
 
 
