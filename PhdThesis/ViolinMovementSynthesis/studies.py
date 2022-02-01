@@ -23,7 +23,11 @@ from violin_ocp import (
     FigureOptions,
     CustomAnalysesFcn,
     CustomAnalyses,
+    CustomAnalysesOption,
     Videos,
+    ExtraFigures,
+    ExtraFiguresFcn,
+    ExtraFigureOption,
 )
 
 
@@ -160,6 +164,7 @@ class StudiesInternal:
         figures: Figures = None,
         custom_analyses: CustomAnalyses = None,
         videos: Videos = None,
+        extra_figures: ExtraFigures = None
     ):
         self.name = name
         self._has_run = False
@@ -169,6 +174,7 @@ class StudiesInternal:
         self.figures = figures
         self.videos = videos
         self.custom_analyses = custom_analyses
+        self.extra_figures = extra_figures
 
     def perform(
         self,
@@ -264,6 +270,15 @@ class StudiesInternal:
             return
 
         self.figures.generate_figure(self, self.solutions, save_folder=self.prepare_and_get_results_dir())
+
+    def generate_extra_figures(self):
+        if not self._has_run:
+            raise RuntimeError("run() must be called before generating the figures")
+
+        if self.extra_figures is None:
+            return
+
+        self.extra_figures.generate_extra_figures(self, save_folder=self.prepare_and_get_results_dir())
 
     def prepare_and_get_results_dir(self):
         try:
@@ -538,7 +553,13 @@ class StudyConfig:
             ),
             font_size=30,
         ),
-        custom_analyses=CustomAnalyses((CustomAnalysesFcn.PRINT_NUMBER_OF_ITERATIONS,)),
+        custom_analyses=CustomAnalyses((CustomAnalysesOption(CustomAnalysesFcn.PRINT_NUMBER_OF_ITERATIONS),)),
+        extra_figures=ExtraFigures(
+            extra_figures=(ExtraFigureOption(
+                ExtraFiguresFcn.INITIAL_GUESS_NMPC,
+                data_path="condTauPe_iterations/iteration_0000.bo"),
+            ),
+        ),
     )
 
     STUDY3_TAU_10_CYCLES_3_AT_A_TIME: StudiesInternal = StudiesInternal(
@@ -617,10 +638,336 @@ class StudyConfig:
                 ),
             ),
         ),
-        custom_analyses=CustomAnalyses((CustomAnalysesFcn.PRINT_NUMBER_OF_ITERATIONS,)),
+        custom_analyses=CustomAnalyses((CustomAnalysesOption(CustomAnalysesFcn.PRINT_NUMBER_OF_ITERATIONS),)),
     )
 
-    STUDY4_VIOLIN: StudiesInternal = StudiesInternal(
+    STUDY4A_VIOLIN: StudiesInternal = StudiesInternal(
+        name="STUDY4_VIOLIN",
+        studies=(
+            StudyInternal(
+                name=r"$\condTauNf$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.NO_FATIGUE,
+                n_cycles_total=600,
+                n_shoot_per_cycle=30,
+                n_integration_steps=3,
+                n_cycles_simultaneous=3,
+                rmse_index=0,
+            ),
+            StudyInternal(
+                name=r"$\condTauPe\ (80\%)$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.EFFORT_PERCEPTION,
+                n_cycles_total=600,
+                n_shoot_per_cycle=30,
+                n_integration_steps=3,
+                n_cycles_simultaneous=3,
+                rmse_index=0,
+            ),
+        ),
+        latex_table=LatexTable(
+            table_caption=(
+                f"Comparaison des métriques d'efficacité entre les conditions $\\condTauNf$ et $\\condTauPe$ "
+                f"lors d'un mouvement de violon synthétisé par \\multiCyclicNMPC{{}} à $3$~cycles simultanés "
+                f"sur un total de $600$~allers-retours"
+            ),
+            add_non_converged_notice=False,
+            add_bfgs_dagger_notice=True,
+            table_label="table:violin_nmpc",
+            analyses=(
+                LatexAnalysesFcn.TOTAL_OPTIMIZATION_TIME,
+                LatexAnalysesFcn.MEAN_NUMBER_ITERATIONS,
+                LatexAnalysesFcn.MEAN_ITERATION_TIME,
+                LatexAnalysesFcn.RMSE_Q,
+            ),
+        ),
+        custom_analyses=CustomAnalyses(
+            analyses=(
+                CustomAnalysesOption(CustomAnalysesFcn.RMSE, last_cycle=450),
+                CustomAnalysesOption(CustomAnalysesFcn.RMSE, first_cycle=510),
+                CustomAnalysesOption(CustomAnalysesFcn.OBJECTIVE_FUNCTION, cycle=50),
+                CustomAnalysesOption(CustomAnalysesFcn.OBJECTIVE_FUNCTION, cycle=550),
+            ),
+        ),
+        figures=Figures(
+            figures=(
+                FigureOptions(
+                    # title="Évolution au cours du temps pour le bassin\n"
+                    #       "de fatigue positif de $\\tau_1$ pour tous les cycles",
+                    title="",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="study4_fatigue_m1_full",
+                    params={
+                        "dynamics_source_idx": 1,
+                        "key": "tau_plus_mf",
+                        "index": 1,
+                        "is_fatigue": True,
+                        "ylim": (0, 100),
+                    },
+                ),
+                FigureOptions(
+                    # title="Évolution au cours du temps pour le bassin\n"
+                    #       "de fatigue positif de $\\tau_1$ pour les cycles de $450$ à la fin",
+                    title="",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="study4_fatigue_m1_from_450",
+                    params={
+                        "dynamics_source_idx": 1,
+                        "key": "tau_plus_mf",
+                        "index": 1,
+                        "is_fatigue": True,
+                        "first_cycle": 450,
+                    },
+                ),
+                FigureOptions(
+                    # title="Évolution au cours du temps pour le bassin\n"
+                    #       "de fatigue négatif de $\\tau_2$ pour tous les cycles",
+                    title="",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="study4_fatigue_m2_full",
+                    params={
+                        "dynamics_source_idx": 1,
+                        "key": "tau_minus_mf",
+                        "index": 2,
+                        "is_fatigue": True,
+                        "ylim": (0, 100),
+                    },
+                ),
+                FigureOptions(
+                    # title="Évolution au cours du temps pour le bassin\n"
+                    #       "de fatigue négatif de $\\tau_2$ pour les cycles de $450$ à la fin",
+                    title="",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="study4_fatigue_m2_from_450",
+                    params={
+                        "dynamics_source_idx": 1,
+                        "key": "tau_minus_mf",
+                        "index": 2,
+                        "is_fatigue": True,
+                        "first_cycle": 450,
+                    },
+                ),
+                FigureOptions(
+                    # title="Évolution au cours du temps pour le bassin\n"
+                    #       "de fatigue négatif de $\\tau_5$ pour tous les cycles",
+                    title="",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="study4_fatigue_m5_full",
+                    params={
+                        "dynamics_source_idx": 1,
+                        "key": "tau_minus_mf",
+                        "index": 5,
+                        "is_fatigue": True,
+                        "ylim": (0, 100),
+                    },
+                ),
+                FigureOptions(
+                    # title="Évolution au cours du temps pour le bassin\n"
+                    #       "de fatigue négatif de $\\tau_5$ pour les cycles de $450$ à la fin",
+                    title="",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="study4_fatigue_m5_from_450",
+                    params={
+                        "dynamics_source_idx": 1,
+                        "key": "tau_minus_mf",
+                        "index": 5,
+                        "is_fatigue": True,
+                        "first_cycle": 450,
+                    },
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $10$ à $500$ de l'évolution de $q_1$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_q_1_from_10_to_500",
+                    params={
+                        "data_type": DataType.STATES,
+                        "key": "q",
+                        "index": 1,
+                        "to_degree": True,
+                        "first_cycle": 10,
+                        "last_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $10$ à $500$ de l'évolution de $q_1$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_tau_1_from_10_to_500",
+                    params={
+                        "data_type": DataType.CONTROLS,
+                        "key": "tau",
+                        "index": 1,
+                        "to_degree": False,
+                        "first_cycle": 10,
+                        "last_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $500$ jusqu'à final de l'évolution de $q_1$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_q_1_from_500",
+                    params={
+                        "data_type": DataType.STATES,
+                        "key": "q",
+                        "index": 1,
+                        "to_degree": True,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $500$ jusqu'à final de la commande de $\\tau_1$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_tau_1_from_500",
+                    params={
+                        "data_type": DataType.CONTROLS,
+                        "key": "tau",
+                        "index": 1,
+                        "to_degree": False,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $500$ jusqu'à final de l'évolution de $q_2$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_q_2_from_500",
+                    params={
+                        "data_type": DataType.STATES,
+                        "key": "q",
+                        "index": 2,
+                        "to_degree": True,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $500$ jusqu'à final de la commande de $\\tau_2$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_tau_2_from_500",
+                    params={
+                        "data_type": DataType.CONTROLS,
+                        "key": "tau",
+                        "index": 2,
+                        "to_degree": False,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    ##title="Superposition des cycles $500$ jusqu'à final de l'évolution de $q_4$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_q_4_from_500",
+                    params={
+                        "data_type": DataType.STATES,
+                        "key": "q",
+                        "index": 4,
+                        "to_degree": True,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $500$ jusqu'à final de la commande de $\\tau_4$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_tau_4_from_500",
+                    params={
+                        "data_type": DataType.CONTROLS,
+                        "key": "tau",
+                        "index": 4,
+                        "to_degree": False,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    ##title="Superposition des cycles $500$ jusqu'à final de l'évolution de $q_5$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_q_5_from_500",
+                    params={
+                        "data_type": DataType.STATES,
+                        "key": "q",
+                        "index": 5,
+                        "to_degree": True,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $500$ jusqu'à final de la commande de $\\tau_5$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_tau_5_from_500",
+                    params={
+                        "data_type": DataType.CONTROLS,
+                        "key": "tau",
+                        "index": 5,
+                        "to_degree": False,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    ##title="Superposition des cycles $500$ jusqu'à final de l'évolution de $q_6$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_q_6_from_500",
+                    params={
+                        "data_type": DataType.STATES,
+                        "key": "q",
+                        "index": 6,
+                        "to_degree": True,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $500$ jusqu'à final de la commande de $\\tau_6$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4_tau_6_from_500",
+                    params={
+                        "data_type": DataType.CONTROLS,
+                        "key": "tau",
+                        "index": 6,
+                        "to_degree": False,
+                        "first_cycle": 500,
+                    },
+                    use_subplots=False,
+                ),
+            ),
+        ),
+        videos=Videos(
+            cycle_in_and_out=((500, 507),),
+            camera_name_pos_roll=(
+                ("front", (3, 0, 0), 0),
+                ("top", (0.5, 3, 0), 0),
+                ("side", (2, 0, 3), 0),
+            ),
+        ),
+        extra_figures=ExtraFigures(
+            extra_figures=(
+                ExtraFigureOption(
+                    ExtraFiguresFcn.BOW,
+                ),
+                ExtraFigureOption(
+                    ExtraFiguresFcn.VIOLIN,
+                ),
+            ),
+        ),
+    )
+
+    STUDY4B_VIOLIN: StudiesInternal = StudiesInternal(
         name="STUDY4_VIOLIN",
         studies=(
             StudyInternal(
@@ -656,93 +1003,20 @@ class StudyConfig:
                 fatigue_max_threshold=0.7,
             ),
         ),
-        latex_table=LatexTable(
-            table_caption=(
-                f"Comparaison des métriques d'efficacité entre les conditions $\\condTauNf$ et $\\condTauPe$ "
-                f"lors d'un mouvement de violon synthétisé par \\multiCyclicNMPC{{}} à $3$~cycles simultanés "
-                f"sur un total de $600$~allers-retours"
-            ),
-            add_non_converged_notice=False,
-            add_bfgs_dagger_notice=True,
-            table_label="table:violin_nmpc",
-            analyses=(
-                LatexAnalysesFcn.TOTAL_OPTIMIZATION_TIME,
-                LatexAnalysesFcn.MEAN_NUMBER_ITERATIONS,
-                LatexAnalysesFcn.MEAN_ITERATION_TIME,
-                LatexAnalysesFcn.RMSE_Q,
-            ),
-        ),
         custom_analyses=CustomAnalyses(
             analyses=(
-                CustomAnalysesFcn.RMSE_BEFORE_FATIGUE,
-                CustomAnalysesFcn.RMSE_AFTER_FATIGUE,
-                CustomAnalysesFcn.OBJECTIVE_FUNCTION_AT_50_AND_550,
+                CustomAnalysesOption(CustomAnalysesFcn.OBJECTIVE_FUNCTION, cycle=50),
+                CustomAnalysesOption(CustomAnalysesFcn.OBJECTIVE_FUNCTION, cycle=550),
             ),
         ),
         figures=Figures(
             figures=(
                 FigureOptions(
                     # title="Évolution au cours du temps pour le bassin\n"
-                    #       "de fatigue positif de $\\tau_1$ pour tous les cycles",
-                    title="",
-                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
-                    save_name="study4_fatigue_m1_full",
-                    params={
-                        "dynamics_source_idx": 1,
-                        "key": "tau_plus_mf",
-                        "index": 1,
-                        "is_fatigue": True,
-                        "ylim": (0, 100),
-                    },
-                ),
-                FigureOptions(
-                    # title="Évolution au cours du temps pour le bassin\n"
-                    #       "de fatigue positif de $\\tau_1$ pour les cycles de $200$ à la fin",
-                    title="",
-                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
-                    save_name="study4_fatigue_m1_from_200",
-                    params={
-                        "dynamics_source_idx": 1,
-                        "key": "tau_plus_mf",
-                        "index": 1,
-                        "is_fatigue": True,
-                        "first_cycle": 200,
-                    },
-                ),
-                FigureOptions(
-                    # title="Évolution au cours du temps pour le bassin\n"
-                    #       "de fatigue négatif de $\\tau_2$ pour tous les cycles",
-                    title="",
-                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
-                    save_name="study4_fatigue_m2_full",
-                    params={
-                        "dynamics_source_idx": 1,
-                        "key": "tau_minus_mf",
-                        "index": 2,
-                        "is_fatigue": True,
-                        "ylim": (0, 100),
-                    },
-                ),
-                FigureOptions(
-                    # title="Évolution au cours du temps pour le bassin\n"
-                    #       "de fatigue négatif de $\\tau_2$ pour les cycles de $200$ à la fin",
-                    title="",
-                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
-                    save_name="study4_fatigue_m2_from_200",
-                    params={
-                        "dynamics_source_idx": 1,
-                        "key": "tau_minus_mf",
-                        "index": 2,
-                        "is_fatigue": True,
-                        "first_cycle": 200,
-                    },
-                ),
-                FigureOptions(
-                    # title="Évolution au cours du temps pour le bassin\n"
                     #       "de fatigue négatif de $\\tau_5$ pour tous les cycles",
                     title="",
                     fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
-                    save_name="study4_fatigue_m5_full",
+                    save_name="study4b_fatigue_m5_full",
                     params={
                         "dynamics_source_idx": 1,
                         "key": "tau_minus_mf",
@@ -752,129 +1026,15 @@ class StudyConfig:
                     },
                 ),
                 FigureOptions(
-                    # title="Évolution au cours du temps pour le bassin\n"
-                    #       "de fatigue négatif de $\\tau_5$ pour les cycles de $200$ à la fin",
-                    title="",
-                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
-                    save_name="study4_fatigue_m5_from_200",
-                    params={
-                        "dynamics_source_idx": 1,
-                        "key": "tau_minus_mf",
-                        "index": 5,
-                        "is_fatigue": True,
-                        "first_cycle": 200,
-                    },
-                ),
-                FigureOptions(
-                    # title="Superposition des cycles $10$ à $100$ de l'évolution de $q_1$ au cours du temps",
+                    # title="Superposition des cycles $550$ jusqu'à final de l'évolution de $q_4$ au cours du temps",
                     title="",
                     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_q_1_from_10_to_100",
-                    params={
-                        "data_type": DataType.STATES,
-                        "key": "q",
-                        "index": 1,
-                        "to_degree": True,
-                        "first_cycle": 10,
-                        "last_cycle": 100,
-                    },
-                    use_subplots=False,
-                ),
-                FigureOptions(
-                    # title="Superposition des cycles $10$ à $100$ de l'évolution de $q_1$ au cours du temps",
-                    title="",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_tau_1_from_10_to_100",
-                    params={
-                        "data_type": DataType.CONTROLS,
-                        "key": "tau",
-                        "index": 1,
-                        "to_degree": False,
-                        "first_cycle": 10,
-                        "last_cycle": 100,
-                    },
-                    use_subplots=False,
-                ),
-                FigureOptions(
-                    # title="Superposition des cycles $550$ jusqu'à final de l'évolution de $q_1$ au cours du temps",
-                    title="",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_q_1_from_550",
-                    params={
-                        "data_type": DataType.STATES,
-                        "key": "q",
-                        "index": 1,
-                        "to_degree": True,
-                        "first_cycle": 550,
-                    },
-                    use_subplots=False,
-                ),
-                FigureOptions(
-                    # title="Superposition des cycles $550$ jusqu'à final de la commande de $\\tau_1$ au cours du temps",
-                    title="",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_tau_1_from_550",
-                    params={
-                        "data_type": DataType.CONTROLS,
-                        "key": "tau",
-                        "index": 1,
-                        "to_degree": False,
-                        "first_cycle": 550,
-                    },
-                    use_subplots=False,
-                ),
-                FigureOptions(
-                    # title="Superposition des cycles $550$ jusqu'à final de l'évolution de $q_2$ au cours du temps",
-                    title="",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_q_2_from_550",
-                    params={
-                        "data_type": DataType.STATES,
-                        "key": "q",
-                        "index": 2,
-                        "to_degree": True,
-                        "first_cycle": 550,
-                    },
-                    use_subplots=False,
-                ),
-                FigureOptions(
-                    # title="Superposition des cycles $550$ jusqu'à final de la commande de $\\tau_2$ au cours du temps",
-                    title="",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_tau_2_from_550",
-                    params={
-                        "data_type": DataType.CONTROLS,
-                        "key": "tau",
-                        "index": 2,
-                        "to_degree": False,
-                        "first_cycle": 550,
-                    },
-                    use_subplots=False,
-                ),
-                FigureOptions(
-                    ##title="Superposition des cycles $550$ jusqu'à final de l'évolution de $q_4$ au cours du temps",
-                    title="",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_q_4_from_550",
+                    save_name="study4b_q_4_from_550",
                     params={
                         "data_type": DataType.STATES,
                         "key": "q",
                         "index": 4,
                         "to_degree": True,
-                        "first_cycle": 550,
-                    },
-                    use_subplots=False,
-                ),
-                FigureOptions(
-                    # title="Superposition des cycles $550$ jusqu'à final de la commande de $\\tau_4$ au cours du temps",
-                    title="",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_tau_4_from_550",
-                    params={
-                        "data_type": DataType.CONTROLS,
-                        "key": "tau",
-                        "index": 4,
-                        "to_degree": False,
                         "first_cycle": 550,
                     },
                     use_subplots=False,
@@ -883,54 +1043,12 @@ class StudyConfig:
                     ##title="Superposition des cycles $550$ jusqu'à final de l'évolution de $q_5$ au cours du temps",
                     title="",
                     fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_q_5_from_550",
+                    save_name="study4b_q_5_from_550",
                     params={
                         "data_type": DataType.STATES,
                         "key": "q",
                         "index": 5,
                         "to_degree": True,
-                        "first_cycle": 550,
-                    },
-                    use_subplots=False,
-                ),
-                FigureOptions(
-                    # title="Superposition des cycles $550$ jusqu'à final de la commande de $\\tau_5$ au cours du temps",
-                    title="",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_tau_5_from_550",
-                    params={
-                        "data_type": DataType.CONTROLS,
-                        "key": "tau",
-                        "index": 5,
-                        "to_degree": False,
-                        "first_cycle": 550,
-                    },
-                    use_subplots=False,
-                ),
-                FigureOptions(
-                    ##title="Superposition des cycles $550$ jusqu'à final de l'évolution de $q_6$ au cours du temps",
-                    title="",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_q_6_from_550",
-                    params={
-                        "data_type": DataType.STATES,
-                        "key": "q",
-                        "index": 6,
-                        "to_degree": True,
-                        "first_cycle": 550,
-                    },
-                    use_subplots=False,
-                ),
-                FigureOptions(
-                    # title="Superposition des cycles $550$ jusqu'à final de la commande de $\\tau_6$ au cours du temps",
-                    title="",
-                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
-                    save_name="study4_tau_6_from_550",
-                    params={
-                        "data_type": DataType.CONTROLS,
-                        "key": "tau",
-                        "index": 6,
-                        "to_degree": False,
                         "first_cycle": 550,
                     },
                     use_subplots=False,
