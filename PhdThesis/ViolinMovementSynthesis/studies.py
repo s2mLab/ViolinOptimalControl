@@ -655,17 +655,6 @@ class StudyConfig:
                 rmse_index=0,
                 fatigue_max_threshold=0.7,
             ),
-            StudyInternal(
-                name=r"$\condTauPe\ (60\%)$",
-                structure_type=StructureType.TAU,
-                fatigue_type=FatigueType.EFFORT_PERCEPTION,
-                n_cycles_total=600,
-                n_shoot_per_cycle=30,
-                n_integration_steps=3,
-                n_cycles_simultaneous=3,
-                rmse_index=0,
-                fatigue_max_threshold=0.6,
-            ),
         ),
         latex_table=LatexTable(
             table_caption=(

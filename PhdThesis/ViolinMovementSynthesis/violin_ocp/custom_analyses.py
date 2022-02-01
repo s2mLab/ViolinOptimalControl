@@ -16,37 +16,39 @@ class CustomAnalysesImplementation:
     @staticmethod
     def rmse_before_fatigue(studies):
         last_cycle = 200
-        idx = 1
-        ref_idx = studies.studies[idx].rmse_index
-
         last_frame = last_cycle * studies.studies[0].nmpc.n_shooting_per_cycle
-        data_ref = studies.solutions[ref_idx][0].states["q"][:, :last_frame]
-        data = studies.solutions[idx][0].states["q"][:, :last_frame]
 
-        e = data_ref - data
-        se = e ** 2
-        mse = np.sum(se, axis=1) / data_ref.shape[1]
-        rmse = np.sqrt(mse)
-        sum_rmse = np.sum(rmse)
-        print(f"La somme des RMSE jusqu'au cycle {last_cycle} est de : {sum_rmse:0.3f}")
+        for study, solution in zip(studies.studies, studies.solutions):
+            ref_idx = study.rmse_index
+            data_ref = studies.solutions[ref_idx][0].states["q"][:, :last_frame]
+            data = solution[0].states["q"][:, :last_frame]
+
+            e = data_ref - data
+            se = e ** 2
+            mse = np.sum(se, axis=1) / data_ref.shape[1]
+            rmse = np.sqrt(mse)
+            sum_rmse = np.sum(rmse)
+            print(f"\tRMSE pour {study.name}")
+            print(f"\t\tLa somme des RMSE jusqu'au cycle {last_cycle} est de : {sum_rmse:0.3f}")
 
     @staticmethod
     def rmse_after_fatigue(studies):
         first_cycle = 550
-        idx = 1
-        ref_idx = studies.studies[idx].rmse_index
-
         first_frame = first_cycle * studies.studies[0].nmpc.n_shooting_per_cycle
-        data_ref = studies.solutions[ref_idx][0].states["q"][:, first_frame:]
-        data = studies.solutions[idx][0].states["q"][:, first_frame:]
 
-        e = data_ref - data
-        se = e ** 2
-        mse = np.sum(se, axis=1) / data_ref.shape[1]
-        rmse = np.sqrt(mse)
-        sum_rmse = np.sum(rmse)
-        print(f"La valeur minimale des RMSE à partir du cycle {first_cycle} est de : {min(rmse[:-1]):0.3f}")
-        print(f"La somme des RMSE à partir du cycle {first_cycle} est de : {sum_rmse:0.3f}")
+        for study, solution in zip(studies.studies, studies.solutions):
+            ref_idx = study.rmse_index
+            data_ref = studies.solutions[ref_idx][0].states["q"][:, first_frame:]
+            data = solution[0].states["q"][:, first_frame:]
+
+            e = data_ref - data
+            se = e ** 2
+            mse = np.sum(se, axis=1) / data_ref.shape[1]
+            rmse = np.sqrt(mse)
+            sum_rmse = np.sum(rmse)
+            print(f"\tRMSE pour {study.name}")
+            print(f"\t\tLa valeur minimale des RMSE à partir du cycle {first_cycle} est de : {min(rmse[:-1]):0.3f}")
+            print(f"\t\tLa somme des RMSE à partir du cycle {first_cycle} est de : {sum_rmse:0.3f}")
 
     @staticmethod
     def objective_function_at_50_and_550(studies):
