@@ -1,0 +1,110 @@
+version 4
+
+gravity 0 -9.8 0
+
+
+segment violin
+    mass 0.460
+    inertia
+	    0.00000048	0.000000	0.000000
+	    0.000000	0.00000048	0.000000
+	    0.000000	0.000000	0.00117637
+    com	-0.003 -0.325 0
+    meshfile Geometry/Violin.obj
+endsegment
+
+segment g_string
+    parent violin
+    RT -3.0698845  0.3208052  1.57110567  xyz  0.011744 -0.28481 -0.041691
+endsegment
+
+    marker e_string_bridge          // 3
+	    parent violin
+	    position -0.014111 -0.2845 -0.041979
+	endmarker
+    marker e_string_neck            // 4
+	    parent violin
+	    position -0.008398  0.000679    -0.02094
+	endmarker
+
+    marker a_string_bridge          // 5
+	    parent violin
+	    position -0.006533 -0.28469 -0.043179
+	endmarker
+    marker a_string_neck            // 6
+	    parent violin
+	    position -0.0001799 0.000094    -0.022836
+	endmarker
+
+    marker d_string_bridge          // 7
+	    parent violin
+	    position 0.003744 -0.28477 -0.043224
+	endmarker
+    marker d_string_neck            // 8
+	    parent violin
+	    position 0.005498   0.000598    -0.023055
+	endmarker
+
+    marker g_string_bridge          // 9
+	    parent violin
+	    position 0.011744 -0.28481 -0.041691
+	endmarker
+    marker g_string_neck            // 10
+	    parent violin
+	    position 0.011828   0.000595    -0.021162
+	endmarker
+
+    marker b_string_virtual         // 11
+        parent violin
+        position -0.0215 -0.284 -0.037
+    endmarker
+    marker c_string_virtual         // 12
+        parent violin
+        position 0.0190 -0.284 -0.039
+    endmarker
+
+    customRT bowOnGString
+        fromMarkers
+        parent violin
+        originMarkerName g_string_neck
+        firstAxis x
+        firstAxisMarkerNames g_string_neck g_string_bridge
+        secondAxis y
+        secondAxisMarkerNames c_string_virtual d_string_neck
+        recalculate secondAxis
+    endcustomRT
+
+    customRT bowOnDString
+        fromMarkers
+        parent violin
+        originMarkerName d_string_neck
+        firstAxis x
+        firstAxisMarkerNames d_string_neck d_string_bridge
+        secondAxis y
+        secondAxisMarkerNames g_string_neck a_string_neck
+        recalculate secondAxis
+    endcustomRT
+    
+    customRT bowOnAString
+        fromMarkers
+        parent violin
+        originMarkerName a_string_neck
+        firstAxis x
+        firstAxisMarkerNames a_string_neck a_string_bridge
+        secondAxis y
+        secondAxisMarkerNames d_string_neck e_string_neck
+        recalculate secondAxis
+    endcustomRT
+    
+    customRT bowOnEString
+        fromMarkers
+        parent violin
+        originMarkerName e_string_neck
+        firstAxis x
+        firstAxisMarkerNames e_string_neck e_string_bridge
+        secondAxis y
+        secondAxisMarkerNames a_string_neck b_string_virtual
+        recalculate secondAxis
+    endcustomRT
+    
+
