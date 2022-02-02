@@ -12,6 +12,47 @@ from bioptim import OptimalControlProgram, Shooting, Solution, InitialGuess, Int
 
 class ExtraFiguresFunctionImplementation:
     @staticmethod
+    def show_model_toggle_segment(
+            studies,
+            save_folder: str,
+            save_name: str,
+            idx_solution: int,
+            cycle: int,
+            half_cycle: bool,
+            toggle_idx: tuple[int, ...],
+            camera_name_pos_roll: tuple[str, tuple[float, float, float], float]
+    ):
+        b = studies.solutions[idx_solution][0].animate(
+            show_floor=False,
+            show_global_ref_frame=False,
+            show_gravity_vector=False,
+            background_color=(1, 1, 1),
+            show_global_center_of_mass=False,
+            show_local_ref_frame=False,
+            show_segments_center_of_mass=False,
+            show_muscles=False,
+            show_now=False,
+            mesh_opacity=1,
+        )[0]
+
+        b.resize(1920, 1080)
+        frame = cycle * studies.studies[0].nmpc.n_shooting_per_cycle
+        if half_cycle:
+            frame += studies.studies[0].nmpc.n_shooting_per_cycle / 2
+
+        for name, pos, roll in camera_name_pos_roll:
+            # Position camera
+            b.set_camera_position(*pos)
+            b.set_camera_roll(roll)
+            b.set_camera_focus_point(0, 0, 0)
+            b.toggle_segments(toggle_idx)
+
+            b.movement_slider[0].setValue(frame)
+            b.snapshot(f"{save_folder}/{name}_{save_name}")
+            b.toggle_segments(toggle_idx)
+        b.quit()
+
+    @staticmethod
     def initial_guess_cyclic_nmpc(studies, save_folder: str, data_path: str):
         class From(Enum):
             START = 0
@@ -144,6 +185,7 @@ class ExtraFiguresFcn(Enum):
     VIOLIN = ExtraFiguresFunctionImplementation.violin
     BOW = ExtraFiguresFunctionImplementation.bow_figure
     INITIAL_GUESS_NMPC = ExtraFiguresFunctionImplementation.initial_guess_cyclic_nmpc
+    SHOW_MODEL_TOGGLE_SEGMENT = ExtraFiguresFunctionImplementation.show_model_toggle_segment
 
 
 class ExtraFigureOption:

@@ -42,10 +42,12 @@ class StudyInternal:
         n_cycles_total: int,
         n_cycles_simultaneous: int,
         rmse_index: int,
+        save_name: str = None,
         fatigue_max_threshold: float = 0.8,
     ):
         self.name = name
-        self.save_name = name.replace("$", "").replace("\ ", "_").replace("\\", "").replace("(", "").replace(")", "").replace("%", "pct")
+        save_name = name if save_name is None else save_name
+        self.save_name = save_name.replace("$", "").replace("\ ", "_").replace("\\", "").replace("(", "").replace(")", "").replace("%", "pct")
         self.rmse_index = rmse_index
 
         self.model_name: str = "WuViolin"
@@ -655,7 +657,8 @@ class StudyConfig:
                 rmse_index=0,
             ),
             StudyInternal(
-                name=r"$\condTauPe\ (80\%)$",
+                name=r"$\condTauPe$",
+                save_name=r"$\condTauPe\ (80\%)$",
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.EFFORT_PERCEPTION,
                 n_cycles_total=600,
@@ -963,6 +966,32 @@ class StudyConfig:
                 ExtraFigureOption(
                     ExtraFiguresFcn.VIOLIN,
                 ),
+                ExtraFigureOption(
+                    ExtraFiguresFcn.SHOW_MODEL_TOGGLE_SEGMENT,
+                    save_name="violin_tip_NoFatigue.png",
+                    idx_solution=0,
+                    cycle=550,
+                    half_cycle=False,
+                    toggle_idx=[],
+                    camera_name_pos_roll=(
+                        ("front", (3, 0, 0), 0),
+                        ("top", (0.5, 3, 0), 0),
+                        ("side", (2, 0, 3), 0),
+                    ),
+                ),
+                ExtraFigureOption(
+                    ExtraFiguresFcn.SHOW_MODEL_TOGGLE_SEGMENT,
+                    save_name="violin_tip_Fatigue80.png",
+                    idx_solution=1,
+                    cycle=550,
+                    half_cycle=False,
+                    toggle_idx=[1, 0] + list(range(13, 29)),
+                    camera_name_pos_roll=(
+                        ("front", (3, 0, 0), 0),
+                        ("top", (0.5, 3, 0), 0),
+                        ("side", (2, 0, 3), 0),
+                    ),
+                ),
             ),
         ),
     )
@@ -1061,6 +1090,49 @@ class StudyConfig:
                 ("front", (3, 0, 0), 0),
                 ("top", (0.5, 3, 0), 0),
                 ("side", (2, 0, 3), 0),
+            ),
+        ),
+        extra_figures=ExtraFigures(
+            extra_figures=(
+                ExtraFigureOption(
+                    ExtraFiguresFcn.SHOW_MODEL_TOGGLE_SEGMENT,
+                    save_name="violin_frog_NoFatigue.png",
+                    idx_solution=0,
+                    cycle=550,
+                    half_cycle=True,
+                    toggle_idx=[],
+                    camera_name_pos_roll=(
+                        ("front", (3, 0, 0), 0),
+                        ("top", (0.5, 3, 0), 0),
+                        ("side", (2, 0, 3), 0),
+                    ),
+                ),
+                ExtraFigureOption(
+                    ExtraFiguresFcn.SHOW_MODEL_TOGGLE_SEGMENT,
+                    save_name="violin_frog_Fatigue80.png",
+                    idx_solution=1,
+                    cycle=550,
+                    half_cycle=True,
+                    toggle_idx=[1, 0] + list(range(13, 29)),
+                    camera_name_pos_roll=(
+                        ("front", (3, 0, 0), 0),
+                        ("top", (0.5, 3, 0), 0),
+                        ("side", (2, 0, 3), 0),
+                    ),
+                ),
+                ExtraFigureOption(
+                    ExtraFiguresFcn.SHOW_MODEL_TOGGLE_SEGMENT,
+                    save_name="violin_frog_Fatigue70.png",
+                    idx_solution=2,
+                    cycle=550,
+                    half_cycle=True,
+                    toggle_idx=[1, 0] + list(range(13, 29)),
+                    camera_name_pos_roll=(
+                        ("front", (3, 0, 0), 0),
+                        ("top", (0.5, 3, 0), 0),
+                        ("side", (2, 0, 3), 0),
+                    ),
+                ),
             ),
         ),
     )
