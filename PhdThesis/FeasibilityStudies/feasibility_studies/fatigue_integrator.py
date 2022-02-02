@@ -160,7 +160,7 @@ class FatigueIntegrator:
         save_path = f"{self.prepare_and_get_results_dir()}/rmse.txt"
         with open(save_path, "w", encoding="utf8") as file:
             file.write(table)
-        print("RMSE written int results folder")
+        print("RMSE written in the results folder")
 
     def print_custom_analyses(self):
         if not self._has_run:
@@ -182,7 +182,7 @@ class FatigueIntegrator:
         save_path = f"{self.prepare_and_get_results_dir()}/custom_analysis.txt"
         with open(save_path, "w", encoding="utf8") as file:
             file.write(table)
-        print("Custom analyses written int results folder")
+        print("Custom analyses written in the results folder")
 
     def prepare_and_get_results_dir(self):
         try:

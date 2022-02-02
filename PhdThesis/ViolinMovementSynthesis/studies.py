@@ -485,6 +485,7 @@ class StudyConfig:
             add_bfgs_dagger_notice=True,
             table_label="table:aller_retour_ocp",
             analyses=(
+                LatexAnalysesFcn.NUMBER_OF_VAR_AND_CONSTRAINTS,
                 LatexAnalysesFcn.MEAN_OPTIMIZATION_TIME,
                 LatexAnalysesFcn.MEAN_NUMBER_ITERATIONS,
                 LatexAnalysesFcn.MEAN_ITERATION_TIME,

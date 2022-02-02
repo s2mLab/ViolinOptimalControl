@@ -259,7 +259,7 @@ class Study(Enum):
 
     STUDY1_2_XIA_VS_STABILIZED_GOOD_X0 = StudyConfiguration(
         name="STUDY1_2_XIA_VS_STABILIZED_GOOD_X0",
-        repeat=1,
+        repeat=10,
         fatigue_models=(
             FatigueModels.XIA_STABILIZED(
                 FatigueParameters(stabilization_factor=100),
@@ -298,7 +298,7 @@ class Study(Enum):
 
     STUDY1_3_XIA_VS_STABILIZED_BAD_X0 = StudyConfiguration(
         name="STUDY1_3_XIA_VS_STABILIZED_BAD_X0",
-        repeat=1,
+        repeat=10,
         fatigue_models=(
             FatigueModels.XIA_STABILIZED(
                 FatigueParameters(stabilization_factor=100),
@@ -564,6 +564,7 @@ class Study(Enum):
 
     STUDY2_4_MICHAUD_VS_XIA = StudyConfiguration(
         name="STUDY2_4_MICHAUD_VS_XIA",
+        repeat=10,
         fatigue_models=(
             FatigueModels.MICHAUD(
                 FatigueParameters(effort_threshold=0.5, F=0.01 / 4),
