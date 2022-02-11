@@ -240,6 +240,7 @@ class Conditions(Enum):
             title="%s pour les conditions $C/\\tau\\varnothing$  et $C/\\alpha\\varnothing$",
             legend_indices=None,
             options=({"linestyle": "-"}, {"linestyle": "--"}),
+            to_degrees=True,
         ),
     )
 
@@ -270,6 +271,7 @@ class Conditions(Enum):
                 {"linestyle": "-"},
                 {"linestyle": "--"},
             ),
+            to_degrees=True,
         ),
     )
 
@@ -286,7 +288,8 @@ class Conditions(Enum):
         ),
         rmse_index=(0, 0, 0, 0, 0, 5, 5, 5),
         plot_options=PlotOptions(
-            title="Degré de liberté %s en fonction du temps pour toutes les conditions",
+            # title="Degré de liberté %s en fonction du temps pour toutes les conditions",
+            title="",
             legend_indices=(
                 True,
                 True,
@@ -299,7 +302,7 @@ class Conditions(Enum):
                 True,
             ),
             options=(
-                {"linestyle": "-", "color": mcolors.CSS4_COLORS["black"]},
+                {"linestyle": "-", "color": mcolors.CSS4_COLORS["black"], "linewidth": 5},
                 {"linestyle": "-", "color": mcolors.CSS4_COLORS["lightcoral"]},
                 {"linestyle": "-", "color": mcolors.CSS4_COLORS["cornflowerblue"]},
                 {"linestyle": "-", "color": mcolors.CSS4_COLORS["red"]},
@@ -308,6 +311,7 @@ class Conditions(Enum):
                 {"linestyle": "--", "color": mcolors.CSS4_COLORS["red"]},
                 {"linestyle": "--", "color": mcolors.CSS4_COLORS["blue"]},
             ),
+            to_degrees=True,
             maximize=False,
             save_path=("feasibility_q0", "feasibility_q1"),
         ),
@@ -507,13 +511,17 @@ class Study:
             )
 
             ax = plt.axes()
-            ax.set_title(plot_options.title % f"{key}\\textsubscript{{{i}}}", fontsize=1.5 * font_size)
+            if plot_options.title:
+                ax.set_title(plot_options.title % f"{key}\\textsubscript{{{i}}}", fontsize=1.5 * font_size)
             ax.set_xlabel(r"Temps (\SI{}{\second})", fontsize=font_size)
-            ax.set_ylabel(r"Angle (\SI{}{\radian})", fontsize=font_size)
+            ax.set_ylabel(
+                r"Angle (\SI{}{\degree})" if plot_options.to_degrees else r"Angle (\SI{}{\radian})", fontsize=font_size
+            )
             ax.tick_params(axis="both", labelsize=font_size)
 
             for sol, options in zip(self.solution, plot_options.options):
                 data = getattr(sol, data_type.value)[key][i, :]
+                data *= 180 / np.pi if plot_options.to_degrees else 1
                 plt.plot(t, data, **options)
 
             if plot_options.legend_indices is not None:

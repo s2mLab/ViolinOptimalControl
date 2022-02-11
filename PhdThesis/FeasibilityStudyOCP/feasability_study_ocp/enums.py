@@ -10,12 +10,14 @@ class PlotOptions:
         title: str,
         legend_indices: Union[tuple[bool, ...], None],
         options: tuple[dict, ...],
+        to_degrees: bool,
         maximize: bool = False,
         save_path: Union[tuple[str, ...], None] = None,
     ):
         self.title = title
         self.legend_indices = legend_indices
         self.options = options
+        self.to_degrees = to_degrees
         self.maximize = maximize
         self.save_path = save_path
 

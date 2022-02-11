@@ -1,3 +1,5 @@
+from typing import Union
+
 from bioptim import (
     FatigueList,
     Dynamics,
@@ -37,7 +39,7 @@ class OcpConfiguration:
         constraints: ConstraintList,
         use_sx: bool,
         ode_solver: OdeSolverBase,
-        solver: Solver.Generic,
+        solver: Union[Solver, Solver.Generic],
         n_threads: int,
     ):
         # Initialize the meta ocp parameters
@@ -48,7 +50,7 @@ class OcpConfiguration:
         self.final_time = final_time
         self.use_sx = use_sx
         self.ode_solver = ode_solver
-        self.solver = solver
+        self.solver: Solver = solver
         self.n_threads = n_threads
 
         # Initializing model
