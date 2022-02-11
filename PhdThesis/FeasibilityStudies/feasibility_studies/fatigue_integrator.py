@@ -82,7 +82,13 @@ class FatigueIntegrator:
         fig = plt.figure()
         fig.set_size_inches(16, 9)
         plt.rcParams["text.usetex"] = True
-        plt.rcParams["text.latex.preamble"] = r"\usepackage{siunitx}"
+        plt.rcParams["text.latex.preamble"] = (
+            r"\usepackage{siunitx}"
+            r"\newcommand{\tcc}{3\textsubscript{CC}}"
+            r"\newcommand{\tccs}{3S\textsubscript{CC}}"
+            r"\newcommand{\qcc}{4\textsubscript{CC}}"
+            r"\newcommand{\pe}{P\textsubscript{E}}"
+        )
         self.axes = plt.axes()
 
         if not self._has_run:
