@@ -44,11 +44,13 @@ class StudyInternal:
         rmse_index: int,
         save_name: str = None,
         fatigue_max_threshold: float = 0.8,
+        plot_options: dict = None,
     ):
         self.name = name
         save_name = name if save_name is None else save_name
         self.save_name = save_name.replace("$", "").replace("\ ", "_").replace("\\", "").replace("(", "").replace(")", "").replace("%", "pct")
         self.rmse_index = rmse_index
+        self.plot_options = plot_options if plot_options is not None else {}
 
         self.model_name: str = "WuViolin"
         self.violin: Violin = Violin(self.model_name, ViolinString.G, fatigue_max_threshold)
@@ -506,6 +508,7 @@ class StudyConfig:
                 n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
+                plot_options={"linewidth": 5}
             ),
             StudyInternal(
                 name=r"$\condTauPe$",
@@ -577,6 +580,7 @@ class StudyConfig:
                 n_integration_steps=3,
                 n_cycles_simultaneous=3,
                 rmse_index=0,
+                plot_options={"linewidth": 5}
             ),
             StudyInternal(
                 name=r"$\condTauPe$",
@@ -656,6 +660,7 @@ class StudyConfig:
                 n_integration_steps=3,
                 n_cycles_simultaneous=3,
                 rmse_index=0,
+                plot_options={"linewidth": 5}
             ),
             StudyInternal(
                 name=r"$\condTauPe$",
@@ -1009,6 +1014,7 @@ class StudyConfig:
                 n_integration_steps=3,
                 n_cycles_simultaneous=3,
                 rmse_index=0,
+                plot_options={"linewidth": 5}
             ),
             StudyInternal(
                 name=r"$\condTauPe\ (80\%)$",
