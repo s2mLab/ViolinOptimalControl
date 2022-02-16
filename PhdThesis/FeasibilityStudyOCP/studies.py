@@ -240,6 +240,7 @@ class Conditions(Enum):
             title="%s pour les conditions $C/\\tau\\varnothing$  et $C/\\alpha\\varnothing$",
             legend_indices=None,
             options=({"linestyle": "-"}, {"linestyle": "--"}),
+            to_degrees=True,
         ),
     )
 
@@ -270,6 +271,7 @@ class Conditions(Enum):
                 {"linestyle": "-"},
                 {"linestyle": "--"},
             ),
+            to_degrees=True,
         ),
     )
 
@@ -286,7 +288,8 @@ class Conditions(Enum):
         ),
         rmse_index=(0, 0, 0, 0, 0, 5, 5, 5),
         plot_options=PlotOptions(
-            title="Degré de liberté %s en fonction du temps pour toutes les conditions",
+            # title="Degré de liberté %s en fonction du temps pour toutes les conditions",
+            title="",
             legend_indices=(
                 True,
                 True,
@@ -299,7 +302,7 @@ class Conditions(Enum):
                 True,
             ),
             options=(
-                {"linestyle": "-", "color": mcolors.CSS4_COLORS["black"]},
+                {"linestyle": "-", "color": mcolors.CSS4_COLORS["black"], "linewidth": 5},
                 {"linestyle": "-", "color": mcolors.CSS4_COLORS["lightcoral"]},
                 {"linestyle": "-", "color": mcolors.CSS4_COLORS["cornflowerblue"]},
                 {"linestyle": "-", "color": mcolors.CSS4_COLORS["red"]},
@@ -308,6 +311,7 @@ class Conditions(Enum):
                 {"linestyle": "--", "color": mcolors.CSS4_COLORS["red"]},
                 {"linestyle": "--", "color": mcolors.CSS4_COLORS["blue"]},
             ),
+            to_degrees=True,
             maximize=False,
             save_path=("feasibility_q0", "feasibility_q1"),
         ),
@@ -350,6 +354,7 @@ class Study:
             f"\\usepackage{{amsmath}}\n"
             f"\\usepackage{{amssymb}}\n"
             f"\\usepackage[table]{{xcolor}}\n"
+            f"\\usepackage{{threeparttable}}\n"
             f"\\usepackage{{makecell}}\n"
             f"\\definecolor{{lightgray}}{{gray}}{{0.91}}\n"
             f"\n\n"
@@ -392,16 +397,19 @@ class Study:
             f" \\caption{{Comparaison des métriques d'efficacité et de comportement entre les modèles de fatigue "
             f"appliqués sur une dynamique musculaire ou articulaire lors de la résolution d'un \\ocp{{}}}}\n"
             f" \\label{{table:faisabilite}}\n"
-            f" \\begin{{tabular}}{{lcccc}}\n"
-            f"  \\hline\n"
-            f"  \\bfseries Condition & "
-            f"\\bfseries\\makecell[c]{{Nombre\\\\d'itération}} & "
-            f"\\bfseries\\makecell[c]{{Temps\\\\d'optimisation\\\\(s)}} & "
+            f" \\begin{{threeparttable}}\n"
+            f"  \\begin{{tabular}}{{lccccc}}\n"
+            f"   \\hline\n"
+            f"   \\bfseries Condition & "
+            f"\\bfseries\\makecell[c]{{Nombre de\\\\variables/\\\\contraintes}} & "
+            f"\\bfseries\\makecell[c]{{Nombre\\\\d'itérations}} & "
+            f"\\bfseries\\makecell[c]{{Temps\\\\de calcul\\\\(s)}} & "
             f"\\bfseries\\makecell[c]{{Temps moyen\\\\par itération\\\\(s/iteration)}} & "
             f"\\bfseries\\makecell[c]{{$\\sum\\text{{\\rmse{{}}}}$\\\\pour $\\q$\\\\(rad)}}\\\\ \n"
-            f"  \\hline\n"
+            f"   \\hline\n"
         )
 
+        all_has_converged = True
         for study, sol, rmse_index in zip(self.conditions.studies, self.solution, self.conditions.rmse_index):
             rmse = np.sum(self._rmse(DataType.STATES, "q", rmse_index, sol))
             rmse_str = f"{rmse:0.3e}" if rmse != 0 else "---"
@@ -411,15 +419,33 @@ class Study:
                 rmse_str = rmse_str.replace("+0", "")
                 rmse_str = rmse_str.replace("-0", "-")
                 rmse_str = rmse_str.replace("$\\times 10^{{0}}$", "")
+
+            nlp = study.ocp.nlp[0]
+            n_var = nlp.ns * nlp.controls.shape + (nlp.ns + 1) * nlp.states.shape
+            n_constraints = nlp.ns * study.ocp.nlp[0].states.shape + sum([g.bounds.shape[0] for g in nlp.g])
+
+            study_name = study.name
+            if sol.iterations == study.solver.max_iter:
+                study_name += "*"
+                all_has_converged = False
+
             table += (
-                f"  {study.name} "
+                f"   {study_name} "
+                f"& {n_var}/{n_constraints} "
                 f"& {sol.iterations} "
                 f"& {sol.real_time_to_optimize:0.3f} "
                 f"& {sol.real_time_to_optimize / sol.iterations:0.3f} "
                 f"& {rmse_str} \\\\\n"
             )
+        table += f"   \\hline\n" f"  \\end{{tabular}}\n"
 
-        table += f"  \\hline\n" f" \\end{{tabular}}\n" f"\\end{{table}}\n\n"
+        if not all_has_converged:
+            table += f"  \\begin{{tablenotes}}\n"
+            table += f"   \\item * Condition n'ayant pas convergé (maximum d'itérations atteint)\n"
+            table += f"  \\end{{tablenotes}}\n"
+
+        table += f" \\end{{threeparttable}}\n"
+        table += f"\\end{{table}}\n\n"
         table += f"\\end{{document}}\n"
 
         save_path = f"{self.prepare_and_get_results_dir()}/results.tex"
@@ -485,13 +511,17 @@ class Study:
             )
 
             ax = plt.axes()
-            ax.set_title(plot_options.title % f"{key}\\textsubscript{{{i}}}", fontsize=1.5 * font_size)
+            if plot_options.title:
+                ax.set_title(plot_options.title % f"{key}\\textsubscript{{{i}}}", fontsize=1.5 * font_size)
             ax.set_xlabel(r"Temps (\SI{}{\second})", fontsize=font_size)
-            ax.set_ylabel(r"Angle (\SI{}{\rad})", fontsize=font_size)
+            ax.set_ylabel(
+                r"Angle (\SI{}{\degree})" if plot_options.to_degrees else r"Angle (\SI{}{\radian})", fontsize=font_size
+            )
             ax.tick_params(axis="both", labelsize=font_size)
 
             for sol, options in zip(self.solution, plot_options.options):
                 data = getattr(sol, data_type.value)[key][i, :]
+                data *= 180 / np.pi if plot_options.to_degrees else 1
                 plt.plot(t, data, **options)
 
             if plot_options.legend_indices is not None:
@@ -502,8 +532,6 @@ class Study:
                 plt.get_current_fig_manager().window.showMaximized()
 
             if plot_options.save_path is not None and plot_options.save_path[i] is not None:
-                plt.show(block=False)
-                plt.draw_all(True)
                 plt.savefig(f"{self.prepare_and_get_results_dir()}/{plot_options.save_path[i]}", dpi=300)
 
         self._plots_are_prepared = True

@@ -82,7 +82,13 @@ class FatigueIntegrator:
         fig = plt.figure()
         fig.set_size_inches(16, 9)
         plt.rcParams["text.usetex"] = True
-        plt.rcParams["text.latex.preamble"] = r"\usepackage{siunitx}"
+        plt.rcParams["text.latex.preamble"] = (
+            r"\usepackage{siunitx}"
+            r"\newcommand{\tcc}{3\textsubscript{CC}}"
+            r"\newcommand{\tccs}{3S\textsubscript{CC}}"
+            r"\newcommand{\qcc}{4\textsubscript{CC}}"
+            r"\newcommand{\pe}{P\textsubscript{E}}"
+        )
         self.axes = plt.axes()
 
         if not self._has_run:
@@ -121,8 +127,6 @@ class FatigueIntegrator:
             plt.get_current_fig_manager().window.showMaximized()
 
         if self.study.plot_options.save_path:
-            plt.show(block=False)
-            plt.draw_all(True)
             plt.savefig(f"{self.prepare_and_get_results_dir()}/{self.study.plot_options.save_path}", dpi=300)
 
         plt.show()
@@ -162,7 +166,7 @@ class FatigueIntegrator:
         save_path = f"{self.prepare_and_get_results_dir()}/rmse.txt"
         with open(save_path, "w", encoding="utf8") as file:
             file.write(table)
-        print("RMSE written int results folder")
+        print("RMSE written in the results folder")
 
     def print_custom_analyses(self):
         if not self._has_run:
@@ -184,7 +188,7 @@ class FatigueIntegrator:
         save_path = f"{self.prepare_and_get_results_dir()}/custom_analysis.txt"
         with open(save_path, "w", encoding="utf8") as file:
             file.write(table)
-        print("Custom analyses written int results folder")
+        print("Custom analyses written in the results folder")
 
     def prepare_and_get_results_dir(self):
         try:

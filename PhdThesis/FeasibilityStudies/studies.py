@@ -228,7 +228,7 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=1000,
         plot_options=PlotOptions(
-            title="Remplissages des bassins du modèle $3CC^S$ en fonction du temps",
+            title="Remplissages des bassins du modèle $\\tccs$ en fonction du temps",
             legend=(
                 "_",
                 "_",
@@ -259,7 +259,7 @@ class Study(Enum):
 
     STUDY1_2_XIA_VS_STABILIZED_GOOD_X0 = StudyConfiguration(
         name="STUDY1_2_XIA_VS_STABILIZED_GOOD_X0",
-        repeat=1,
+        repeat=10,
         fatigue_models=(
             FatigueModels.XIA_STABILIZED(
                 FatigueParameters(stabilization_factor=100),
@@ -281,8 +281,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=1000,
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $3CC$ et $3CC^S$ en fonction du temps",
-            legend=("_", "_", "_", "_", "$3CC^S$", "_", "_", "_", "$3CC$"),
+            title="Remplissages des bassins des modèles $\\tcc$ et $\\tccs$ en fonction du temps",
+            legend=("_", "_", "_", "_", "$\\tccs$", "_", "_", "_", "$\\tcc$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$\sum{}$"),
             options=(
                 {"linestyle": "-"},
@@ -298,7 +298,7 @@ class Study(Enum):
 
     STUDY1_3_XIA_VS_STABILIZED_BAD_X0 = StudyConfiguration(
         name="STUDY1_3_XIA_VS_STABILIZED_BAD_X0",
-        repeat=1,
+        repeat=10,
         fatigue_models=(
             FatigueModels.XIA_STABILIZED(
                 FatigueParameters(stabilization_factor=100),
@@ -320,8 +320,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=1000,
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $3CC$ et $3CC^S$ en fonction du temps",
-            legend=("_", "_", "_", "_", "$3CC^S$", "_", "_", "_", "$3CC$"),
+            title="Remplissages des bassins des modèles $\\tcc$ et $\\tccs$ en fonction du temps",
+            legend=("_", "_", "_", "_", "$\\tccs$", "_", "_", "_", "$\\tcc$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$\sum{}$"),
             options=(
                 {"linestyle": "-"},
@@ -359,8 +359,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=1000,
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $3CC$ et $3CC^S$ en fonction du temps",
-            legend=("_", "_", "_", "_", "$3CC^S$", "_", "_", "_", "$3CC$"),
+            title="Remplissages des bassins des modèles $\\tcc$ et $\\tccs$ en fonction du temps",
+            legend=("_", "_", "_", "_", "$\\tccs$", "_", "_", "_", "$\\tcc$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$\sum{}$"),
             options=(
                 {"linestyle": "-"},
@@ -397,8 +397,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $3CC$ et $4CC$ en fonction du temps",
-            legend=("_", "_", "_", "_", "_", "$4CC$", "_", "_", "_", "$3CC$"),
+            title="Remplissages des bassins des modèles $\\tcc$ et $\\qcc$ en fonction du temps",
+            legend=("_", "_", "_", "_", "_", "$\\qcc$", "_", "_", "_", "$\\tcc$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$M_E$", "$\sum{}$"),
             options=({"linestyle": "-"}, {"linestyle": "--"}),
             save_path="michaud_vs_xia_long.png",
@@ -442,7 +442,7 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET1_UP_TO_MID_THEN_TARGET2,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="Remplissages des bassins du modèle $4CC$ en fonction du temps",
+            title="Remplissages des bassins du modèle $\\qcc$ en fonction du temps",
             legend=(
                 "_",
                 "_",
@@ -517,7 +517,7 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET1_UP_TO_MID_THEN_TARGET2,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="Remplissages des bassins du modèle $4CC$ en fonction du temps",
+            title="Remplissages des bassins du modèle $\\qcc$ en fonction du temps",
             legend=(
                 "_",
                 "_",
@@ -564,6 +564,7 @@ class Study(Enum):
 
     STUDY2_4_MICHAUD_VS_XIA = StudyConfiguration(
         name="STUDY2_4_MICHAUD_VS_XIA",
+        repeat=10,
         fatigue_models=(
             FatigueModels.MICHAUD(
                 FatigueParameters(effort_threshold=0.5, F=0.01 / 4),
@@ -582,6 +583,7 @@ class Study(Enum):
                 FatigueParameters(F=0.01),
                 integrator=Integrator.RK45,
                 x0=(0, 1, 0),
+                colors=("tab:green", "tab:orange", "tab:red"),
                 rms_indices=(0, 1, 2),
             ),
         ),
@@ -590,8 +592,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET1_UP_TO_MID_THEN_TARGET2,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $3CC$ et $4CC$ en fonction du temps",
-            legend=("_", "_", "_", "_", "_", "$4CC$", "_", "_", "_", "$3CC$"),
+            title="Remplissages des bassins des modèles $\\tcc$ et $\\qcc$ en fonction du temps",
+            legend=("_", "_", "_", "_", "_", "$\\qcc$", "_", "_", "_", "$\\tcc$"),
             supplementary_legend=(
                 "Cible",
                 "$M_A$",
@@ -644,8 +646,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET1_UP_TO_MID_THEN_TARGET2,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $PE$ et $4CC$ en fonction du temps",
-            legend=("_", "PE", "_", "_", "_", "4CC"),
+            title="Remplissages des bassins des modèles $\\pe$ et $\\qcc$ en fonction du temps",
+            legend=("_", "\\pe", "_", "_", "_", "\\qcc"),
             supplementary_legend=("Cible", "$M_E$", "$M_A$", "$M_R$", "$M_F$", "_", "$\sum{}$"),
             options=({"linestyle": "-"}, {"linestyle": "--"}),
             save_path="effortPerception_vs_michaud.png",

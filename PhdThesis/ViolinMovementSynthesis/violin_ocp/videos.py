@@ -29,15 +29,12 @@ class Videos:
             )[0]
 
             b.resize(1920, 1080)
-            cam = b.vtk_window.ren.GetActiveCamera()
             ns_per_cycle = study.nmpc.n_shooting_per_cycle
             for cycles in self.cycle_in_and_out:
                 for name, pos, roll in self.camera_name_pos_roll:
                     # Position camera
-                    cam.SetPosition(*pos)
-                    cam.SetRoll(roll)
-                    b.vtk_window.ren.ResetCamera()
-                    b.refresh_window()
+                    b.set_camera_position(*pos)
+                    b.set_camera_roll(roll)
 
                     # Record
                     b.start_recording(f"{save_folder}/{study.save_name}_from_{cycles[0]}_to_{cycles[1]}_{name}")

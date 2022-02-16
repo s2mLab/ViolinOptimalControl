@@ -21,14 +21,14 @@ class LatexAnalysesImplementation:
     def mean_optimisation_time(
         study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]
     ) -> tuple[str, str]:
-        header = r"Temps\\d'optimisation\\(s)" if len(all_iterations) == 1 else r"Temps moyen\\d'optimisation\\(s)"
+        header = r"Temps\\de calcul\\(s)" if len(all_iterations) == 1 else r"Temps moyen\\de calcul\\(s)"
         return header, f"${mean([sol.real_time_to_optimize for sol in all_iterations]):0.1f}$"
 
     @staticmethod
     def total_optimisation_time(
         study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]
     ) -> tuple[str, str]:
-        header = r"Temps total\\d'optimisation\\(s)"
+        header = r"Temps total\\de calcul\\(s)"
         return header, f"${sum([sol.real_time_to_optimize for sol in all_iterations]):0.1f}$"
 
     @staticmethod
@@ -39,6 +39,16 @@ class LatexAnalysesImplementation:
         total_time = sum([sol.real_time_to_optimize for sol in all_iterations])
         header = r"Temps moyen\\par itération\\(s/itération)"
         return header, f"${total_time / n_iter:0.3f}$"
+
+    @staticmethod
+    def number_of_var_and_constraints(
+            study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]
+    ) -> tuple[str, str]:
+        nlp = studies.studies[study_index].nmpc.ocp.nlp[0]
+        n_var = nlp.ns * nlp.controls.shape + (nlp.ns + 1) * nlp.states.shape
+        n_constraints = nlp.ns * nlp.states.shape + sum([g.bounds.shape[0] for g in nlp.g])
+        header = r"\bfseries\makecell[c]{Nombre de\\variables/\\contraintes}"
+        return header, f"${n_var}/{n_constraints}$"
 
     @staticmethod
     def rmse_q(study_index: int, studies, solution: Solution, all_iterations: tuple[Solution, ...]) -> tuple[str, str]:
@@ -77,6 +87,7 @@ class LatexAnalysesFcn(Enum):
     MEAN_OPTIMIZATION_TIME = LatexAnalysesImplementation.mean_optimisation_time
     MEAN_ITERATION_TIME = LatexAnalysesImplementation.mean_iteration_time
     RMSE_Q = LatexAnalysesImplementation.rmse_q
+    NUMBER_OF_VAR_AND_CONSTRAINTS = LatexAnalysesImplementation.number_of_var_and_constraints
 
 
 class LatexTable:

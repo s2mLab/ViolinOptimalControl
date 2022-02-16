@@ -23,7 +23,11 @@ from violin_ocp import (
     FigureOptions,
     CustomAnalysesFcn,
     CustomAnalyses,
+    CustomAnalysesOption,
     Videos,
+    ExtraFigures,
+    ExtraFiguresFcn,
+    ExtraFigureOption,
 )
 
 
@@ -38,14 +42,18 @@ class StudyInternal:
         n_cycles_total: int,
         n_cycles_simultaneous: int,
         rmse_index: int,
+        save_name: str = None,
+        fatigue_max_threshold: float = 0.8,
+        plot_options: dict = None,
     ):
         self.name = name
-        self.save_name = name.replace("$", "")
-        self.save_name = self.save_name.replace("\\", "")
+        save_name = name if save_name is None else save_name
+        self.save_name = save_name.replace("$", "").replace("\ ", "_").replace("\\", "").replace("(", "").replace(")", "").replace("%", "pct")
         self.rmse_index = rmse_index
+        self.plot_options = plot_options if plot_options is not None else {}
 
         self.model_name: str = "WuViolin"
-        self.violin: Violin = Violin(self.model_name, ViolinString.G)
+        self.violin: Violin = Violin(self.model_name, ViolinString.G, fatigue_max_threshold)
         self.bow: Bow = Bow(self.model_name)
         self.solver = Solver.IPOPT()
         self.ode_solver = OdeSolver.RK4(n_integration_steps=n_integration_steps)
@@ -160,6 +168,7 @@ class StudiesInternal:
         figures: Figures = None,
         custom_analyses: CustomAnalyses = None,
         videos: Videos = None,
+        extra_figures: ExtraFigures = None
     ):
         self.name = name
         self._has_run = False
@@ -169,6 +178,7 @@ class StudiesInternal:
         self.figures = figures
         self.videos = videos
         self.custom_analyses = custom_analyses
+        self.extra_figures = extra_figures
 
     def perform(
         self,
@@ -264,6 +274,15 @@ class StudiesInternal:
             return
 
         self.figures.generate_figure(self, self.solutions, save_folder=self.prepare_and_get_results_dir())
+
+    def generate_extra_figures(self):
+        if not self._has_run:
+            raise RuntimeError("run() must be called before generating the figures")
+
+        if self.extra_figures is None:
+            return
+
+        self.extra_figures.generate_extra_figures(self, save_folder=self.prepare_and_get_results_dir())
 
     def prepare_and_get_results_dir(self):
         try:
@@ -468,6 +487,7 @@ class StudyConfig:
             add_bfgs_dagger_notice=True,
             table_label="table:aller_retour_ocp",
             analyses=(
+                LatexAnalysesFcn.NUMBER_OF_VAR_AND_CONSTRAINTS,
                 LatexAnalysesFcn.MEAN_OPTIMIZATION_TIME,
                 LatexAnalysesFcn.MEAN_NUMBER_ITERATIONS,
                 LatexAnalysesFcn.MEAN_ITERATION_TIME,
@@ -488,6 +508,7 @@ class StudyConfig:
                 n_integration_steps=5,
                 n_cycles_simultaneous=1,
                 rmse_index=0,
+                plot_options={"linewidth": 5}
             ),
             StudyInternal(
                 name=r"$\condTauPe$",
@@ -538,7 +559,13 @@ class StudyConfig:
             ),
             font_size=30,
         ),
-        custom_analyses=CustomAnalyses((CustomAnalysesFcn.PRINT_NUMBER_OF_ITERATIONS,)),
+        custom_analyses=CustomAnalyses((CustomAnalysesOption(CustomAnalysesFcn.PRINT_NUMBER_OF_ITERATIONS),)),
+        extra_figures=ExtraFigures(
+            extra_figures=(ExtraFigureOption(
+                ExtraFiguresFcn.INITIAL_GUESS_NMPC,
+                data_path="condTauPe_iterations/iteration_0000.bo"),
+            ),
+        ),
     )
 
     STUDY3_TAU_10_CYCLES_3_AT_A_TIME: StudiesInternal = StudiesInternal(
@@ -553,6 +580,7 @@ class StudyConfig:
                 n_integration_steps=3,
                 n_cycles_simultaneous=3,
                 rmse_index=0,
+                plot_options={"linewidth": 5}
             ),
             StudyInternal(
                 name=r"$\condTauPe$",
@@ -617,10 +645,10 @@ class StudyConfig:
                 ),
             ),
         ),
-        custom_analyses=CustomAnalyses((CustomAnalysesFcn.PRINT_NUMBER_OF_ITERATIONS,)),
+        custom_analyses=CustomAnalyses((CustomAnalysesOption(CustomAnalysesFcn.PRINT_NUMBER_OF_ITERATIONS),)),
     )
 
-    STUDY4_VIOLIN: StudiesInternal = StudiesInternal(
+    STUDY4A_VIOLIN: StudiesInternal = StudiesInternal(
         name="STUDY4_VIOLIN",
         studies=(
             StudyInternal(
@@ -632,9 +660,11 @@ class StudyConfig:
                 n_integration_steps=3,
                 n_cycles_simultaneous=3,
                 rmse_index=0,
+                plot_options={"linewidth": 5}
             ),
             StudyInternal(
                 name=r"$\condTauPe$",
+                save_name=r"$\condTauPe\ (80\%)$",
                 structure_type=StructureType.TAU,
                 fatigue_type=FatigueType.EFFORT_PERCEPTION,
                 n_cycles_total=600,
@@ -662,9 +692,10 @@ class StudyConfig:
         ),
         custom_analyses=CustomAnalyses(
             analyses=(
-                CustomAnalysesFcn.RMSE_UP_TO_CYCLE_450,
-                CustomAnalysesFcn.RMSE_FROM_CYCLE_510,
-                CustomAnalysesFcn.OBJECTIVE_FUNCTION_AT_50_AND_550,
+                CustomAnalysesOption(CustomAnalysesFcn.RMSE, last_cycle=450),
+                CustomAnalysesOption(CustomAnalysesFcn.RMSE, first_cycle=510),
+                CustomAnalysesOption(CustomAnalysesFcn.OBJECTIVE_FUNCTION, cycle=50),
+                CustomAnalysesOption(CustomAnalysesFcn.OBJECTIVE_FUNCTION, cycle=550),
             ),
         ),
         figures=Figures(
@@ -931,6 +962,184 @@ class StudyConfig:
                 ("front", (3, 0, 0), 0),
                 ("top", (0.5, 3, 0), 0),
                 ("side", (2, 0, 3), 0),
+            ),
+        ),
+        extra_figures=ExtraFigures(
+            extra_figures=(
+                ExtraFigureOption(
+                    ExtraFiguresFcn.BOW,
+                ),
+                ExtraFigureOption(
+                    ExtraFiguresFcn.VIOLIN,
+                ),
+                ExtraFigureOption(
+                    ExtraFiguresFcn.SHOW_MODEL_TOGGLE_SEGMENT,
+                    save_name="violin_tip_NoFatigue.png",
+                    idx_solution=0,
+                    cycle=550,
+                    half_cycle=False,
+                    toggle_idx=[],
+                    camera_name_pos_roll=(
+                        ("front", (3, 0, 0), 0),
+                        ("top", (0.5, 3, 0), 0),
+                        ("side", (2, 0, 3), 0),
+                    ),
+                ),
+                ExtraFigureOption(
+                    ExtraFiguresFcn.SHOW_MODEL_TOGGLE_SEGMENT,
+                    save_name="violin_tip_Fatigue80.png",
+                    idx_solution=1,
+                    cycle=550,
+                    half_cycle=False,
+                    toggle_idx=[1, 0] + list(range(13, 29)),
+                    camera_name_pos_roll=(
+                        ("front", (3, 0, 0), 0),
+                        ("top", (0.5, 3, 0), 0),
+                        ("side", (2, 0, 3), 0),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    STUDY4B_VIOLIN: StudiesInternal = StudiesInternal(
+        name="STUDY4_VIOLIN",
+        studies=(
+            StudyInternal(
+                name=r"$\condTauNf$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.NO_FATIGUE,
+                n_cycles_total=600,
+                n_shoot_per_cycle=30,
+                n_integration_steps=3,
+                n_cycles_simultaneous=3,
+                rmse_index=0,
+                plot_options={"linewidth": 5}
+            ),
+            StudyInternal(
+                name=r"$\condTauPe\ (80\%)$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.EFFORT_PERCEPTION,
+                n_cycles_total=600,
+                n_shoot_per_cycle=30,
+                n_integration_steps=3,
+                n_cycles_simultaneous=3,
+                rmse_index=0,
+                fatigue_max_threshold=0.8,
+            ),
+            StudyInternal(
+                name=r"$\condTauPe\ (70\%)$",
+                structure_type=StructureType.TAU,
+                fatigue_type=FatigueType.EFFORT_PERCEPTION,
+                n_cycles_total=600,
+                n_shoot_per_cycle=30,
+                n_integration_steps=3,
+                n_cycles_simultaneous=3,
+                rmse_index=0,
+                fatigue_max_threshold=0.7,
+            ),
+        ),
+        custom_analyses=CustomAnalyses(
+            analyses=(
+                CustomAnalysesOption(CustomAnalysesFcn.OBJECTIVE_FUNCTION, cycle=50),
+                CustomAnalysesOption(CustomAnalysesFcn.OBJECTIVE_FUNCTION, cycle=550),
+            ),
+        ),
+        figures=Figures(
+            figures=(
+                FigureOptions(
+                    # title="Évolution au cours du temps pour le bassin\n"
+                    #       "de fatigue négatif de $\\tau_5$ pour tous les cycles",
+                    title="",
+                    fcn=FiguresFcn.INTEGRATION_FROM_ANOTHER_DYNAMICS,
+                    save_name="study4b_fatigue_m5_full",
+                    params={
+                        "dynamics_source_idx": 1,
+                        "key": "tau_minus_mf",
+                        "index": 5,
+                        "is_fatigue": True,
+                        "ylim": (0, 100),
+                    },
+                ),
+                FigureOptions(
+                    # title="Superposition des cycles $550$ jusqu'à final de l'évolution de $q_4$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4b_q_4_from_550",
+                    params={
+                        "data_type": DataType.STATES,
+                        "key": "q",
+                        "index": 4,
+                        "to_degree": True,
+                        "first_cycle": 550,
+                    },
+                    use_subplots=False,
+                ),
+                FigureOptions(
+                    ##title="Superposition des cycles $550$ jusqu'à final de l'évolution de $q_5$ au cours du temps",
+                    title="",
+                    fcn=FiguresFcn.DATA_STACKED_PER_CYCLE,
+                    save_name="study4b_q_5_from_550",
+                    params={
+                        "data_type": DataType.STATES,
+                        "key": "q",
+                        "index": 5,
+                        "to_degree": True,
+                        "first_cycle": 550,
+                    },
+                    use_subplots=False,
+                ),
+            ),
+        ),
+        videos=Videos(
+            cycle_in_and_out=((550, 557),),
+            camera_name_pos_roll=(
+                ("front", (3, 0, 0), 0),
+                ("top", (0.5, 3, 0), 0),
+                ("side", (2, 0, 3), 0),
+            ),
+        ),
+        extra_figures=ExtraFigures(
+            extra_figures=(
+                ExtraFigureOption(
+                    ExtraFiguresFcn.SHOW_MODEL_TOGGLE_SEGMENT,
+                    save_name="violin_frog_NoFatigue.png",
+                    idx_solution=0,
+                    cycle=550,
+                    half_cycle=True,
+                    toggle_idx=[],
+                    camera_name_pos_roll=(
+                        ("front", (3, 0, 0), 0),
+                        ("top", (0.5, 3, 0), 0),
+                        ("side", (2, 0, 3), 0),
+                    ),
+                ),
+                ExtraFigureOption(
+                    ExtraFiguresFcn.SHOW_MODEL_TOGGLE_SEGMENT,
+                    save_name="violin_frog_Fatigue80.png",
+                    idx_solution=1,
+                    cycle=550,
+                    half_cycle=True,
+                    toggle_idx=[1, 0] + list(range(13, 29)),
+                    camera_name_pos_roll=(
+                        ("front", (3, 0, 0), 0),
+                        ("top", (0.5, 3, 0), 0),
+                        ("side", (2, 0, 3), 0),
+                    ),
+                ),
+                ExtraFigureOption(
+                    ExtraFiguresFcn.SHOW_MODEL_TOGGLE_SEGMENT,
+                    save_name="violin_frog_Fatigue70.png",
+                    idx_solution=2,
+                    cycle=550,
+                    half_cycle=True,
+                    toggle_idx=[1, 0] + list(range(13, 29)),
+                    camera_name_pos_roll=(
+                        ("front", (3, 0, 0), 0),
+                        ("top", (0.5, 3, 0), 0),
+                        ("side", (2, 0, 3), 0),
+                    ),
+                ),
             ),
         ),
     )
