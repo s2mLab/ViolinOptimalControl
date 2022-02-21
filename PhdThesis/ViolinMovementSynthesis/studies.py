@@ -168,6 +168,7 @@ class StudiesInternal:
         figures: Figures = None,
         custom_analyses: CustomAnalyses = None,
         videos: Videos = None,
+        snapshots: Videos = None,
         extra_figures: ExtraFigures = None
     ):
         self.name = name
@@ -177,6 +178,7 @@ class StudiesInternal:
         self.latex_table = latex_table
         self.figures = figures
         self.videos = videos
+        self.snapshots = snapshots
         self.custom_analyses = custom_analyses
         self.extra_figures = extra_figures
 
@@ -265,6 +267,22 @@ class StudiesInternal:
             return
 
         self.videos.generate_video(self, self.solutions, save_folder=self.prepare_and_get_results_dir())
+
+    def generate_snapshots(self):
+        if not self._has_run:
+            raise RuntimeError("run() must be called before generating snapshots")
+
+        if self.snapshots is None:
+            return
+
+        save_folder = self.prepare_and_get_results_dir()
+        save_folder += "/snapshots"
+        try:
+            os.mkdir(save_folder)
+        except FileExistsError:
+            pass
+
+        self.snapshots.generate_snapshot(self, self.solutions, save_folder=save_folder)
 
     def generate_figures(self):
         if not self._has_run:
@@ -962,6 +980,12 @@ class StudyConfig:
                 ("front", (3, 0, 0), 0),
                 ("top", (0.5, 3, 0), 0),
                 ("side", (2, 0, 3), 0),
+            ),
+        ),
+        snapshots=Videos(
+            cycle_in_and_out=((506, 507),),
+            camera_name_pos_roll=(
+                ("front", (3, 0, 0), 0),
             ),
         ),
         extra_figures=ExtraFigures(
