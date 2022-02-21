@@ -228,7 +228,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=1000,
         plot_options=PlotOptions(
-            title="Remplissages des bassins du modèle $\\tccs$ en fonction du temps",
+            # title="Remplissages des bassins du modèle $\\tccs$ en fonction du temps",
+            title="",
             legend=(
                 "_",
                 "_",
@@ -281,7 +282,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=1000,
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $\\tcc$ et $\\tccs$ en fonction du temps",
+            # title="Remplissages des bassins des modèles $\\tcc$ et $\\tccs$ en fonction du temps",
+            title="",
             legend=("_", "_", "_", "_", "$\\tccs$", "_", "_", "_", "$\\tcc$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$\sum{}$"),
             options=(
@@ -320,7 +322,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=1000,
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $\\tcc$ et $\\tccs$ en fonction du temps",
+            # title="Remplissages des bassins des modèles $\\tcc$ et $\\tccs$ en fonction du temps",
+            title="",
             legend=("_", "_", "_", "_", "$\\tccs$", "_", "_", "_", "$\\tcc$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$\sum{}$"),
             options=(
@@ -359,7 +362,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=1000,
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $\\tcc$ et $\\tccs$ en fonction du temps",
+            # title="Remplissages des bassins des modèles $\\tcc$ et $\\tccs$ en fonction du temps",
+            title="",
             legend=("_", "_", "_", "_", "$\\tccs$", "_", "_", "_", "$\\tcc$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$\sum{}$"),
             options=(
@@ -397,7 +401,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET_UP_TO_END,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $\\tcc$ et $\\qcc$ en fonction du temps",
+            # title="Remplissages des bassins des modèles $\\tcc$ et $\\qcc$ en fonction du temps",
+            title="",
             legend=("_", "_", "_", "_", "_", "$\\qcc$", "_", "_", "_", "$\\tcc$"),
             supplementary_legend=("Cible", "$M_A$", "$M_R$", "$M_F$", "$M_E$", "$\sum{}$"),
             options=({"linestyle": "-"}, {"linestyle": "--"}),
@@ -442,7 +447,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET1_UP_TO_MID_THEN_TARGET2,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="Remplissages des bassins du modèle $\\qcc$ en fonction du temps",
+            # title="Remplissages des bassins du modèle $\\qcc$ en fonction du temps",
+            title="",
             legend=(
                 "_",
                 "_",
@@ -517,7 +523,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET1_UP_TO_MID_THEN_TARGET2,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="Remplissages des bassins du modèle $\\qcc$ en fonction du temps",
+            # title="Remplissages des bassins du modèle $\\qcc$ en fonction du temps",
+            title="",
             legend=(
                 "_",
                 "_",
@@ -592,7 +599,8 @@ class Study(Enum):
         target_function=TargetFunctions.TARGET1_UP_TO_MID_THEN_TARGET2,
         n_points=10000,  # 100000
         plot_options=PlotOptions(
-            title="Remplissages des bassins des modèles $\\tcc$ et $\\qcc$ en fonction du temps",
+            # title="Remplissages des bassins des modèles $\\tcc$ et $\\qcc$ en fonction du temps",
+            title="",
             legend=("_", "_", "_", "_", "_", "$\\qcc$", "_", "_", "_", "$\\tcc$"),
             supplementary_legend=(
                 "Cible",

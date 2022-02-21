@@ -27,6 +27,7 @@ def main():
         study.perform_custom_analyses()
         study.generate_latex_table()
         study.generate_videos()
+        study.generate_snapshots()
         study.generate_extra_figures()
         print("----------")
 
